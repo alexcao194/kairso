@@ -10,7 +10,7 @@ The web app for **Kairso** — a workspace, project, KPI, attendance and initiat
 `kairso-web` is one half of a stack (the other is [`alexcao194/kairso-server`](https://hub.docker.com/r/alexcao194/kairso-server)). Run the whole stack with the self-host bundle:
 
 ```bash
-# in deploy/selfhost
+# in deploy/selfhost of https://github.com/alexcao194/kairso
 cp .env.example .env         # fill in secrets + Firebase
 docker compose up -d
 ```

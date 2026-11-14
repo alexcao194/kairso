@@ -1,0 +1,202 @@
+# Kairso monorepo CI/CD. Push a `v*` tag → build, deploy to prod over SSH, and publish
+# multi-arch images to Docker Hub for both apps, all with the same version.
+#
+#   server/  → kairso-server (Go API)      deploy dir: $SERVER_DEPLOY_DIR (default ~/kairso/server)
+#   web/     → kairso-web    (Next.js)     deploy dir: $WEB_DEPLOY_DIR    (default ~/kairso/web)
+#
+# CI/CD variables (Settings → CI/CD → Variables):
+#   SSH:        DEPLOY_SSH_KEY (File/Variable), DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_PORT (default 22)
+#               SERVER_DEPLOY_DIR, WEB_DEPLOY_DIR (optional)
+#   Shared:     TUNNEL_TOKEN — Cloudflare Tunnel token
+#   Server:     APP_TOKEN_SECRET, DB_NAME, DB_PASSWORD, DB_PORT, DB_SSLMODE, DB_USER,
+#               JWT_ACCESS_EXPIRATION, JWT_REFRESH_EXPIRATION, JWT_SECRET,
+#               MINIO_ACCESS_KEY, MINIO_API_PORT, MINIO_BUCKET, MINIO_CONSOLE_PORT,
+#               MINIO_PUBLIC_URL, MINIO_SECRET_KEY, NGINX_PORT, REDIS_PORT,
+#               FIREBASE_CREDENTIALS_JSON (File)
+#   Web:        WEB_ENV_PRODUCTION (File) — contents of .env.production
+#   Docker Hub: DOCKERHUB_USER, DOCKERHUB_TOKEN, DOCKERHUB_NAMESPACE
+
+stages:
+  - build
+  - deploy
+  - release
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+
+variables:
+  DOCKER_BUILDKIT: "1"
+  APP_IMAGE: "kairso-server:$CI_COMMIT_SHA"
+  WEB_IMAGE: "kairso-web:$CI_COMMIT_SHA"
+  SERVER_DEPLOY_DIR: "kairso/server"
+  WEB_DEPLOY_DIR: "kairso/web"
+
+# ---------------------------------------------------------------------------- templates
+.dind:
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: "/certs/client"
+
+.wait_dind: &wait_dind
+  - |
+    for _ in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 2; done
+    docker info >/dev/null || { echo "Cannot reach dind (runner needs privileged = true)"; exit 1; }
+
+.ssh:
+  image: alpine:3.22
+  environment:
+    name: production
+  before_script:
+    - test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER" && test -n "$TUNNEL_TOKEN"
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - cp "$DEPLOY_SSH_KEY" ~/.ssh/id_deploy 2>/dev/null || printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+    - chmod 600 ~/.ssh/id_deploy
+    - ssh-keyscan -p "${DEPLOY_SSH_PORT:-22}" "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+.release:
+  extends: .dind
+  stage: release
+  image: docker:27
+  before_script:
+    - *wait_dind
+    - test -n "$DOCKERHUB_NAMESPACE" || { echo "DOCKERHUB_NAMESPACE is missing"; exit 1; }
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+    - docker run --privileged --rm tonistiigi/binfmt --install all
+    # buildx refuses TLS settings taken from env (dind); build from a context.
+    - docker context inspect kairso-ctx >/dev/null 2>&1 || docker context create kairso-ctx
+    - docker buildx create --use --name kairso kairso-ctx
+
+# ---------------------------------------------------------------------------- server
+server:build:
+  extends: .dind
+  stage: build
+  image: golang:1.25-alpine
+  interruptible: true
+  variables:
+    GOPATH: "$CI_PROJECT_DIR/.cache/go"
+    GOCACHE: "$CI_PROJECT_DIR/.cache/go-build"
+  before_script:
+    - apk add --no-cache docker-cli docker-cli-buildx
+    - *wait_dind
+  script:
+    - cd server
+    - go build -buildvcs=false -o server ./cmd/server
+    - docker build --pull -f Dockerfile.prod -t "$APP_IMAGE" .
+    - mkdir -p deploy-bundle
+    - docker save "$APP_IMAGE" | gzip > deploy-bundle/server-image.tar.gz
+    - cp docker-compose.prod.yml nginx.conf deploy-bundle/
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - server/deploy-bundle/
+
+server:deploy:
+  extends: .ssh
+  stage: deploy
+  resource_group: production-server
+  needs:
+    - job: server:build
+      artifacts: true
+  script:
+    - test -f "$FIREBASE_CREDENTIALS_JSON"
+    - test -n "$APP_TOKEN_SECRET" && test -n "$DB_NAME" && test -n "$DB_PASSWORD"
+    - test -n "$DB_PORT" && test -n "$DB_SSLMODE" && test -n "$DB_USER"
+    - test -n "$JWT_ACCESS_EXPIRATION" && test -n "$JWT_REFRESH_EXPIRATION" && test -n "$JWT_SECRET"
+    - test -n "$MINIO_ACCESS_KEY" && test -n "$MINIO_API_PORT" && test -n "$MINIO_BUCKET"
+    - test -n "$MINIO_CONSOLE_PORT" && test -n "$MINIO_PUBLIC_URL" && test -n "$MINIO_SECRET_KEY"
+    - test -n "$NGINX_PORT" && test -n "$REDIS_PORT"
+    - |
+      umask 077
+      printf '%s\n' \
+        "APP_IMAGE=$APP_IMAGE" \
+        "APP_TOKEN_SECRET=$APP_TOKEN_SECRET" \
+        "DB_NAME=$DB_NAME" "DB_PASSWORD=$DB_PASSWORD" "DB_PORT=$DB_PORT" \
+        "DB_SSLMODE=$DB_SSLMODE" "DB_USER=$DB_USER" \
+        "JWT_ACCESS_EXPIRATION=$JWT_ACCESS_EXPIRATION" \
+        "JWT_REFRESH_EXPIRATION=$JWT_REFRESH_EXPIRATION" "JWT_SECRET=$JWT_SECRET" \
+        "MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY" "MINIO_API_PORT=$MINIO_API_PORT" \
+        "MINIO_BUCKET=$MINIO_BUCKET" "MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT" \
+        "MINIO_PUBLIC_URL=$MINIO_PUBLIC_URL" "MINIO_SECRET_KEY=$MINIO_SECRET_KEY" \
+        "NGINX_PORT=$NGINX_PORT" "REDIS_PORT=$REDIS_PORT" \
+        "TUNNEL_TOKEN=$TUNNEL_TOKEN" > prod.env
+    - DIR="$SERVER_DEPLOY_DIR"; B=server/deploy-bundle
+    - SSH="ssh -i ~/.ssh/id_deploy -p ${DEPLOY_SSH_PORT:-22} $DEPLOY_USER@$DEPLOY_HOST"
+    - SCP="scp -i ~/.ssh/id_deploy -P ${DEPLOY_SSH_PORT:-22}"
+    - $SSH "mkdir -p '$DIR'"
+    - gzip -dc $B/server-image.tar.gz | $SSH "docker load"
+    - $SCP $B/docker-compose.prod.yml "$DEPLOY_USER@$DEPLOY_HOST:$DIR/docker-compose.yml"
+    - $SCP $B/nginx.conf "$DEPLOY_USER@$DEPLOY_HOST:$DIR/nginx.conf"
+    - $SCP prod.env "$DEPLOY_USER@$DEPLOY_HOST:$DIR/.env"
+    - $SCP "$FIREBASE_CREDENTIALS_JSON" "$DEPLOY_USER@$DEPLOY_HOST:$DIR/firebase-credentials.json"
+    - $SSH "cd '$DIR' && docker compose up -d --no-build postgres"
+    - $SSH "cd '$DIR' && docker compose run --rm migrate"
+    - $SSH "cd '$DIR' && docker compose up -d --no-build --remove-orphans"
+    # Keep only the image just deployed so repeated deploys don't fill the disk.
+    - $SSH "docker images --format '{{.Repository}}:{{.Tag}}' | grep '^kairso-server:' | grep -vxF '$APP_IMAGE' | xargs -r docker rmi; docker image prune -f >/dev/null" || true
+    # nginx.conf is bind-mounted, so reload to pick up changes.
+    - $SSH "cd '$DIR' && docker compose exec -T nginx nginx -s reload"
+    - $SSH "cd '$DIR' && docker compose ps"
+
+server:release:
+  extends: .release
+  script:
+    - IMG="$DOCKERHUB_NAMESPACE/kairso-server"
+    - docker buildx build --platform linux/amd64,linux/arm64 -f server/Dockerfile.release
+      -t "$IMG:$CI_COMMIT_TAG" -t "$IMG:latest" --push server
+
+# ---------------------------------------------------------------------------- web
+web:build:
+  extends: .dind
+  stage: build
+  image: docker:27
+  interruptible: true
+  before_script:
+    - *wait_dind
+  script:
+    # NEXT_PUBLIC_* are baked in at build time, so .env.production must exist when building.
+    - test -f "$WEB_ENV_PRODUCTION"
+    - cp "$WEB_ENV_PRODUCTION" web/.env.production
+    - docker build --pull -f web/Dockerfile -t "$WEB_IMAGE" web
+    - docker save "$WEB_IMAGE" | gzip > web/web-image.tar.gz
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - web/web-image.tar.gz
+      - web/docker-compose.prod.yml
+
+web:deploy:
+  extends: .ssh
+  stage: deploy
+  resource_group: production-web
+  needs:
+    - job: web:build
+      artifacts: true
+  script:
+    - test -f "$WEB_ENV_PRODUCTION"
+    - DIR="$WEB_DEPLOY_DIR"
+    - SSH="ssh -i ~/.ssh/id_deploy -p ${DEPLOY_SSH_PORT:-22} $DEPLOY_USER@$DEPLOY_HOST"
+    - SCP="scp -i ~/.ssh/id_deploy -P ${DEPLOY_SSH_PORT:-22}"
+    - |
+      umask 077
+      printf 'WEB_IMAGE=%s\nTUNNEL_TOKEN=%s\n' "$WEB_IMAGE" "$TUNNEL_TOKEN" > compose.env
+    - $SSH "mkdir -p '$DIR'"
+    - gzip -dc web/web-image.tar.gz | $SSH "docker load"
+    - $SCP web/docker-compose.prod.yml "$DEPLOY_USER@$DEPLOY_HOST:$DIR/docker-compose.yml"
+    - $SCP compose.env "$DEPLOY_USER@$DEPLOY_HOST:$DIR/.env"
+    - $SCP "$WEB_ENV_PRODUCTION" "$DEPLOY_USER@$DEPLOY_HOST:$DIR/.env.production"
+    - $SSH "cd '$DIR' && docker compose up -d --remove-orphans && docker compose ps"
+    - $SSH "docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(kairso-web|nextkairso):' | grep -vxF '$WEB_IMAGE' | xargs -r docker rmi; docker image prune -f >/dev/null" || true
+
+web:release:
+  extends: .release
+  script:
+    # The public image reads its config at runtime (/env-config.js); no .env.production.
+    - IMG="$DOCKERHUB_NAMESPACE/kairso-web"
+    - docker buildx build --platform linux/amd64,linux/arm64 -f web/Dockerfile
+      -t "$IMG:$CI_COMMIT_TAG" -t "$IMG:latest" --push web

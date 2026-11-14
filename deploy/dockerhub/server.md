@@ -10,7 +10,7 @@ The backend for **Kairso** — a workspace, project, KPI, attendance and initiat
 `kairso-server` is one half of a stack (the other is [`alexcao194/kairso-web`](https://hub.docker.com/r/alexcao194/kairso-web)). It needs PostgreSQL, Redis, S3-compatible storage and a Firebase project. Run the whole stack with the self-host bundle instead of starting this image by hand:
 
 ```bash
-# in deploy/selfhost
+# in deploy/selfhost of https://github.com/alexcao194/kairso
 cp .env.example .env         # fill in secrets + Firebase
 docker compose up -d         # migrations run automatically
 ```

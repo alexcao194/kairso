@@ -1,10 +1,10 @@
 # Kairso — Web
 
-The web front end for **Kairso**, a platform for managing workspaces, projects, KPIs, attendance and initiatives for teams. This repository is the Next.js app. It also proxies REST calls to the backend so the signing secret never reaches the browser.
+The web front end for **Kairso**, a platform for managing workspaces, projects, KPIs, attendance and initiatives for teams. This is the `web/` folder of the [Kairso monorepo](../README.md): the Next.js app. It also proxies REST calls to the backend so the signing secret never reaches the browser.
 
 - 🌐 Website & docs: **https://home.kairso.com** (see the [Install & self-host guide](https://home.kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
-- 🧩 Backend: **[kairso-server](https://gitlab.alexcao.tech/kairso/gokairso)** — the other half of the stack
+- 🧩 Backend: **[`server/`](../server)** — the other half of the stack
 - 🐳 Image: **[`alexcao194/kairso-web`](https://hub.docker.com/r/alexcao194/kairso-web)** (multi-arch `amd64` + `arm64`)
 
 ## Stack
@@ -25,7 +25,7 @@ The dev server runs on `:3000`.
 
 ### Prerequisites
 - [Node.js 20+](https://nodejs.org/) and npm
-- A running **backend** — either a local [`kairso-server`](https://gitlab.alexcao.tech/kairso/gokairso) or the hosted one at `https://app.kairso.com`
+- A running **backend** — either a local [`server/`](../server) or the hosted one at `https://app.kairso.com`
 - A **Firebase project** for authentication
 
 ### Steps
@@ -40,7 +40,7 @@ cp .env.example .env.local
 #    and set APP_SIGNATURE_SECRET to match the backend's APP_TOKEN_SECRET
 
 # 3. Generate the API client from the backend's Swagger
-#    (by default it reads ../gokairso/docs/swagger.json — clone both repos side by side)
+#    (reads ../server/docs/swagger.json from the same repo)
 npm run gen:api
 
 # 4. Start the dev server
@@ -74,10 +74,10 @@ Open http://localhost:3000.
 
 The web image is built once and configured **at runtime** — the same image runs on any domain without rebuilding. On startup an entrypoint writes `/env-config.js` from environment variables, so Firebase config and the WebSocket origin are injected when the container starts, not baked into the bundle.
 
-It pairs with `kairso-server`, so run the whole stack with the self-host bundle in the backend repo's [`deploy/selfhost`](https://gitlab.alexcao.tech/kairso/gokairso/-/tree/main/deploy/selfhost):
+It pairs with `kairso-server`, so run the whole stack with the self-host bundle in [`deploy/selfhost`](../deploy/selfhost):
 
 ```bash
-cd deploy/selfhost
+cd deploy/selfhost   # from the repo root
 cp .env.example .env         # fill in secrets + Firebase
 docker compose up -d
 ```

@@ -1,4 +1,4 @@
-// Client mirror of the server notification catalog (internal/i18n in gokairso).
+// Client mirror of the server notification catalog (server/internal/i18n).
 // Notifications are stored with a `type` + params in `data`; we render them in
 // the reader's current language here, falling back to the server-rendered
 // title/body (default locale) when a type is unknown.

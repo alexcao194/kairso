@@ -34,9 +34,9 @@ Luật cứng:
 
 ## Dữ liệu & kiến trúc (đã nối backend thật)
 
-Mọi màn dùng API thật của `gokairso`. Không còn dữ liệu mock.
+Mọi màn dùng API thật của backend (`../server`). Không còn dữ liệu mock.
 
-- `lib/api/schema.ts` + `lib/api/endpoints.ts` được **sinh tự động** từ `gokairso/docs/swagger.json`
+- `lib/api/schema.ts` + `lib/api/endpoints.ts` được **sinh tự động** từ `server/docs/swagger.json`
   (`npm run gen:api`). Đừng sửa tay. Tên hàm sinh từ method + path (`getWorkspaceProjectTasks`,
   `patchTask`…) — tra trong `endpoints.ts`. Field bắt buộc/tuỳ chọn suy ra từ tag `json` của mã Go.
 - List endpoint trả envelope `{items, page, limit, hasMore}` → dùng `fetchAll` (`lib/query/paged.ts`).
