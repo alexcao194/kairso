@@ -2,6 +2,7 @@
 
 **Kairso** is an open-source platform for teams to manage workspaces, projects, tasks, KPIs, attendance, workflows, meeting notes and quotes, with realtime updates and multilingual (vi/en) notifications.
 
+- 💻 Source: **https://github.com/alexcao194/kairso**
 - 🌐 Website & docs: **https://home.kairso.com** ([Install & self-host guide](https://home.kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
 - 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
@@ -43,4 +44,4 @@ See each app's README for environment variables and details.
 
 ## Contributing
 
-See [server/CONTRIBUTING.md](server/CONTRIBUTING.md).
+Bug reports and feature ideas go to [GitHub Issues](https://github.com/alexcao194/kairso/issues); pull requests are welcome. See [server/CONTRIBUTING.md](server/CONTRIBUTING.md) for conventions.

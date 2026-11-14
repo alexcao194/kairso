@@ -1,6 +1,8 @@
 # Contributing Guide
 
-This document summarizes the conventions to follow when contributing to `gpgo`.
+This document summarizes the conventions for contributing to the Kairso server (`server/` in [alexcao194/kairso](https://github.com/alexcao194/kairso)).
+
+Report bugs and propose features in [GitHub Issues](https://github.com/alexcao194/kairso/issues); send changes as a pull request against `main`.
 
 ## Environment Setup
 
@@ -21,7 +23,7 @@ make dev-down
 
 ## Workflow
 
-1. Create a dedicated branch for your change.
+1. Fork the repository and create a dedicated branch for your change.
 2. Inspect the existing code before editing, especially the related feature under `internal/features`.
 3. Keep changes scoped to the requested behavior.
 
@@ -87,7 +89,7 @@ make swagger
 - Avoid changing files outside the requested scope unless required.
 - Do not revert someone else's changes unless explicitly requested.
 
-## Merge Request Checklist
+## Pull Request Checklist
 
 - [ ] The change is scoped to the requested behavior.
 - [ ] The feature's DTOs and mapping logic are in `dto.go`.
