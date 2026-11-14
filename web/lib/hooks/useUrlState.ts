@@ -21,3 +21,21 @@ export function useUrlState(key: string, def = ""): [string, (v: string | null) 
   );
   return [value, set];
 }
+
+/** Update several query params in one navigation (null/"" removes a key). */
+export function useSetUrlParams() {
+  const router = useRouter();
+  const pathname = usePathname();
+  return useCallback(
+    (patch: Record<string, string | null>) => {
+      const next = new URLSearchParams(window.location.search);
+      for (const [k, v] of Object.entries(patch)) {
+        if (v === null || v === "") next.delete(k);
+        else next.set(k, v);
+      }
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname],
+  );
+}

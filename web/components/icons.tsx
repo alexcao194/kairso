@@ -336,3 +336,20 @@ export const IconSave = (p: Props) => (
     <path d="M8 4.5v5h7v-5M8 20.5v-6h8v6" />
   </Svg>
 );
+
+export const IconGrid = (p: Props) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="6.5" height="6.5" rx="1.2" />
+    <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2" />
+    <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2" />
+    <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2" />
+  </Svg>
+);
+
+export const IconImage = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="m20.5 16-4.6-4.6a1 1 0 0 0-1.4 0L6 19.5" />
+  </Svg>
+);
