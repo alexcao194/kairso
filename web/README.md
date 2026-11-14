@@ -70,22 +70,8 @@ Open http://localhost:3000.
 
 ---
 
-## Run with Docker (production / self-host)
+## Self-host
 
-The web image is built once and configured **at runtime** — the same image runs on any domain without rebuilding. On startup an entrypoint writes `/env-config.js` from environment variables, so Firebase config and the WebSocket origin are injected when the container starts, not baked into the bundle.
+The web app ships together with the API in the all-in-one image [`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso) on Docker Hub — follow the guide there or at https://home.kairso.com/install.
 
-It ships together with the API in the all-in-one `kairso` image, so run the whole stack with the self-host bundle in [`deploy/selfhost`](../deploy/selfhost):
-
-```bash
-cd deploy/selfhost   # from the repo root
-cp .env.example .env         # fill in secrets + Firebase
-docker compose up -d
-```
-
-Then open `http://localhost:8080` (or your `PUBLIC_URL`). A single nginx entry point routes everything on one origin:
-
-- `/` → this web app
-- `/ws` → the API (realtime WebSocket)
-- `/cdn/` → object storage (files/images) when using the bundled MinIO
-
-See the [Install & self-host guide](https://home.kairso.com/install) for the full walkthrough, HTTPS setup and bring-your-own database/storage options.
+The image is configured **at runtime**: on startup it writes `/env-config.js` from environment variables, so Firebase config and the WebSocket origin are injected when the container starts, not baked into the bundle, and the same image runs on any domain.

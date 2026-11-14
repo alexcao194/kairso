@@ -1,18 +1,60 @@
-# Kairso self-host — the app itself: one all-in-one container (web + API + realtime),
-# migrations run automatically on start. PostgreSQL/Redis/MinIO come from
-# docker-compose.bundled.yml (default) or from your own services set in .env.
-#
-#   Bundled (default):     COMPOSE_FILE=docker-compose.yml:docker-compose.bundled.yml
-#   Your own Postgres/S3:  COMPOSE_FILE=docker-compose.yml, then set DB_* / MINIO_* in .env
+# Kairso self-host: the all-in-one Kairso image plus PostgreSQL, Redis and MinIO.
+# Put this file next to .env and firebase-credentials.json, then: docker compose up -d
+# Using your own PostgreSQL / S3 / Redis? Delete those services (and depends_on) and
+# set DB_* / MINIO_* / REDIS_* in .env.
 name: kairso
 
 services:
   kairso:
-    image: ${KAIRSO_IMAGE:-alexcao194/kairso}:${KAIRSO_TAG:-latest}
+    image: alexcao194/kairso:${KAIRSO_TAG:-latest}
     restart: unless-stopped
     ports:
       - "${PUBLIC_PORT:-8080}:80"
     env_file: .env
     volumes:
-      - ./data/kairso:/data                                   # generated secrets
+      - kairso-data:/data
       - ./firebase-credentials.json:/etc/kairso/firebase-credentials.json:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio: { condition: service_started }
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kairso
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: kairso
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kairso"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: bitnamilegacy/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_DEFAULT_BUCKETS: kairso:download
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    volumes:
+      - minio-data:/bitnami/minio/data
+
+volumes:
+  kairso-data:
+  postgres-data:
+  minio-data:

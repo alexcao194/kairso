@@ -84,17 +84,9 @@ Open http://localhost:8080/swagger/ for the API explorer.
 
 ---
 
-## Run with Docker (production / self-host)
+## Self-host
 
-The server is not meant to run alone — it pairs with `kairso-web` plus PostgreSQL, Redis and S3-compatible storage. Use the self-host bundle in [`deploy/selfhost`](../deploy/selfhost), which runs the published all-in-one image (web + API in one container):
-
-```bash
-cd deploy/selfhost   # from the repo root
-cp .env.example .env         # fill in secrets + Firebase
-docker compose up -d         # migrations run automatically
-```
-
-Then open `http://localhost:8080` (or your `PUBLIC_URL`). You can bring your own PostgreSQL and S3-compatible storage, or use the bundled ones — see the [Install & self-host guide](https://home.kairso.com/install) for the full walkthrough, HTTPS setup and configuration.
+The server is not meant to run alone. Self-hosters run the all-in-one image [`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso) (web + API in one container) from Docker Hub — follow the guide there or at https://home.kairso.com/install.
 
 ---
 

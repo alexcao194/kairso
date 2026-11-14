@@ -13,21 +13,17 @@
 |---|---|
 | [`server/`](server) | Go API server: REST API, realtime WebSocket hub, migrations ([README](server/README.md)) |
 | [`web/`](web) | Next.js web app, with a signing proxy to the API ([README](web/README.md)) |
-| [`deploy/selfhost/`](deploy/selfhost) | Docker Compose bundle to self-host the whole stack from the published images |
+| [`deploy/selfhost/`](deploy/selfhost) | The `docker-compose.yml` and `.env.example` self-hosters copy |
 | [`deploy/image/`](deploy/image) | Entrypoint and nginx config of the all-in-one image (built from the root `Dockerfile`) |
 | [`deploy/dockerhub/`](deploy/dockerhub) | Docker Hub overview page |
 
 Both apps are versioned together: a `v*` tag builds and deploys both, and publishes one image, `kairso`, with that version.
 
-## Self-host with Docker
+## Self-host
 
-```bash
-cd deploy/selfhost
-cp .env.example .env         # fill in secrets + Firebase
-docker compose up -d         # one Kairso container; migrations and secrets are automatic
-```
+Self-hosting uses the prebuilt image from Docker Hub; no need to clone this repo. Follow the guide on [Docker Hub](https://hub.docker.com/r/alexcao194/kairso) or at https://home.kairso.com/install: one `docker-compose.yml`, one `.env`, then `docker compose up -d`.
 
-Open `http://localhost:8080` (or your `PUBLIC_URL`). See [`deploy/selfhost/README.md`](deploy/selfhost/README.md) for bringing your own PostgreSQL / S3 storage and HTTPS.
+This repository is for developing Kairso.
 
 ## Develop from source
 
