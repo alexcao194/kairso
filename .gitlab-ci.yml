@@ -8,11 +8,10 @@
 #   SSH:        DEPLOY_SSH_KEY (File/Variable), DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_PORT (default 22)
 #               SERVER_DEPLOY_DIR, WEB_DEPLOY_DIR (optional)
 #   Shared:     TUNNEL_TOKEN — Cloudflare Tunnel token
-#   Server:     APP_TOKEN_SECRET, DB_NAME, DB_PASSWORD, DB_PORT, DB_SSLMODE, DB_USER,
-#               JWT_ACCESS_EXPIRATION, JWT_REFRESH_EXPIRATION, JWT_SECRET,
-#               MINIO_ACCESS_KEY, MINIO_API_PORT, MINIO_BUCKET, MINIO_CONSOLE_PORT,
-#               MINIO_PUBLIC_URL, MINIO_SECRET_KEY, NGINX_PORT, REDIS_PORT,
-#               FIREBASE_CREDENTIALS_JSON (File)
+#   Server:     APP_TOKEN_SECRET, JWT_SECRET, DB_PASSWORD, MINIO_ACCESS_KEY, MINIO_SECRET_KEY,
+#               MINIO_PUBLIC_URL, FIREBASE_CREDENTIALS_JSON (File)
+#               optional (default): DB_USER (kairso), DB_NAME (kairso), DB_PORT (5432, host port),
+#               MINIO_BUCKET (kairso), JWT_ACCESS_EXPIRATION (15m), JWT_REFRESH_EXPIRATION (168h)
 #   Web:        WEB_ENV_PRODUCTION (File) — contents of .env.production
 #   Docker Hub: DOCKERHUB_USER, DOCKERHUB_TOKEN, DOCKERHUB_NAMESPACE → publishes <namespace>/kairso
 
@@ -105,26 +104,21 @@ server:deploy:
       artifacts: true
   script:
     - test -f "$FIREBASE_CREDENTIALS_JSON"
-    - test -n "$APP_TOKEN_SECRET" && test -n "$DB_NAME" && test -n "$DB_PASSWORD"
-    - test -n "$DB_PORT" && test -n "$DB_SSLMODE" && test -n "$DB_USER"
-    - test -n "$JWT_ACCESS_EXPIRATION" && test -n "$JWT_REFRESH_EXPIRATION" && test -n "$JWT_SECRET"
-    - test -n "$MINIO_ACCESS_KEY" && test -n "$MINIO_API_PORT" && test -n "$MINIO_BUCKET"
-    - test -n "$MINIO_CONSOLE_PORT" && test -n "$MINIO_PUBLIC_URL" && test -n "$MINIO_SECRET_KEY"
-    - test -n "$NGINX_PORT" && test -n "$REDIS_PORT"
+    - |
+      for v in APP_TOKEN_SECRET JWT_SECRET DB_PASSWORD MINIO_ACCESS_KEY MINIO_SECRET_KEY MINIO_PUBLIC_URL; do
+        eval "test -n \"\${$v:-}\"" || { echo "Missing CI/CD variable $v"; exit 1; }
+      done
     - |
       umask 077
-      printf '%s\n' \
-        "APP_IMAGE=$APP_IMAGE" \
-        "APP_TOKEN_SECRET=$APP_TOKEN_SECRET" \
-        "DB_NAME=$DB_NAME" "DB_PASSWORD=$DB_PASSWORD" "DB_PORT=$DB_PORT" \
-        "DB_SSLMODE=$DB_SSLMODE" "DB_USER=$DB_USER" \
-        "JWT_ACCESS_EXPIRATION=$JWT_ACCESS_EXPIRATION" \
-        "JWT_REFRESH_EXPIRATION=$JWT_REFRESH_EXPIRATION" "JWT_SECRET=$JWT_SECRET" \
-        "MINIO_ACCESS_KEY=$MINIO_ACCESS_KEY" "MINIO_API_PORT=$MINIO_API_PORT" \
-        "MINIO_BUCKET=$MINIO_BUCKET" "MINIO_CONSOLE_PORT=$MINIO_CONSOLE_PORT" \
-        "MINIO_PUBLIC_URL=$MINIO_PUBLIC_URL" "MINIO_SECRET_KEY=$MINIO_SECRET_KEY" \
-        "NGINX_PORT=$NGINX_PORT" "REDIS_PORT=$REDIS_PORT" \
-        "TUNNEL_TOKEN=$TUNNEL_TOKEN" > prod.env
+      {
+        echo "APP_IMAGE=$APP_IMAGE"
+        echo "TUNNEL_TOKEN=$TUNNEL_TOKEN"
+        for v in APP_TOKEN_SECRET JWT_SECRET DB_PASSWORD MINIO_ACCESS_KEY MINIO_SECRET_KEY MINIO_PUBLIC_URL \
+                 DB_USER DB_NAME DB_PORT MINIO_BUCKET JWT_ACCESS_EXPIRATION JWT_REFRESH_EXPIRATION; do
+          eval "val=\"\${$v:-}\""
+          if [ -n "$val" ]; then printf '%s=%s\n' "$v" "$val"; fi
+        done
+      } > prod.env
     - DIR="$SERVER_DEPLOY_DIR"; B=server/deploy-bundle
     - SSH="ssh -i ~/.ssh/id_deploy -p ${DEPLOY_SSH_PORT:-22} $DEPLOY_USER@$DEPLOY_HOST"
     - SCP="scp -i ~/.ssh/id_deploy -P ${DEPLOY_SSH_PORT:-22}"

@@ -13,15 +13,15 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-kairso}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-kairso}
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kairso}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -60,7 +60,7 @@ services:
     restart: "no"
     environment:
       GOOSE_DRIVER: postgres
-      GOOSE_DBSTRING: host=postgres port=5432 user=${DB_USER} password=${DB_PASSWORD} dbname=${DB_NAME} sslmode=${DB_SSLMODE}
+      GOOSE_DBSTRING: host=postgres port=5432 user=${DB_USER:-kairso} password=${DB_PASSWORD} dbname=${DB_NAME:-kairso} sslmode=disable
     command: ["goose", "-dir", "/app/db/migrations", "up"]
     depends_on:
       postgres:
@@ -74,23 +74,23 @@ services:
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${DB_USER}
+      DB_USER: ${DB_USER:-kairso}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      DB_SSLMODE: ${DB_SSLMODE}
+      DB_NAME: ${DB_NAME:-kairso}
+      DB_SSLMODE: disable
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION}
-      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-15m}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-168h}
       FIREBASE_CREDENTIALS_PATH: /app/firebase-credentials.json
-      APP_TOKEN_SECRET: ${APP_TOKEN_SECRET}
+      APP_TOKEN_SECRET: ${APP_TOKEN_SECRET:?APP_TOKEN_SECRET is required}
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: ${MINIO_BUCKET:-kairso}
       MINIO_USE_SSL: "false"
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:${MINIO_API_PORT:-9000}}
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:?MINIO_PUBLIC_URL is required}
     depends_on:
       postgres:
         condition: service_healthy
