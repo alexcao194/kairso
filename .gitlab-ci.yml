@@ -1,5 +1,5 @@
 # Kairso monorepo CI/CD. Push a `v*` tag → build, deploy to prod over SSH, and publish
-# multi-arch images to Docker Hub for both apps, all with the same version.
+# the all-in-one multi-arch image (root Dockerfile) to Docker Hub, all with the same version.
 #
 #   server/  → kairso-server (Go API)      deploy dir: $SERVER_DEPLOY_DIR (default ~/kairso/server)
 #   web/     → kairso-web    (Next.js)     deploy dir: $WEB_DEPLOY_DIR    (default ~/kairso/web)
@@ -14,7 +14,7 @@
 #               MINIO_PUBLIC_URL, MINIO_SECRET_KEY, NGINX_PORT, REDIS_PORT,
 #               FIREBASE_CREDENTIALS_JSON (File)
 #   Web:        WEB_ENV_PRODUCTION (File) — contents of .env.production
-#   Docker Hub: DOCKERHUB_USER, DOCKERHUB_TOKEN, DOCKERHUB_NAMESPACE
+#   Docker Hub: DOCKERHUB_USER, DOCKERHUB_TOKEN, DOCKERHUB_NAMESPACE → publishes <namespace>/kairso
 
 stages:
   - build
@@ -143,12 +143,6 @@ server:deploy:
     - $SSH "cd '$DIR' && docker compose exec -T nginx nginx -s reload"
     - $SSH "cd '$DIR' && docker compose ps"
 
-server:release:
-  extends: .release
-  script:
-    - IMG="$DOCKERHUB_NAMESPACE/kairso-server"
-    - docker buildx build --platform linux/amd64,linux/arm64 -f server/Dockerfile.release
-      -t "$IMG:$CI_COMMIT_TAG" -t "$IMG:latest" --push server
 
 # ---------------------------------------------------------------------------- web
 web:build:
@@ -193,10 +187,11 @@ web:deploy:
     - $SSH "cd '$DIR' && docker compose up -d --remove-orphans && docker compose ps"
     - $SSH "docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(kairso-web|nextkairso):' | grep -vxF '$WEB_IMAGE' | xargs -r docker rmi; docker image prune -f >/dev/null" || true
 
-web:release:
+# ---------------------------------------------------------------------------- Docker Hub
+# One all-in-one image (web + API) built from the root Dockerfile.
+release:
   extends: .release
   script:
-    # The public image reads its config at runtime (/env-config.js); no .env.production.
-    - IMG="$DOCKERHUB_NAMESPACE/kairso-web"
-    - docker buildx build --platform linux/amd64,linux/arm64 -f web/Dockerfile
-      -t "$IMG:$CI_COMMIT_TAG" -t "$IMG:latest" --push web
+    - IMG="$DOCKERHUB_NAMESPACE/kairso"
+    - docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile
+      -t "$IMG:$CI_COMMIT_TAG" -t "$IMG:latest" --push .

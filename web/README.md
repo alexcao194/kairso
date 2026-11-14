@@ -5,7 +5,7 @@ The web front end for **Kairso**, a platform for managing workspaces, projects, 
 - 🌐 Website & docs: **https://home.kairso.com** (see the [Install & self-host guide](https://home.kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
 - 🧩 Backend: **[`server/`](../server)** — the other half of the stack
-- 🐳 Image: **[`alexcao194/kairso-web`](https://hub.docker.com/r/alexcao194/kairso-web)** (multi-arch `amd64` + `arm64`)
+- 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
 
 ## Stack
 
@@ -74,7 +74,7 @@ Open http://localhost:3000.
 
 The web image is built once and configured **at runtime** — the same image runs on any domain without rebuilding. On startup an entrypoint writes `/env-config.js` from environment variables, so Firebase config and the WebSocket origin are injected when the container starts, not baked into the bundle.
 
-It pairs with `kairso-server`, so run the whole stack with the self-host bundle in [`deploy/selfhost`](../deploy/selfhost):
+It ships together with the API in the all-in-one `kairso` image, so run the whole stack with the self-host bundle in [`deploy/selfhost`](../deploy/selfhost):
 
 ```bash
 cd deploy/selfhost   # from the repo root
@@ -85,7 +85,7 @@ docker compose up -d
 Then open `http://localhost:8080` (or your `PUBLIC_URL`). A single nginx entry point routes everything on one origin:
 
 - `/` → this web app
-- `/ws` → `kairso-server` (realtime WebSocket)
+- `/ws` → the API (realtime WebSocket)
 - `/cdn/` → object storage (files/images) when using the bundled MinIO
 
 See the [Install & self-host guide](https://home.kairso.com/install) for the full walkthrough, HTTPS setup and bring-your-own database/storage options.

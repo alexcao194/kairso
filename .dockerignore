@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/.next
+**/.env*
+!web/.env.example
+**/*.tsbuildinfo
+**/.DS_Store
+server/tmp
+server/logs
+server/.cache
+server/credentials
+deploy/selfhost/data

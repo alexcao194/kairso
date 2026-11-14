@@ -4,7 +4,7 @@
 
 - 🌐 Website & docs: **https://home.kairso.com** ([Install & self-host guide](https://home.kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
-- 🐳 Images: [`alexcao194/kairso-server`](https://hub.docker.com/r/alexcao194/kairso-server) · [`alexcao194/kairso-web`](https://hub.docker.com/r/alexcao194/kairso-web) (multi-arch `amd64` + `arm64`)
+- 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
 
 ## Repository layout
 
@@ -13,16 +13,17 @@
 | [`server/`](server) | Go API server: REST API, realtime WebSocket hub, migrations ([README](server/README.md)) |
 | [`web/`](web) | Next.js web app, with a signing proxy to the API ([README](web/README.md)) |
 | [`deploy/selfhost/`](deploy/selfhost) | Docker Compose bundle to self-host the whole stack from the published images |
-| [`deploy/dockerhub/`](deploy/dockerhub) | Docker Hub overview pages for both images |
+| [`deploy/image/`](deploy/image) | Entrypoint and nginx config of the all-in-one image (built from the root `Dockerfile`) |
+| [`deploy/dockerhub/`](deploy/dockerhub) | Docker Hub overview page |
 
-Both apps are versioned together: a `v*` tag builds, deploys and publishes `kairso-server` and `kairso-web` with the same version.
+Both apps are versioned together: a `v*` tag builds and deploys both, and publishes one image, `kairso`, with that version.
 
 ## Self-host with Docker
 
 ```bash
 cd deploy/selfhost
 cp .env.example .env         # fill in secrets + Firebase
-docker compose up -d         # migrations run automatically
+docker compose up -d         # one Kairso container; migrations and secrets are automatic
 ```
 
 Open `http://localhost:8080` (or your `PUBLIC_URL`). See [`deploy/selfhost/README.md`](deploy/selfhost/README.md) for bringing your own PostgreSQL / S3 storage and HTTPS.

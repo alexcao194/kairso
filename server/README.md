@@ -5,7 +5,7 @@ The backend for **Kairso**, a platform for managing workspaces, projects, KPIs, 
 - 🌐 Website & docs: **https://home.kairso.com** (see the [Install & self-host guide](https://home.kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
 - 🧩 Web front end: **[`web/`](../web)** — the other half of the stack
-- 🐳 Image: **[`alexcao194/kairso-server`](https://hub.docker.com/r/alexcao194/kairso-server)** (multi-arch `amd64` + `arm64`)
+- 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
 
 ## Stack
 
@@ -86,7 +86,7 @@ Open http://localhost:8080/swagger/ for the API explorer.
 
 ## Run with Docker (production / self-host)
 
-The server is not meant to run alone — it pairs with `kairso-web` plus PostgreSQL, Redis and S3-compatible storage. Use the self-host bundle in [`deploy/selfhost`](../deploy/selfhost), which runs the published images with a single nginx entry point:
+The server is not meant to run alone — it pairs with `kairso-web` plus PostgreSQL, Redis and S3-compatible storage. Use the self-host bundle in [`deploy/selfhost`](../deploy/selfhost), which runs the published all-in-one image (web + API in one container):
 
 ```bash
 cd deploy/selfhost   # from the repo root
