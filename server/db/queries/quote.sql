@@ -65,7 +65,7 @@ RETURNING id;
 SELECT q.id, q.workspace_id, q.project_id, q.module_id, q.customer_id, q.number, q.title, q.status, q.currency,
        q.language, q.issue_date, q.valid_until, q.discount_type, q.discount_value, q.vat_bp, q.subtotal,
        q.discount_total, q.tax_total, q.grand_total, q.customer_snapshot, q.issuer_snapshot, q.notes, q.terms,
-       q.created_by, q.sent_at, q.decided_at, q.created_at, q.updated_at,
+       q.created_by, q.sent_at, q.decided_at, q.created_at, q.updated_at, q.root_id, q.version,
        m.name AS module_name, p.name AS project_name,
        COALESCE(c.name, '') AS customer_name
 FROM quotes q
@@ -134,3 +134,14 @@ FROM quote_events e
 LEFT JOIN users u ON u.id = e.actor_id
 WHERE e.quote_id = $1
 ORDER BY e.created_at;
+
+-- name: SetQuoteVersion :exec
+UPDATE quotes SET root_id = $3, version = $4
+WHERE id = $1 AND workspace_id = $2;
+
+-- All versions of one quote chain (rootID is the first quote's id), oldest first.
+-- name: ListQuoteVersions :many
+SELECT id, number, version, status, valid_until, currency, grand_total, sent_at, created_at
+FROM quotes
+WHERE workspace_id = $1 AND (id = $2 OR root_id = $2)
+ORDER BY version;

@@ -14,8 +14,9 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { Badge } from "@/components/ui/feedback";
 import { Menu } from "@/components/ui/Popover";
+import { MeetingTaskPicker } from "@/components/kairso/MeetingTaskPicker";
 import { StatusChip } from "@/components/kairso/StatusChip";
-import { IconArrowRight, IconClose, IconCopy, IconDownload, IconMore, IconPlus, IconTrash } from "@/components/icons";
+import { IconArrowRight, IconClose, IconCopy, IconDownload, IconMore, IconPlus, IconSearch, IconTrash } from "@/components/icons";
 import { ParticipantPicker } from "./ParticipantPicker";
 import { tr } from "@/lib/i18n";
 
@@ -53,15 +54,36 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
   const modules = useProjectModules(scope.ws, scope.projectId ?? "");
   const others = useMeetings(scope);
   const [draft, setDraft] = useState<Draft>(() => fromServer(meeting));
+  const [pickFor, setPickFor] = useState<string | null>(null);
 
   const base = useMemo(() => JSON.stringify(fromServer(meeting)), [meeting]);
   const dirty = JSON.stringify(draft) !== base;
 
-  const dirtyRef = useRef(dirty);
-  dirtyRef.current = dirty;
+  // Re-sync when the server copy changes (e.g. a task was just created from an item and linked
+  // to it). `dirty` is already true in the render where `base` changes, so compare against the
+  // *previous* base instead: a draft that matched it had no unsaved edits and can follow the server.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const lastBase = useRef(base);
   useEffect(() => {
-    if (!dirtyRef.current) setDraft(fromServer(meeting));
-  }, [meeting]);
+    if (lastBase.current === base) return;
+    const prev = JSON.parse(lastBase.current) as Draft;
+    lastBase.current = base;
+    if (JSON.stringify(draftRef.current) === JSON.stringify(prev)) {
+      setDraft(fromServer(meeting));
+      return;
+    }
+    // Unsaved edits: keep them, but adopt task links the server added so saving won't drop them.
+    const next = fromServer(meeting);
+    setDraft((d) => ({
+      ...d,
+      items: d.items.map((it) => {
+        const before = prev.items.find((i) => i.id === it.id);
+        const after = next.items.find((i) => i.id === it.id);
+        return before && after && JSON.stringify(before.tasks) === JSON.stringify(it.tasks) ? { ...it, tasks: after.tasks } : it;
+      }),
+    }));
+  }, [base, meeting]);
 
   const taskIds = useMemo(() => [...new Set(draft.items.flatMap((i) => (i.tasks ?? []).map((t) => t.id)))], [draft.items]);
   const linked = useLinkedTasks(taskIds);
@@ -116,6 +138,7 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
   const listId = `meeting-modules-${meeting?.id ?? "new"}`;
 
   return (
+    <>
     <form
       onSubmit={(e) => (e.preventDefault(), save())}
       onKeyDown={(e) => {
@@ -159,6 +182,7 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
           onChange={setItem}
           onRemove={removeItem}
           onMove={moveItem}
+          onPickTask={(it) => setPickFor(it.id)}
           onCreateTask={(it) => meeting && openCreateTask({ projectId: scope.projectId, meetingId: meeting.id, meetingItemId: it.id })}
         />
       ))}
@@ -186,6 +210,15 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
         </Button>
       </div>
     </form>
+      <MeetingTaskPicker
+        open={!!pickFor}
+        ws={scope.ws}
+        projectId={meeting?.projectId ?? scope.projectId}
+        linked={draft.items.find((i) => i.id === pickFor)?.tasks ?? []}
+        onClose={() => setPickFor(null)}
+        onPick={(t) => pickFor && setItem(pickFor, { tasks: [...(draft.items.find((i) => i.id === pickFor)?.tasks ?? []), { id: t.id, code: t.code }] })}
+      />
+    </>
   );
 }
 
@@ -203,6 +236,7 @@ function SectionTable({
   onRemove,
   onMove,
   onCreateTask,
+  onPickTask,
 }: {
   index: number;
   section: MeetingSection;
@@ -217,6 +251,7 @@ function SectionTable({
   onRemove: (id: string) => void;
   onMove: (id: string, s: MeetingSection) => void;
   onCreateTask: (it: MeetingItem) => void;
+  onPickTask: (it: MeetingItem) => void;
 }) {
   const meta = SECTION_META[section];
   const priorityCount = items.filter((i) => i.priority).length;
@@ -274,7 +309,7 @@ function SectionTable({
                   )}
                   {meta.tasks && (
                     <td className="px-1.5 py-1.5">
-                      <ItemTasks item={it} tasks={tasks} blocked={taskBlocked} onUnlink={(id) => onChange(it.id, { tasks: (it.tasks ?? []).filter((t) => t.id !== id) })} onCreate={() => onCreateTask(it)} />
+                      <ItemTasks item={it} tasks={tasks} blocked={taskBlocked} onUnlink={(id) => onChange(it.id, { tasks: (it.tasks ?? []).filter((t) => t.id !== id) })} onCreate={() => onCreateTask(it)} onPick={() => onPickTask(it)} />
                     </td>
                   )}
                   {meta.status && (
@@ -326,7 +361,7 @@ function SectionTable({
   );
 }
 
-function ItemTasks({ item, tasks, blocked, onUnlink, onCreate }: { item: MeetingItem; tasks: Map<string, TaskResponse>; blocked: string | null; onUnlink: (id: string) => void; onCreate: () => void }) {
+function ItemTasks({ item, tasks, blocked, onUnlink, onCreate, onPick }: { item: MeetingItem; tasks: Map<string, TaskResponse>; blocked: string | null; onUnlink: (id: string) => void; onCreate: () => void; onPick: () => void }) {
   const refs = item.tasks ?? [];
   const { owners, due } = itemAssignment(refs.map((r) => tasks.get(r.id)));
   return (
@@ -358,6 +393,9 @@ function ItemTasks({ item, tasks, blocked, onUnlink, onCreate }: { item: Meeting
         className="inline-flex w-fit items-center gap-1 rounded-md px-1 text-[12px] text-ink-muted hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
       >
         <IconPlus size={12} /> {refs.length ? tr().meetingEd.addTask : tr().meetingEd.createTask}
+      </button>
+      <button type="button" onClick={onPick} className="inline-flex w-fit items-center gap-1 rounded-md px-1 text-[12px] text-ink-muted hover:bg-hover hover:text-ink">
+        <IconSearch size={12} /> {tr().meetingEd.pickExisting}
       </button>
     </div>
   );

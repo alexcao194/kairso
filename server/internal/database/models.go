@@ -612,6 +612,20 @@ type ProjectNote struct {
 	CreatedByID pgtype.UUID        `json:"created_by_id"`
 }
 
+type ProjectQuestion struct {
+	ID                pgtype.UUID        `json:"id"`
+	ProjectID         pgtype.UUID        `json:"project_id"`
+	Question          string             `json:"question"`
+	CreatedByID       pgtype.UUID        `json:"created_by_id"`
+	Answer            pgtype.Text        `json:"answer"`
+	AnsweredByName    pgtype.Text        `json:"answered_by_name"`
+	AnsweredByCompany pgtype.Text        `json:"answered_by_company"`
+	AnsweredAt        pgtype.Timestamptz `json:"answered_at"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+}
+
 type ProjectUser struct {
 	ProjectID pgtype.UUID `json:"project_id"`
 	UserID    pgtype.UUID `json:"user_id"`
@@ -647,6 +661,8 @@ type Quote struct {
 	DecidedAt        pgtype.Timestamptz `json:"decided_at"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	RootID           pgtype.UUID        `json:"root_id"`
+	Version          int32              `json:"version"`
 }
 
 type QuoteCounter struct {

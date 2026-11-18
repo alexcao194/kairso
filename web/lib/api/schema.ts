@@ -14,6 +14,12 @@ export interface AddProjectMemberRequest {
   userId: string;
 }
 
+export interface AnswerProjectQuestionRequest {
+  answer: string;
+  answererCompany?: string;
+  answererName: string;
+}
+
 export interface AssignTaskFaultHolderRequest {
   weight: number;
 }
@@ -334,6 +340,10 @@ export interface CreateProjectLinkRequest {
 export interface CreateProjectNoteRequest {
   content: string;
   title: string;
+}
+
+export interface CreateProjectQuestionRequest {
+  question: string;
 }
 
 export interface CreateProjectRequest {
@@ -993,6 +1003,16 @@ export interface ProjectOverviewsByIDsResponse {
   items: ProjectOverviewResponse[];
 }
 
+export interface ProjectQuestionResponse {
+  answer?: string;
+  answeredAt?: string;
+  answeredByCompany?: string;
+  answeredByName?: string;
+  createdAt: string;
+  id: string;
+  question: string;
+}
+
 export interface ProjectResponse {
   avatar?: string;
   createdAt: string;
@@ -1135,6 +1155,8 @@ export interface QuoteResponse {
   updatedAt: string;
   validUntil?: string;
   vatRate: number;
+  version: number;
+  versions: QuoteVersionResponse[];
 }
 
 export interface QuoteSettingsRequest {
@@ -1188,6 +1210,17 @@ export interface QuoteSummaryResponse {
   status: string;
   title: string;
   validUntil?: string;
+}
+
+export interface QuoteVersionResponse {
+  createdAt: string;
+  currency: string;
+  grandTotal: number;
+  id: string;
+  minorUnits: number;
+  number: string;
+  status: string;
+  version: number;
 }
 
 export interface ReadNotificationsRequest {

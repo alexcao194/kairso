@@ -407,7 +407,15 @@ func (s *Service) load(ctx context.Context, ws, id pgtype.UUID) (*QuoteResponse,
 	if err != nil {
 		return nil, err
 	}
-	resp := quoteResponse(row, items, events, live, st)
+	rootID := row.ID
+	if row.RootID.Valid {
+		rootID = row.RootID
+	}
+	versions, err := s.repo.ListQuoteVersions(ctx, ws, rootID)
+	if err != nil {
+		return nil, err
+	}
+	resp := quoteResponse(row, items, events, versions, live, st)
 	return &resp, nil
 }
 

@@ -154,41 +154,55 @@ type QuoteEventResponse struct {
 	CreatedAt time.Time `json:"createdAt" swaggertype:"string" format:"date-time"`
 }
 
+// QuoteVersionResponse is one entry of a quote's revision history.
+type QuoteVersionResponse struct {
+	ID         string    `json:"id"`
+	Number     string    `json:"number"`
+	Version    int       `json:"version"`
+	Status     string    `json:"status"`
+	Currency   string    `json:"currency"`
+	MinorUnits int       `json:"minorUnits"`
+	GrandTotal int64     `json:"grandTotal"`
+	CreatedAt  time.Time `json:"createdAt" swaggertype:"string" format:"date-time"`
+}
+
 type QuoteResponse struct {
-	ID              string               `json:"id"`
-	Number          string               `json:"number"`
-	Title           string               `json:"title"`
-	Status          string               `json:"status"`
-	Editable        bool                 `json:"editable"`
-	Currency        string               `json:"currency"`
-	MinorUnits      int                  `json:"minorUnits"`
-	Language        string               `json:"language"`
-	IssueDate       string               `json:"issueDate" format:"date"`
-	ValidUntil      string               `json:"validUntil,omitempty" format:"date"`
-	DiscountType    string               `json:"discountType"`
-	DiscountPercent float64              `json:"discountPercent"`
-	DiscountAmount  int64                `json:"discountAmount"`
-	VatRate         float64              `json:"vatRate"`
-	Subtotal        int64                `json:"subtotal"`
-	DiscountTotal   int64                `json:"discountTotal"`
-	TaxTotal        int64                `json:"taxTotal"`
-	GrandTotal      int64                `json:"grandTotal"`
-	AmountInWords   string               `json:"amountInWords"`
-	ProjectID       string               `json:"projectId"`
-	ProjectName     string               `json:"projectName"`
-	ModuleID        string               `json:"moduleId"`
-	ModuleName      string               `json:"moduleName"`
-	CustomerID      string               `json:"customerId,omitempty"`
-	Customer        PartyInfo            `json:"customer"`
-	Issuer          PartyInfo            `json:"issuer"`
-	Notes           string               `json:"notes"`
-	Terms           string               `json:"terms"`
-	Items           []QuoteItemResponse  `json:"items"`
-	Events          []QuoteEventResponse `json:"events"`
-	SentAt          *time.Time           `json:"sentAt,omitempty" swaggertype:"string" format:"date-time"`
-	DecidedAt       *time.Time           `json:"decidedAt,omitempty" swaggertype:"string" format:"date-time"`
-	CreatedAt       time.Time            `json:"createdAt" swaggertype:"string" format:"date-time"`
-	UpdatedAt       time.Time            `json:"updatedAt" swaggertype:"string" format:"date-time"`
+	ID              string                 `json:"id"`
+	Version         int                    `json:"version"`
+	Versions        []QuoteVersionResponse `json:"versions"`
+	Number          string                 `json:"number"`
+	Title           string                 `json:"title"`
+	Status          string                 `json:"status"`
+	Editable        bool                   `json:"editable"`
+	Currency        string                 `json:"currency"`
+	MinorUnits      int                    `json:"minorUnits"`
+	Language        string                 `json:"language"`
+	IssueDate       string                 `json:"issueDate" format:"date"`
+	ValidUntil      string                 `json:"validUntil,omitempty" format:"date"`
+	DiscountType    string                 `json:"discountType"`
+	DiscountPercent float64                `json:"discountPercent"`
+	DiscountAmount  int64                  `json:"discountAmount"`
+	VatRate         float64                `json:"vatRate"`
+	Subtotal        int64                  `json:"subtotal"`
+	DiscountTotal   int64                  `json:"discountTotal"`
+	TaxTotal        int64                  `json:"taxTotal"`
+	GrandTotal      int64                  `json:"grandTotal"`
+	AmountInWords   string                 `json:"amountInWords"`
+	ProjectID       string                 `json:"projectId"`
+	ProjectName     string                 `json:"projectName"`
+	ModuleID        string                 `json:"moduleId"`
+	ModuleName      string                 `json:"moduleName"`
+	CustomerID      string                 `json:"customerId,omitempty"`
+	Customer        PartyInfo              `json:"customer"`
+	Issuer          PartyInfo              `json:"issuer"`
+	Notes           string                 `json:"notes"`
+	Terms           string                 `json:"terms"`
+	Items           []QuoteItemResponse    `json:"items"`
+	Events          []QuoteEventResponse   `json:"events"`
+	SentAt          *time.Time             `json:"sentAt,omitempty" swaggertype:"string" format:"date-time"`
+	DecidedAt       *time.Time             `json:"decidedAt,omitempty" swaggertype:"string" format:"date-time"`
+	CreatedAt       time.Time              `json:"createdAt" swaggertype:"string" format:"date-time"`
+	UpdatedAt       time.Time              `json:"updatedAt" swaggertype:"string" format:"date-time"`
 }
 
 type QuoteSummaryResponse struct {
@@ -356,9 +370,11 @@ func eventResponse(e database.ListQuoteEventsRow) QuoteEventResponse {
 
 // quoteResponse maps a quote row; customer/issuer come from the snapshot once
 // sent, otherwise from the live customer and current settings.
-func quoteResponse(row database.GetQuoteRow, items []database.QuoteItem, events []database.ListQuoteEventsRow, liveCustomer *database.Customer, settings database.QuoteSetting) QuoteResponse {
+func quoteResponse(row database.GetQuoteRow, items []database.QuoteItem, events []database.ListQuoteEventsRow, versions []database.ListQuoteVersionsRow, liveCustomer *database.Customer, settings database.QuoteSetting) QuoteResponse {
 	resp := QuoteResponse{
 		ID:            pgutil.UUIDToString(row.ID),
+		Version:       int(row.Version),
+		Versions:      make([]QuoteVersionResponse, 0, len(versions)),
 		Number:        row.Number,
 		Title:         row.Title,
 		Status:        effectiveStatus(row.Status, row.ValidUntil),
@@ -388,6 +404,13 @@ func quoteResponse(row database.GetQuoteRow, items []database.QuoteItem, events 
 		DecidedAt:     timePtr(row.DecidedAt),
 		CreatedAt:     row.CreatedAt.Time,
 		UpdatedAt:     row.UpdatedAt.Time,
+	}
+	for _, v := range versions {
+		resp.Versions = append(resp.Versions, QuoteVersionResponse{
+			ID: pgutil.UUIDToString(v.ID), Number: v.Number, Version: int(v.Version),
+			Status: effectiveStatus(v.Status, v.ValidUntil), Currency: v.Currency,
+			MinorUnits: currency.MinorUnits(v.Currency), GrandTotal: v.GrandTotal, CreatedAt: v.CreatedAt.Time,
+		})
 	}
 	if row.DiscountType == "amount" {
 		resp.DiscountAmount = row.DiscountValue

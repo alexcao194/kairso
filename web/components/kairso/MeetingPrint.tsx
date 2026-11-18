@@ -135,7 +135,6 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
   const meta = SECTION_META[section];
   const showStatus = !!meta.status && rows.some((r) => r.status === "done");
   const assign = new Map(rows.map((r) => [r.id, itemAssignment((r.tasks ?? []).map((t) => tasks.get(t.id)))]));
-  const showOwner = meta.tasks && [...assign.values()].some((a) => a.owners.length);
   const showDue = meta.tasks && [...assign.values()].some((a) => a.due);
   const showPriority = meta.tasks;
 
@@ -146,7 +145,6 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
           <th className="w-[13mm] px-4 py-3">STT</th>
           <th className="w-[34mm] px-3 py-3">{tr().meetingPrint.module}</th>
           <th className="px-3 py-3">{meta.contentLabel}</th>
-          {showOwner && <th className="w-[30mm] px-3 py-3">{tr().meetingPrint.owner}</th>}
           {showDue && <th className="w-[24mm] px-3 py-3">{tr().meetingPrint.due}</th>}
           {showStatus && <th className="w-[28mm] px-3 py-3">{tr().meetingPrint.status}</th>}
           {showPriority && <th className="w-[22mm] px-3 py-3">{tr().meetingPrint.priority}</th>}
@@ -170,7 +168,6 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
                   </span>
                 )}
               </Td>
-              {showOwner && <Td className="text-[12.5px]">{a.owners.join(", ")}</Td>}
               {showDue && <Td className="whitespace-nowrap text-[12.5px]">{a.due ? fmtDate(a.due) : ""}</Td>}
               {showStatus && <Td className="text-[12.5px]">{meta.status![r.status === "done" ? 1 : 0]}</Td>}
               {showPriority && (

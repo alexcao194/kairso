@@ -32,6 +32,7 @@ func (h *PublicHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /public/projects/{token}/feedbacks", h.CreateFeedback)
 	mux.HandleFunc("POST /public/projects/{token}/uploads/presigned-url", h.CreatePresignedUploadURL)
 	mux.HandleFunc("GET /public/projects/{token}/modules", h.ListModules)
+	h.registerQuestionRoutes(mux)
 }
 
 func (h *PublicHandler) handleError(w http.ResponseWriter, err error) {

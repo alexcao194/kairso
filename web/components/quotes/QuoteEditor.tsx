@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { QuoteResponse, UpdateQuoteRequest } from "@/lib/api/schema";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
@@ -154,6 +155,11 @@ export function QuoteEditor({ id }: { id: string }) {
   };
   const duplicate = () =>
     m.duplicate.mutate(id, { onSuccess: (d) => { toast.success(t.quoteEditor.duplicated); router.push(`/quotes/${d.id}`); }, onError: (e) => toast.error(e) });
+  const newVersion = async () => {
+    if (await confirm({ title: t.quoteEditor.newVersionConfirm, message: t.quoteEditor.newVersionDesc, confirmLabel: t.quoteEditor.newVersion })) {
+      m.newVersion.mutate(id, { onSuccess: (d) => { toast.success(t.quoteEditor.newVersionOk); router.push(`/quotes/${d.id}`); }, onError: (e) => toast.error(e) });
+    }
+  };
   const remove = async () => {
     if (await confirm({ title: t.quoteEditor.removeConfirm(quote.number), danger: true })) {
       m.remove.mutate(id, { onSuccess: () => { toast.success(t.quoteEditor.removed); router.push("/quotes"); }, onError: (e) => toast.error(e) });
@@ -161,6 +167,7 @@ export function QuoteEditor({ id }: { id: string }) {
   };
 
   const moreItems = [
+    ...(quote.status !== "draft" ? [{ label: t.quoteEditor.newVersion, icon: <IconCopy size={14} />, onSelect: newVersion }] : []),
     { label: t.quoteEditor.duplicate, icon: <IconCopy size={14} />, onSelect: duplicate },
     ...(quote.status === "sent" || quote.status === "expired"
       ? [
@@ -179,6 +186,7 @@ export function QuoteEditor({ id }: { id: string }) {
       <TopBar>
         <Breadcrumb items={[{ label: t.quoteEditor.back, href: "/quotes" }, { label: quote.number }]} />
         <QuoteStatusBadge status={quote.status} />
+        {quote.versions.length > 1 && <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-ink-muted">v{quote.version}</span>}
         {editable && dirty && <span className="text-[12px] text-warning">{t.quoteEditor.unsaved}</span>}
         <TopBarSpacer />
         <Button size="sm" variant="ghost" onClick={() => window.open(`/print/quotes/${id}?auto=1`, "_blank")}>
@@ -333,6 +341,28 @@ export function QuoteEditor({ id }: { id: string }) {
             </div>
           </section>
 
+          {quote.versions.length > 1 && (
+            <section className="rounded-lg border border-line bg-surface">
+              <h2 className="border-b border-line px-4 py-2.5 text-[13px] font-semibold">{t.quoteEditor.versions}</h2>
+              <ul>
+                {[...quote.versions].reverse().map((v, i) => (
+                  <li key={v.id} className="border-b border-line-row last:border-b-0">
+                    <Link href={`/quotes/${v.id}`} aria-current={v.id === quote.id ? "page" : undefined} className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5 text-[13px] hover:bg-row-hover ${v.id === quote.id ? "bg-accent-soft" : ""}`}>
+                      <span className="w-8 font-mono text-[12px] text-ink-faint">v{v.version}</span>
+                      <span className="font-mono font-medium text-ink">{v.number}</span>
+                      <QuoteStatusBadge status={v.status} />
+                      {i === 0 && <span className="text-[11.5px] text-ink-muted">{t.quoteEditor.latest}</span>}
+                      {v.id === quote.id && <span className="text-[11.5px] font-medium text-accent-ink">{t.quoteEditor.viewing}</span>}
+                      <span className="flex-1" />
+                      <span className="font-mono text-[12.5px]">{formatMoney(v.grandTotal, v.currency, v.minorUnits, lang)}</span>
+                      <span className="text-[12px] text-ink-faint">{fmtDateTime(v.createdAt)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {quote.events.length > 0 && (
             <section className="rounded-lg border border-line bg-surface p-4">
               <h2 className="mb-2 text-[13px] font-semibold">{t.quoteEditor.history}</h2>
@@ -341,6 +371,8 @@ export function QuoteEditor({ id }: { id: string }) {
                   <li key={i}>
                     <span className="text-ink-faint">{fmtDateTime(e.createdAt)}</span> · <b className="font-medium text-ink">{e.actorName || "—"}</b>{" "}
                     {t.quoteEditor.event[e.type] ?? e.type}
+                    {e.type === "new_version" && ` ${t.quoteEditor.versionNext(e.note)}`}
+                    {e.note.startsWith("version:") && ` (${t.quoteEditor.versionFrom(e.note.slice("version:".length))})`}
                     {e.note.startsWith("duplicated:") && ` (${t.quoteEditor.duplicatedFrom(e.note.slice("duplicated:".length))})`}
                   </li>
                 ))}

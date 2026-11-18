@@ -205,7 +205,7 @@ const getQuote = `-- name: GetQuote :one
 SELECT q.id, q.workspace_id, q.project_id, q.module_id, q.customer_id, q.number, q.title, q.status, q.currency,
        q.language, q.issue_date, q.valid_until, q.discount_type, q.discount_value, q.vat_bp, q.subtotal,
        q.discount_total, q.tax_total, q.grand_total, q.customer_snapshot, q.issuer_snapshot, q.notes, q.terms,
-       q.created_by, q.sent_at, q.decided_at, q.created_at, q.updated_at,
+       q.created_by, q.sent_at, q.decided_at, q.created_at, q.updated_at, q.root_id, q.version,
        m.name AS module_name, p.name AS project_name,
        COALESCE(c.name, '') AS customer_name
 FROM quotes q
@@ -249,6 +249,8 @@ type GetQuoteRow struct {
 	DecidedAt        pgtype.Timestamptz `json:"decided_at"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	RootID           pgtype.UUID        `json:"root_id"`
+	Version          int32              `json:"version"`
 	ModuleName       string             `json:"module_name"`
 	ProjectName      string             `json:"project_name"`
 	CustomerName     string             `json:"customer_name"`
@@ -286,6 +288,8 @@ func (q *Queries) GetQuote(ctx context.Context, arg GetQuoteParams) (GetQuoteRow
 		&i.DecidedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RootID,
+		&i.Version,
 		&i.ModuleName,
 		&i.ProjectName,
 		&i.CustomerName,
@@ -500,6 +504,61 @@ func (q *Queries) ListQuoteItems(ctx context.Context, quoteID pgtype.UUID) ([]Qu
 	return items, nil
 }
 
+const listQuoteVersions = `-- name: ListQuoteVersions :many
+SELECT id, number, version, status, valid_until, currency, grand_total, sent_at, created_at
+FROM quotes
+WHERE workspace_id = $1 AND (id = $2 OR root_id = $2)
+ORDER BY version
+`
+
+type ListQuoteVersionsParams struct {
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	ID          pgtype.UUID `json:"id"`
+}
+
+type ListQuoteVersionsRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	Number     string             `json:"number"`
+	Version    int32              `json:"version"`
+	Status     string             `json:"status"`
+	ValidUntil pgtype.Date        `json:"valid_until"`
+	Currency   string             `json:"currency"`
+	GrandTotal int64              `json:"grand_total"`
+	SentAt     pgtype.Timestamptz `json:"sent_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+// All versions of one quote chain (rootID is the first quote's id), oldest first.
+func (q *Queries) ListQuoteVersions(ctx context.Context, arg ListQuoteVersionsParams) ([]ListQuoteVersionsRow, error) {
+	rows, err := q.db.Query(ctx, listQuoteVersions, arg.WorkspaceID, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListQuoteVersionsRow{}
+	for rows.Next() {
+		var i ListQuoteVersionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.Version,
+			&i.Status,
+			&i.ValidUntil,
+			&i.Currency,
+			&i.GrandTotal,
+			&i.SentAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listQuotes = `-- name: ListQuotes :many
 SELECT q.id, q.project_id, q.module_id, q.customer_id, q.number, q.title, q.status, q.currency, q.issue_date,
        q.valid_until, q.grand_total, q.customer_snapshot, q.sent_at, q.created_at, q.updated_at,
@@ -650,6 +709,28 @@ type SetQuoteStatusParams struct {
 
 func (q *Queries) SetQuoteStatus(ctx context.Context, arg SetQuoteStatusParams) error {
 	_, err := q.db.Exec(ctx, setQuoteStatus, arg.ID, arg.WorkspaceID, arg.Status)
+	return err
+}
+
+const setQuoteVersion = `-- name: SetQuoteVersion :exec
+UPDATE quotes SET root_id = $3, version = $4
+WHERE id = $1 AND workspace_id = $2
+`
+
+type SetQuoteVersionParams struct {
+	ID          pgtype.UUID `json:"id"`
+	WorkspaceID pgtype.UUID `json:"workspace_id"`
+	RootID      pgtype.UUID `json:"root_id"`
+	Version     int32       `json:"version"`
+}
+
+func (q *Queries) SetQuoteVersion(ctx context.Context, arg SetQuoteVersionParams) error {
+	_, err := q.db.Exec(ctx, setQuoteVersion,
+		arg.ID,
+		arg.WorkspaceID,
+		arg.RootID,
+		arg.Version,
+	)
 	return err
 }
 

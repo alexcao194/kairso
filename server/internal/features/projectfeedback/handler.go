@@ -98,6 +98,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("PATCH /v1/project-feedbacks/{feedbackId}/response", authMid.Handle(h.RespondToFeedback))
 	mux.HandleFunc("PUT /v1/project-feedbacks/{feedbackId}/tasks/{taskId}", authMid.Handle(h.LinkTask))
 	mux.HandleFunc("DELETE /v1/project-feedbacks/{feedbackId}/tasks/{taskId}", authMid.Handle(h.UnlinkTask))
+	h.registerQuestionRoutes(mux, authMid)
 }
 
 func handleServiceError(w http.ResponseWriter, err error, action string) {

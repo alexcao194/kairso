@@ -34,6 +34,14 @@ type Service interface {
 	ListPublicFeedbacks(ctx context.Context, token string, filter ListFeedbacksFilter, params pagination.Params) (ProjectFeedbackListResponse, error)
 	SubmitPublicFeedback(ctx context.Context, token string, req CreateProjectFeedbackRequest) (*ProjectFeedbackResponse, error)
 	ListPublicModules(ctx context.Context, token string) ([]PublicModuleResponse, error)
+
+	ListQuestions(ctx context.Context, projectID, callerID string) ([]ProjectQuestionResponse, error)
+	CreateQuestion(ctx context.Context, projectID, callerID, question string) (*ProjectQuestionResponse, error)
+	UpdateQuestion(ctx context.Context, questionID, callerID, question string) (*ProjectQuestionResponse, error)
+	ClearQuestionAnswer(ctx context.Context, questionID, callerID string) (*ProjectQuestionResponse, error)
+	DeleteQuestion(ctx context.Context, questionID, callerID string) error
+	ListPublicQuestions(ctx context.Context, token string) ([]ProjectQuestionResponse, error)
+	AnswerPublicQuestion(ctx context.Context, token, questionID string, req AnswerProjectQuestionRequest) (*ProjectQuestionResponse, error)
 }
 
 type service struct {

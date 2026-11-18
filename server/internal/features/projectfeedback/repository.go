@@ -41,6 +41,14 @@ type Repository interface {
 	LinkTask(ctx context.Context, feedbackID, taskID string) error
 	UnlinkTask(ctx context.Context, feedbackID, taskID string) error
 
+	CreateQuestion(ctx context.Context, projectID, userID, question string) (*ProjectQuestionResponse, error)
+	ListQuestions(ctx context.Context, projectID string) ([]ProjectQuestionResponse, error)
+	GetQuestionProjectID(ctx context.Context, questionID string) (string, error)
+	UpdateQuestionText(ctx context.Context, questionID, question string) (*ProjectQuestionResponse, error)
+	ClearQuestionAnswer(ctx context.Context, questionID string) (*ProjectQuestionResponse, error)
+	DeleteQuestion(ctx context.Context, questionID string) error
+	AnswerQuestion(ctx context.Context, projectID, questionID string, req AnswerProjectQuestionRequest) (*ProjectQuestionResponse, error)
+
 	CheckProjectMembership(ctx context.Context, projectID, userID string) (bool, error)
 	CheckProjectManageAuth(ctx context.Context, projectID, userID string) (bool, error)
 }

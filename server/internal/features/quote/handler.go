@@ -36,6 +36,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}", authMid.Handle(h.DeleteQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/send", authMid.Handle(h.SendQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/duplicate", authMid.Handle(h.DuplicateQuote))
+	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version", authMid.Handle(h.NewVersion))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/status", authMid.Handle(h.SetStatus))
 }
 

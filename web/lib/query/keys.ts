@@ -68,6 +68,8 @@ export const qk = {
   wfDeadLetter: (ws: string) => ["wf-dead-letter", ws] as const,
   whatsNew: () => ["whats-new"] as const,
   user: (id: string) => ["user", id] as const,
+  projectQuestions: (ws: string, p: string) => ["project-questions", ws, p] as const,
+  publicQuestions: (token: string) => ["public-questions", token] as const,
   publicProject: (token: string) => ["public-project", token] as const,
   publicFeedbacks: (token: string, params?: object) => ["public-feedbacks", token, params ?? {}] as const,
 };

@@ -33,6 +33,8 @@ type Repository interface {
 	MarkQuoteSent(ctx context.Context, arg database.MarkQuoteSentParams) error
 	SetQuoteStatus(ctx context.Context, arg database.SetQuoteStatusParams) error
 	DeleteQuote(ctx context.Context, id, workspaceID pgtype.UUID) (int64, error)
+	SetQuoteVersion(ctx context.Context, arg database.SetQuoteVersionParams) error
+	ListQuoteVersions(ctx context.Context, workspaceID, rootID pgtype.UUID) ([]database.ListQuoteVersionsRow, error)
 
 	ListItems(ctx context.Context, quoteID pgtype.UUID) ([]database.QuoteItem, error)
 	ReplaceItems(ctx context.Context, quoteID pgtype.UUID, items []database.InsertQuoteItemParams) error
@@ -169,4 +171,12 @@ func (r *repository) InsertEvent(ctx context.Context, quoteID pgtype.UUID, event
 
 func (r *repository) ListEvents(ctx context.Context, quoteID pgtype.UUID) ([]database.ListQuoteEventsRow, error) {
 	return r.queries.ListQuoteEvents(ctx, quoteID)
+}
+
+func (r *repository) SetQuoteVersion(ctx context.Context, arg database.SetQuoteVersionParams) error {
+	return r.queries.SetQuoteVersion(ctx, arg)
+}
+
+func (r *repository) ListQuoteVersions(ctx context.Context, workspaceID, rootID pgtype.UUID) ([]database.ListQuoteVersionsRow, error) {
+	return r.queries.ListQuoteVersions(ctx, database.ListQuoteVersionsParams{WorkspaceID: workspaceID, ID: rootID})
 }

@@ -7,6 +7,15 @@ definitions:
       userId:
         type: string
     type: object
+  AnswerProjectQuestionRequest:
+    properties:
+      answer:
+        type: string
+      answererCompany:
+        type: string
+      answererName:
+        type: string
+    type: object
   AssignTaskFaultHolderRequest:
     properties:
       weight:
@@ -597,6 +606,11 @@ definitions:
       content:
         type: string
       title:
+        type: string
+    type: object
+  CreateProjectQuestionRequest:
+    properties:
+      question:
         type: string
     type: object
   CreateProjectRequest:
@@ -1867,6 +1881,25 @@ definitions:
           $ref: '#/definitions/ProjectOverviewResponse'
         type: array
     type: object
+  ProjectQuestionResponse:
+    properties:
+      answer:
+        type: string
+      answeredAt:
+        format: date-time
+        type: string
+      answeredByCompany:
+        type: string
+      answeredByName:
+        type: string
+      createdAt:
+        format: date-time
+        type: string
+      id:
+        type: string
+      question:
+        type: string
+    type: object
   ProjectResponse:
     properties:
       avatar:
@@ -2148,6 +2181,12 @@ definitions:
         type: string
       vatRate:
         type: number
+      version:
+        type: integer
+      versions:
+        items:
+          $ref: '#/definitions/QuoteVersionResponse'
+        type: array
     type: object
   QuoteSettingsRequest:
     properties:
@@ -2249,6 +2288,26 @@ definitions:
       validUntil:
         format: date
         type: string
+    type: object
+  QuoteVersionResponse:
+    properties:
+      createdAt:
+        format: date-time
+        type: string
+      currency:
+        type: string
+      grandTotal:
+        type: integer
+      id:
+        type: string
+      minorUnits:
+        type: integer
+      number:
+        type: string
+      status:
+        type: string
+      version:
+        type: integer
     type: object
   ReadNotificationsRequest:
     properties:
@@ -4185,6 +4244,76 @@ paths:
       summary: List Public Modules
       tags:
       - PublicFeedback
+  /public/projects/{token}/questions:
+    get:
+      description: No authentication required — gated only by the unguessable token.
+      parameters:
+      - description: Public feedback token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ProjectQuestionResponse'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: List Public Questions
+      tags:
+      - PublicFeedback
+  /public/projects/{token}/questions/{questionId}/answer:
+    post:
+      consumes:
+      - application/json
+      description: No authentication required — gated only by the unguessable token.
+        Only unanswered questions can be answered.
+      parameters:
+      - description: Public feedback token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Question ID
+        in: path
+        name: questionId
+        required: true
+        type: string
+      - description: Answer
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/AnswerProjectQuestionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProjectQuestionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      summary: Answer Public Question
+      tags:
+      - PublicFeedback
   /public/projects/{token}/uploads/presigned-url:
     post:
       consumes:
@@ -5139,6 +5268,99 @@ paths:
       summary: Link An Existing Task To A Feedback
       tags:
       - ProjectFeedback
+  /v1/project-questions/{questionId}:
+    delete:
+      parameters:
+      - description: Question ID
+        in: path
+        name: questionId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete Project Question
+      tags:
+      - ProjectQuestion
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Question ID
+        in: path
+        name: questionId
+        required: true
+        type: string
+      - description: Question
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateProjectQuestionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProjectQuestionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update Project Question
+      tags:
+      - ProjectQuestion
+  /v1/project-questions/{questionId}/answer:
+    delete:
+      description: Removes the answer so the question can be answered again from the
+        public link.
+      parameters:
+      - description: Question ID
+        in: path
+        name: questionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ProjectQuestionResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Clear Project Question Answer
+      tags:
+      - ProjectQuestion
   /v1/projects/{projectId}/modules:
     get:
       parameters:
@@ -9589,6 +9811,78 @@ paths:
       summary: Create Project Feedback (member view)
       tags:
       - ProjectFeedback
+  /v1/workspaces/{workspaceId}/projects/{projectId}/questions:
+    get:
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Project ID
+        in: path
+        name: projectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ProjectQuestionResponse'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List Project Questions
+      tags:
+      - ProjectQuestion
+    post:
+      consumes:
+      - application/json
+      description: Members write a question that people with the public link can answer.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Project ID
+        in: path
+        name: projectId
+        required: true
+        type: string
+      - description: Question
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/CreateProjectQuestionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/ProjectQuestionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create Project Question
+      tags:
+      - ProjectQuestion
   /v1/workspaces/{workspaceId}/projects/{projectId}/tasks:
     get:
       parameters:
@@ -9984,6 +10278,37 @@ paths:
       security:
       - BearerAuth: []
       summary: Duplicate a quote as a new draft
+      tags:
+      - Quotes
+  /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version:
+    post:
+      description: Copies a sent/decided quote into a new editable draft with the
+        next version number (BG-…-v2, -v3, …).
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Quote ID
+        in: path
+        name: quoteId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/QuoteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create the next version of a quote
       tags:
       - Quotes
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/send:

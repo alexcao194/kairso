@@ -2,10 +2,11 @@
 
 import { use, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getPublicProject, getPublicProjectFeedbacks, getPublicProjectFiles, getPublicProjectModules, postPublicProjectFeedbacks, postPublicProjectUploadsPresignedUrl } from "@/lib/api/endpoints";
-import type { FileResponse, TreeNode } from "@/lib/api/schema";
+import { getPublicProject, getPublicProjectFeedbacks, getPublicProjectFiles, getPublicProjectModules, getPublicProjectQuestions, postPublicProjectFeedbacks, postPublicProjectQuestionAnswer, postPublicProjectUploadsPresignedUrl } from "@/lib/api/endpoints";
+import type { FileResponse, ProjectQuestionResponse, TreeNode } from "@/lib/api/schema";
 import { fmtBytes } from "@/lib/upload";
 import { qk } from "@/lib/query/keys";
+import { ApiError } from "@/lib/api/http";
 import { FEEDBACK_STATUSES, FEEDBACK_STATUS_LABEL, FEEDBACK_STATUS_TONE, FEEDBACK_TYPES, FEEDBACK_TYPE_LABEL, FEEDBACK_TYPE_TONE } from "@/lib/domain/feedback";
 import { MODULE_STATUS_COLOR, MODULE_STATUS_LABEL, SPRINT_STATUS_COLOR, SPRINT_STATUS_LABEL, moduleTimelineBars, type ModuleStatus, type SprintStatus } from "@/lib/domain/module";
 import { PRIORITY_LEVELS, PRIORITY_META, priorityToApi } from "@/lib/domain/task";
@@ -43,6 +44,7 @@ function Board({ token }: { token: string }) {
   });
   const modules = useQuery({ queryKey: ["public-modules", token], queryFn: async () => (await getPublicProjectModules(token)) ?? [], enabled: !!project.data?.enabled && !!project.data.showModuleTimeline });
   const files = useQuery({ queryKey: ["public-files", token], queryFn: () => getPublicProjectFiles(token), enabled: !!project.data?.enabled });
+  const questions = useQuery({ queryKey: qk.publicQuestions(token), queryFn: async () => (await getPublicProjectQuestions(token)) ?? [], enabled: !!project.data?.enabled });
   const hasFiles = (files.data?.folders?.length ?? 0) > 0 || (files.data?.rootFiles?.length ?? 0) > 0;
   const items = list.data?.pages.flatMap((p) => p.items ?? []) ?? [];
   const moduleRows = useMemo<GanttRow[]>(
@@ -104,6 +106,12 @@ function Board({ token }: { token: string }) {
                 </div>
               </section>
             )}
+            {(questions.data ?? []).length > 0 && (
+              <section aria-labelledby="pf-qa" className="overflow-hidden rounded-lg border border-line bg-surface">
+                <h2 id="pf-qa" className="px-4 pt-3 pb-2 text-[13px] font-semibold">{tr().publicFb.qaTitle}</h2>
+                <ul>{(questions.data ?? []).map((qn) => <QuestionItem key={qn.id} token={token} q={qn} />)}</ul>
+              </section>
+            )}
             <div className="flex flex-wrap items-center gap-2">
               <SearchInput value={q} onChange={setQ} placeholder={tr().publicFb.searchPh} label={tr().publicFb.search} className="w-[240px]" />
               <Select small aria-label={tr().publicFb.filterStatus} className="w-40" value={status} onChange={(e) => setStatus(e.target.value)}><option value="">{tr().publicFb.allStatuses}</option>{FEEDBACK_STATUSES.map((s) => <option key={s} value={s}>{FEEDBACK_STATUS_LABEL[s]}</option>)}</Select>
@@ -138,6 +146,47 @@ function Board({ token }: { token: string }) {
       </main>
       <Modal open={open} onClose={() => setOpen(false)} title={tr().publicFb.send} description={tr().publicFb.publicNote} width={560}><SubmitForm token={token} onClose={() => setOpen(false)} /></Modal>
     </div>
+  );
+}
+
+function QuestionItem({ token, q }: { token: string; q: ProjectQuestionResponse }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ answer: "", answererName: "", answererCompany: "" });
+  const ok = f.answer.trim() && f.answererName.trim();
+  const send = useMutation({
+    mutationFn: () => postPublicProjectQuestionAnswer(token, q.id, { answer: f.answer.trim(), answererName: f.answererName.trim(), answererCompany: f.answererCompany.trim() }),
+    onSuccess: () => { toast.success(tr().publicFb.qaThanks); qc.invalidateQueries({ queryKey: qk.publicQuestions(token) }); setOpen(false); },
+    onError: (e) => {
+      if (e instanceof ApiError && e.status === 409) { toast.error(tr().publicFb.qaTaken); qc.invalidateQueries({ queryKey: qk.publicQuestions(token) }); setOpen(false); }
+      else toast.error(e);
+    },
+  });
+  return (
+    <li className="border-t border-line-row px-4 py-3">
+      <p className="whitespace-pre-wrap break-words text-[13.5px] font-medium text-ink">{q.question}</p>
+      {q.answer ? (
+        <div className="mt-2 rounded-md border-l-2 border-accent bg-accent-soft px-3 py-2 text-[13px]">
+          <p className="whitespace-pre-wrap break-words text-ink-2">{q.answer}</p>
+          <p className="mt-1 text-[11.5px] text-ink-muted">{tr().publicFb.qaAnsweredBy([q.answeredByName, q.answeredByCompany].filter(Boolean).join(" · "), fmtDate(q.answeredAt))}</p>
+        </div>
+      ) : open ? (
+        <form className="mt-2 flex flex-col gap-2.5" onSubmit={(e) => (e.preventDefault(), ok && send.mutate())}>
+          <Textarea aria-label={tr().publicFb.qaAnswer} rows={3} autoFocus maxLength={4000} placeholder={tr().publicFb.qaAnswerPh} value={f.answer} onChange={(e) => setF((s) => ({ ...s, answer: e.target.value }))} />
+          <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
+            <Field label={tr().publicFb.qaName} required>{(p) => <Input {...p} maxLength={150} value={f.answererName} onChange={(e) => setF((s) => ({ ...s, answererName: e.target.value }))} />}</Field>
+            <Field label={tr().publicFb.qaCompany}>{(p) => <Input {...p} maxLength={150} value={f.answererCompany} onChange={(e) => setF((s) => ({ ...s, answererCompany: e.target.value }))} />}</Field>
+          </div>
+          <div className="flex justify-end gap-2"><Button size="sm" onClick={() => setOpen(false)}>{tr().publicFb.qaCancel}</Button><Button size="sm" type="submit" variant="primary" loading={send.isPending} disabled={!ok}>{tr().publicFb.qaSubmit}</Button></div>
+        </form>
+      ) : (
+        <div className="mt-2 flex items-center gap-2">
+          <Badge tone="neutral">{tr().publicFb.qaWaiting}</Badge>
+          <Button size="sm" onClick={() => setOpen(true)}>{tr().publicFb.qaAnswer}</Button>
+        </div>
+      )}
+    </li>
   );
 }
 

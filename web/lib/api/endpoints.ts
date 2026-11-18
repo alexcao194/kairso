@@ -51,6 +51,18 @@ export const getPublicProjectFiles = (token: string, opts?: RequestOptions): Pro
 export const getPublicProjectModules = (token: string, opts?: RequestOptions): Promise<S.PublicModuleResponse[]> =>
   request<S.PublicModuleResponse[]>("GET", `/public/projects/${enc(token)}/modules`, { ...opts });
 
+/** GET /public/projects/{token}/questions
+ * List Public Questions
+ * No authentication required — gated only by the unguessable token. */
+export const getPublicProjectQuestions = (token: string, opts?: RequestOptions): Promise<S.ProjectQuestionResponse[]> =>
+  request<S.ProjectQuestionResponse[]>("GET", `/public/projects/${enc(token)}/questions`, { ...opts });
+
+/** POST /public/projects/{token}/questions/{questionId}/answer
+ * Answer Public Question
+ * No authentication required — gated only by the unguessable token. Only unanswered questions can be answered. */
+export const postPublicProjectQuestionAnswer = (token: string, questionId: string, body: S.AnswerProjectQuestionRequest, opts?: RequestOptions): Promise<S.ProjectQuestionResponse> =>
+  request<S.ProjectQuestionResponse>("POST", `/public/projects/${enc(token)}/questions/${enc(questionId)}/answer`, { body, ...opts });
+
 /** POST /public/projects/{token}/uploads/presigned-url
  * Create Presigned Upload URL For A Feedback Photo
  * No authentication required — gated only by the unguessable token. Client PUTs the file directly to object storage using the returned URL. */
@@ -229,6 +241,22 @@ export const putProjectFeedbackTask = (feedbackId: string, taskId: string, opts?
  * Unlink A Task From A Feedback */
 export const deleteProjectFeedbackTask = (feedbackId: string, taskId: string, opts?: RequestOptions): Promise<void> =>
   request<void>("DELETE", `/v1/project-feedbacks/${enc(feedbackId)}/tasks/${enc(taskId)}`, { ...opts });
+
+/** DELETE /v1/project-questions/{questionId}
+ * Delete Project Question */
+export const deleteProjectQuestion = (questionId: string, opts?: RequestOptions): Promise<void> =>
+  request<void>("DELETE", `/v1/project-questions/${enc(questionId)}`, { ...opts });
+
+/** PATCH /v1/project-questions/{questionId}
+ * Update Project Question */
+export const patchProjectQuestion = (questionId: string, body: S.CreateProjectQuestionRequest, opts?: RequestOptions): Promise<S.ProjectQuestionResponse> =>
+  request<S.ProjectQuestionResponse>("PATCH", `/v1/project-questions/${enc(questionId)}`, { body, ...opts });
+
+/** DELETE /v1/project-questions/{questionId}/answer
+ * Clear Project Question Answer
+ * Removes the answer so the question can be answered again from the public link. */
+export const deleteProjectQuestionAnswer = (questionId: string, opts?: RequestOptions): Promise<S.ProjectQuestionResponse> =>
+  request<S.ProjectQuestionResponse>("DELETE", `/v1/project-questions/${enc(questionId)}/answer`, { ...opts });
 
 export interface GetProjectModulesQuery {
   limit?: number;
@@ -1199,6 +1227,17 @@ export const getWorkspaceProjectProjectFeedbacks = (workspaceId: string, project
 export const postWorkspaceProjectProjectFeedbacks = (workspaceId: string, projectId: string, body: S.CreateProjectFeedbackRequest, opts?: RequestOptions): Promise<S.ProjectFeedbackResponse> =>
   request<S.ProjectFeedbackResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/projects/${enc(projectId)}/project-feedbacks`, { body, ...opts });
 
+/** GET /v1/workspaces/{workspaceId}/projects/{projectId}/questions
+ * List Project Questions */
+export const getWorkspaceProjectQuestions = (workspaceId: string, projectId: string, opts?: RequestOptions): Promise<S.ProjectQuestionResponse[]> =>
+  request<S.ProjectQuestionResponse[]>("GET", `/v1/workspaces/${enc(workspaceId)}/projects/${enc(projectId)}/questions`, { ...opts });
+
+/** POST /v1/workspaces/{workspaceId}/projects/{projectId}/questions
+ * Create Project Question
+ * Members write a question that people with the public link can answer. */
+export const postWorkspaceProjectQuestions = (workspaceId: string, projectId: string, body: S.CreateProjectQuestionRequest, opts?: RequestOptions): Promise<S.ProjectQuestionResponse> =>
+  request<S.ProjectQuestionResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/projects/${enc(projectId)}/questions`, { body, ...opts });
+
 export interface GetWorkspaceProjectTasksQuery {
   /** Module ID */
   moduleId?: string;
@@ -1293,6 +1332,12 @@ export const deleteWorkspaceQuote = (workspaceId: string, quoteId: string, opts?
  * Duplicate a quote as a new draft */
 export const postWorkspaceQuoteDuplicate = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/duplicate`, { ...opts });
+
+/** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version
+ * Create the next version of a quote
+ * Copies a sent/decided quote into a new editable draft with the next version number (BG-…-v2, -v3, …). */
+export const postWorkspaceQuoteNewVersion = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
+  request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/new-version`, { ...opts });
 
 /** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/send
  * Send a quote

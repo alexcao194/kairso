@@ -10,9 +10,10 @@ import { useUrlState } from "@/lib/hooks/useUrlState";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { useToast } from "@/lib/toast/ToastProvider";
 import { Button } from "@/components/ui/Button";
-import { SearchInput, Select, Switch } from "@/components/ui/form";
+import { SearchInput, SegmentedControl, Select, Switch } from "@/components/ui/form";
 import { Badge, EmptyState, ErrorState, SkeletonRows } from "@/components/ui/feedback";
 import { useConfirm } from "@/components/ui/Confirm";
+import { QuestionsPanel } from "@/components/project/QuestionsPanel";
 import { CreateFeedbackDialog, FeedbackDetailDialog } from "@/components/project/FeedbackDialogs";
 import { IconChat, IconCopy, IconGlobe, IconPlus, IconRefresh } from "@/components/icons";
 import { tr } from "@/lib/i18n";
@@ -25,6 +26,8 @@ export default function ProjectFeedbackPage({ params }: { params: Promise<{ proj
   const [status, setStatus] = useUrlState("status");
   const [type, setType] = useUrlState("type");
   const [q, setQ] = useUrlState("q");
+  const [tab, setTab] = useUrlState("tab");
+  const qa = tab === "qa";
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -79,6 +82,17 @@ export default function ProjectFeedbackPage({ params }: { params: Promise<{ proj
         )}
       </section>
 
+      <div className="flex shrink-0 items-center border-b border-line bg-surface px-4 py-2">
+        <SegmentedControl
+          label={tr().fbPage.tabs}
+          size="sm"
+          value={qa ? "qa" : "feedback"}
+          onChange={(v) => setTab(v === "qa" ? "qa" : null)}
+          options={[{ value: "feedback", label: tr().fbPage.tabFeedback }, { value: "qa", label: tr().fbPage.tabQa }]}
+        />
+      </div>
+
+      {qa ? <QuestionsPanel workspaceId={workspaceId} projectId={projectId} /> : (<>
       <div className="flex h-toolbar shrink-0 items-center gap-2 overflow-x-auto border-b border-line bg-surface px-4">
         <SearchInput value={q} onChange={(v) => setQ(v || null)} placeholder={tr().fbPage.searchPh} label={tr().fbPage.search} className="w-[220px] shrink-0" />
         <Select small aria-label={tr().fbPage.filterStatus} className="w-40 shrink-0" value={status} onChange={(e) => setStatus(e.target.value || null)}>
@@ -125,6 +139,7 @@ export default function ProjectFeedbackPage({ params }: { params: Promise<{ proj
           })}
         </ul>
       )}
+      </>)}
       <CreateFeedbackDialog open={creating} projectId={projectId} onClose={() => setCreating(false)} />
       <FeedbackDetailDialog feedback={opened} projectId={projectId} onClose={() => setOpen(null)} />
     </div>

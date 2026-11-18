@@ -106,6 +106,9 @@ function Attendance() {
   const sel = (q.data ?? []).find((d) => d.date.slice(0, 10) === selected);
   const info = selected ? dayInfo(sel, selected) : null;
   const t = memberId ? memberStats.data?.members?.find((x) => x.memberId === memberId) : myStats.data;
+  const mk = monthKey(month);
+  // A "worked day" is any day of this month with recorded presence (check-in/out pair).
+  const workedDays = (q.data ?? []).filter((d) => d.date.slice(0, 7) === mk && dayInfo(d, d.date.slice(0, 10)).presence > 0).length;
   const statsLoading = memberId ? memberStats.isLoading : myStats.isLoading;
 
   return (
@@ -134,6 +137,13 @@ function Attendance() {
             { label: tr().calPage.hours, value: t ? Math.round(t.attendanceHours * 10) / 10 : statsLoading ? "…" : 0, hint: tr().calPage.registered(Math.round((t?.registeredHours ?? 0) * 10) / 10) },
             { label: tr().calPage.late, value: t?.lateDays ?? (statsLoading ? "…" : 0), tone: (t?.lateDays ?? 0) > 0 ? "danger" : "default" },
             { label: tr().calPage.early, value: t?.earlyLeaveDays ?? (statsLoading ? "…" : 0), tone: (t?.earlyLeaveDays ?? 0) > 0 ? "danger" : "default" },
+          ]}
+        />
+        <MetricStrip
+          compact
+          metrics={[
+            { label: tr().calPage.workDays, value: q.isLoading ? "…" : workedDays },
+            { label: tr().calPage.taskHours, value: t ? Math.round(t.estimatedTaskHours * 10) / 10 : statsLoading ? "…" : 0, hint: tr().calPage.taskHoursHint },
           ]}
         />
         <section aria-labelledby="cal-day" className="rounded-lg border border-line bg-surface p-4">
