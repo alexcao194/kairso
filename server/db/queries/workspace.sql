@@ -1,17 +1,17 @@
 -- name: CreateWorkspace :one
 INSERT INTO workspaces (created_by_id, name)
 VALUES ($1, $2)
-RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar;
+RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color;
 
 -- name: ListWorkspacesByUser :many
-SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar
+SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar, w.brand_color
 FROM workspaces w
 INNER JOIN workspace_users wu ON wu.workspace_id = w.id
 WHERE wu.user_id = $1 AND w.deleted_at IS NULL
 ORDER BY w.name;
 
 -- name: ListWorkspacesByUserPaginated :many
-SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar
+SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar, w.brand_color
 FROM workspaces w
 INNER JOIN workspace_users wu ON wu.workspace_id = w.id
 WHERE wu.user_id = $1 AND w.deleted_at IS NULL
@@ -19,13 +19,13 @@ ORDER BY w.name
 LIMIT $2 OFFSET $3;
 
 -- name: GetWorkspaceByID :one
-SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 FROM workspaces
 WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1;
 
 -- name: GetWorkspaceByIDForUpdate :one
-SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 FROM workspaces
 WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
@@ -36,15 +36,16 @@ UPDATE workspaces
 SET
     name = COALESCE(sqlc.narg(name), name)
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar;
+RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color;
 
 -- name: UpdateWorkspaceByID :one
 UPDATE workspaces
 SET
     name = CASE WHEN sqlc.arg(name_present)::boolean THEN sqlc.arg(name) ELSE name END,
-    avatar = CASE WHEN sqlc.arg(avatar_present)::boolean THEN NULLIF(sqlc.arg(avatar), '') ELSE avatar END
+    avatar = CASE WHEN sqlc.arg(avatar_present)::boolean THEN NULLIF(sqlc.arg(avatar), '') ELSE avatar END,
+    brand_color = CASE WHEN sqlc.arg(brand_color_present)::boolean THEN NULLIF(sqlc.arg(brand_color), '') ELSE brand_color END
 WHERE id = sqlc.arg(id) AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar;
+RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color;
 
 -- name: SoftDeleteWorkspaceByID :exec
 UPDATE workspaces

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { MeetingItem, TaskResponse } from "@/lib/api/schema";
 import { SECTION_META, SECTION_ORDER, itemAssignment, meetingLead, sectionTitle, toDateInput } from "@/lib/domain/meeting";
 import { fmtDate } from "@/lib/domain/format";
 import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
+import { docTokens } from "@/lib/domain/brand";
 import { tr } from "@/lib/i18n";
 
 export function MeetingPrint({ id }: { id: string }) {
@@ -39,7 +40,7 @@ export function MeetingPrint({ id }: { id: string }) {
   const lead = meetingLead(m);
 
   return (
-    <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0">
+    <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(ws?.brandColor) as CSSProperties | undefined}>
       <style>{`
         @page { size: A4; margin: 12mm 0 12mm; }
         @page :first { margin-top: 0; }

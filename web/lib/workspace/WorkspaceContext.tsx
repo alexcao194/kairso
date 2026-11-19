@@ -1,5 +1,6 @@
 "use client";
 
+import { brandCss } from "@/lib/domain/brand";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -102,6 +103,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       /* bỏ qua */
     }
   }, []);
+
+  // Workspace brand colour → accent tokens for the whole UI (both themes).
+  const brandColor = workspace?.brandColor;
+  useEffect(() => {
+    const css = brandCss(brandColor);
+    let el = document.getElementById("kairso-brand") as HTMLStyleElement | null;
+    if (!css) {
+      el?.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement("style");
+      el.id = "kairso-brand";
+      document.head.appendChild(el);
+    }
+    el.textContent = css;
+  }, [brandColor]);
 
   const value = useMemo<WorkspaceContextType>(
     () => ({

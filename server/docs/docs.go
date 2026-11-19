@@ -16492,6 +16492,10 @@ const docTemplate = `{
                 "avatar": {
                     "type": "string"
                 },
+                "brandColor": {
+                    "description": "BrandColor is #RRGGBB; send \"\" to reset to the default theme.",
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 }
@@ -17255,6 +17259,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "avatar": {
+                    "type": "string"
+                },
+                "brandColor": {
+                    "description": "BrandColor is the workspace accent colour as #RRGGBB; empty means the default theme.",
                     "type": "string"
                 },
                 "createdAt": {
