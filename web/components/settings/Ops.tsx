@@ -15,6 +15,7 @@ import { useKpiSettings, usePerformanceMutations } from "@/lib/hooks/performance
 import { useFeedbackSettings } from "@/lib/hooks/feedback";
 import { useToast } from "@/lib/toast/ToastProvider";
 import { Avatar } from "@/components/ui/Avatar";
+import { BrandColorCard } from "@/components/settings/BrandColor";
 import { Alert, Badge, Skeleton } from "@/components/ui/feedback";
 import { Button } from "@/components/ui/Button";
 import { Checkbox, Field, Input } from "@/components/ui/form";
@@ -66,6 +67,7 @@ export function WorkspaceSection() {
         </div>
         <p className="mt-3 text-[12px] text-ink-faint">{tr().ops.createdOn(fmtDate(workspace.createdAt))}</p>
       </Card>
+      <BrandColorCard />
       {isHolder && (
         <section className="rounded-lg border border-danger-border p-4">
           <h2 className="mb-1 text-[14px] font-semibold text-danger">{tr().ops.danger}</h2>

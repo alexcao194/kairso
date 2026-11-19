@@ -159,11 +159,13 @@ func (r *repository) UpdateWorkspace(ctx context.Context, workspaceID, callerID 
 	}
 	before := workspaceResponseFromDatabaseWorkspace(beforeRow)
 	afterRow, err := txQueries.UpdateWorkspaceByID(ctx, database.UpdateWorkspaceByIDParams{
-		NamePresent:   req.namePresent(),
-		Name:          stringValue(req.Name),
-		AvatarPresent: req.avatarPresent(),
-		Avatar:        stringValue(req.Avatar),
-		ID:            wid,
+		NamePresent:       req.namePresent(),
+		Name:              stringValue(req.Name),
+		AvatarPresent:     req.avatarPresent(),
+		Avatar:            stringValue(req.Avatar),
+		BrandColorPresent: req.brandColorPresent(),
+		BrandColor:        stringValue(req.BrandColor),
+		ID:                wid,
 	})
 	if err != nil {
 		return nil, err
@@ -176,6 +178,11 @@ func (r *repository) UpdateWorkspace(ctx context.Context, workspaceID, callerID 
 	}
 	if req.avatarPresent() {
 		if err := insertHistory(ctx, txQueries, "workspace", after.ID, callerUID, "avatar", emptyToNil(before.Avatar), emptyToNil(after.Avatar)); err != nil {
+			return nil, err
+		}
+	}
+	if req.brandColorPresent() {
+		if err := insertHistory(ctx, txQueries, "workspace", after.ID, callerUID, "brandColor", emptyToNil(before.BrandColor), emptyToNil(after.BrandColor)); err != nil {
 			return nil, err
 		}
 	}

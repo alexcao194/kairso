@@ -890,6 +890,7 @@ type Workspace struct {
 	CreatedByID pgtype.UUID        `json:"created_by_id"`
 	Name        string             `json:"name"`
 	Avatar      pgtype.Text        `json:"avatar"`
+	BrandColor  pgtype.Text        `json:"brand_color"`
 }
 
 type WorkspaceAttendanceSetting struct {

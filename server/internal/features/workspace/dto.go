@@ -3,6 +3,7 @@ package workspace
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -62,10 +63,13 @@ type CreateWorkspaceRequest struct {
 }
 
 type UpdateWorkspaceRequest struct {
-	Name      *string `json:"name,omitempty"`
-	Avatar    *string `json:"avatar,omitempty"`
-	NameSet   bool    `json:"-"`
-	AvatarSet bool    `json:"-"`
+	Name   *string `json:"name,omitempty"`
+	Avatar *string `json:"avatar,omitempty"`
+	// BrandColor is #RRGGBB; send "" to reset to the default theme.
+	BrandColor    *string `json:"brandColor,omitempty"`
+	NameSet       bool    `json:"-"`
+	AvatarSet     bool    `json:"-"`
+	BrandColorSet bool    `json:"-"`
 }
 
 type InviteMemberRequest struct {
@@ -93,6 +97,8 @@ type WorkspaceResponse struct {
 	CreatedByID string    `json:"createdById"`
 	Name        string    `json:"name"`
 	Avatar      string    `json:"avatar,omitempty"`
+	// BrandColor is the workspace accent colour as #RRGGBB; empty means the default theme.
+	BrandColor string `json:"brandColor,omitempty"`
 }
 
 type HistoryChangedBy struct {
@@ -154,6 +160,7 @@ type workspaceRow struct {
 	CreatedByID pgtype.UUID
 	Name        string
 	Avatar      pgtype.Text
+	BrandColor  pgtype.Text
 }
 
 type workspaceMemberRow struct {
@@ -214,6 +221,7 @@ func workspaceResponseFromRow(row workspaceRow) WorkspaceResponse {
 		CreatedByID: pgutil.UUIDToString(row.CreatedByID),
 		Name:        row.Name,
 		Avatar:      textString(row.Avatar),
+		BrandColor:  textString(row.BrandColor),
 	}
 }
 
@@ -259,6 +267,7 @@ func workspaceResponseFromDatabaseWorkspace(row database.Workspace) WorkspaceRes
 		CreatedByID: row.CreatedByID,
 		Name:        row.Name,
 		Avatar:      row.Avatar,
+		BrandColor:  row.BrandColor,
 	})
 }
 
@@ -422,7 +431,23 @@ func normalizeUpdateWorkspaceRequest(req *UpdateWorkspaceRequest) error {
 		value := strings.TrimSpace(*req.Avatar)
 		req.Avatar = &value
 	}
+	if req.BrandColorSet && req.BrandColor == nil {
+		return fmt.Errorf("brandColor không được null (gửi chuỗi rỗng để về mặc định)")
+	}
+	if req.brandColorPresent() {
+		value := strings.ToUpper(strings.TrimSpace(*req.BrandColor))
+		if value != "" && !brandColorPattern.MatchString(value) {
+			return fmt.Errorf("brandColor phải có dạng #RRGGBB")
+		}
+		req.BrandColor = &value
+	}
 	return nil
+}
+
+var brandColorPattern = regexp.MustCompile(`^#[0-9A-F]{6}$`)
+
+func (req UpdateWorkspaceRequest) brandColorPresent() bool {
+	return req.BrandColorSet || req.BrandColor != nil
 }
 
 func (req UpdateWorkspaceRequest) namePresent() bool {
@@ -446,6 +471,7 @@ func (req *UpdateWorkspaceRequest) UnmarshalJSON(data []byte) error {
 	*req = UpdateWorkspaceRequest(decoded)
 	_, req.NameSet = raw["name"]
 	_, req.AvatarSet = raw["avatar"]
+	_, req.BrandColorSet = raw["brandColor"]
 	return nil
 }
 

@@ -1672,6 +1672,8 @@ export interface UpdateWorkspaceNoteRequest {
 
 export interface UpdateWorkspaceRequest {
   avatar?: string;
+  /** BrandColor is #RRGGBB; send "" to reset to the default theme. */
+  brandColor?: string;
   name?: string;
 }
 
@@ -1946,6 +1948,8 @@ export interface WorkspaceNoteResponse {
 
 export interface WorkspaceResponse {
   avatar?: string;
+  /** BrandColor is the workspace accent colour as #RRGGBB; empty means the default theme. */
+  brandColor?: string;
   createdAt: string;
   createdById: string;
   id: string;

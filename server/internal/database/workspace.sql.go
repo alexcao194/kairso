@@ -37,7 +37,7 @@ func (q *Queries) CancelWorkspaceInvitation(ctx context.Context, id pgtype.UUID)
 const createWorkspace = `-- name: CreateWorkspace :one
 INSERT INTO workspaces (created_by_id, name)
 VALUES ($1, $2)
-RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 `
 
 type CreateWorkspaceParams struct {
@@ -56,6 +56,7 @@ func (q *Queries) CreateWorkspace(ctx context.Context, arg CreateWorkspaceParams
 		&i.CreatedByID,
 		&i.Name,
 		&i.Avatar,
+		&i.BrandColor,
 	)
 	return i, err
 }
@@ -353,7 +354,7 @@ func (q *Queries) GetPendingWorkspaceInvitationForAccept(ctx context.Context, ar
 }
 
 const getWorkspaceByID = `-- name: GetWorkspaceByID :one
-SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 FROM workspaces
 WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
@@ -370,12 +371,13 @@ func (q *Queries) GetWorkspaceByID(ctx context.Context, id pgtype.UUID) (Workspa
 		&i.CreatedByID,
 		&i.Name,
 		&i.Avatar,
+		&i.BrandColor,
 	)
 	return i, err
 }
 
 const getWorkspaceByIDForUpdate = `-- name: GetWorkspaceByIDForUpdate :one
-SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+SELECT id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 FROM workspaces
 WHERE id = $1 AND deleted_at IS NULL
 LIMIT 1
@@ -393,6 +395,7 @@ func (q *Queries) GetWorkspaceByIDForUpdate(ctx context.Context, id pgtype.UUID)
 		&i.CreatedByID,
 		&i.Name,
 		&i.Avatar,
+		&i.BrandColor,
 	)
 	return i, err
 }
@@ -904,7 +907,7 @@ func (q *Queries) ListWorkspaceNotes(ctx context.Context, arg ListWorkspaceNotes
 }
 
 const listWorkspacesByUser = `-- name: ListWorkspacesByUser :many
-SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar
+SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar, w.brand_color
 FROM workspaces w
 INNER JOIN workspace_users wu ON wu.workspace_id = w.id
 WHERE wu.user_id = $1 AND w.deleted_at IS NULL
@@ -928,6 +931,7 @@ func (q *Queries) ListWorkspacesByUser(ctx context.Context, userID pgtype.UUID) 
 			&i.CreatedByID,
 			&i.Name,
 			&i.Avatar,
+			&i.BrandColor,
 		); err != nil {
 			return nil, err
 		}
@@ -940,7 +944,7 @@ func (q *Queries) ListWorkspacesByUser(ctx context.Context, userID pgtype.UUID) 
 }
 
 const listWorkspacesByUserPaginated = `-- name: ListWorkspacesByUserPaginated :many
-SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar
+SELECT w.id, w.created_at, w.updated_at, w.deleted_at, w.created_by_id, w.name, w.avatar, w.brand_color
 FROM workspaces w
 INNER JOIN workspace_users wu ON wu.workspace_id = w.id
 WHERE wu.user_id = $1 AND w.deleted_at IS NULL
@@ -971,6 +975,7 @@ func (q *Queries) ListWorkspacesByUserPaginated(ctx context.Context, arg ListWor
 			&i.CreatedByID,
 			&i.Name,
 			&i.Avatar,
+			&i.BrandColor,
 		); err != nil {
 			return nil, err
 		}
@@ -1016,7 +1021,7 @@ UPDATE workspaces
 SET
     name = COALESCE($2, name)
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 `
 
 type UpdateWorkspaceParams struct {
@@ -1035,6 +1040,7 @@ func (q *Queries) UpdateWorkspace(ctx context.Context, arg UpdateWorkspaceParams
 		&i.CreatedByID,
 		&i.Name,
 		&i.Avatar,
+		&i.BrandColor,
 	)
 	return i, err
 }
@@ -1043,17 +1049,20 @@ const updateWorkspaceByID = `-- name: UpdateWorkspaceByID :one
 UPDATE workspaces
 SET
     name = CASE WHEN $1::boolean THEN $2 ELSE name END,
-    avatar = CASE WHEN $3::boolean THEN NULLIF($4, '') ELSE avatar END
-WHERE id = $5 AND deleted_at IS NULL
-RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar
+    avatar = CASE WHEN $3::boolean THEN NULLIF($4, '') ELSE avatar END,
+    brand_color = CASE WHEN $5::boolean THEN NULLIF($6, '') ELSE brand_color END
+WHERE id = $7 AND deleted_at IS NULL
+RETURNING id, created_at, updated_at, deleted_at, created_by_id, name, avatar, brand_color
 `
 
 type UpdateWorkspaceByIDParams struct {
-	NamePresent   bool        `json:"name_present"`
-	Name          string      `json:"name"`
-	AvatarPresent bool        `json:"avatar_present"`
-	Avatar        interface{} `json:"avatar"`
-	ID            pgtype.UUID `json:"id"`
+	NamePresent       bool        `json:"name_present"`
+	Name              string      `json:"name"`
+	AvatarPresent     bool        `json:"avatar_present"`
+	Avatar            interface{} `json:"avatar"`
+	BrandColorPresent bool        `json:"brand_color_present"`
+	BrandColor        interface{} `json:"brand_color"`
+	ID                pgtype.UUID `json:"id"`
 }
 
 func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceByIDParams) (Workspace, error) {
@@ -1062,6 +1071,8 @@ func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceBy
 		arg.Name,
 		arg.AvatarPresent,
 		arg.Avatar,
+		arg.BrandColorPresent,
+		arg.BrandColor,
 		arg.ID,
 	)
 	var i Workspace
@@ -1073,6 +1084,7 @@ func (q *Queries) UpdateWorkspaceByID(ctx context.Context, arg UpdateWorkspaceBy
 		&i.CreatedByID,
 		&i.Name,
 		&i.Avatar,
+		&i.BrandColor,
 	)
 	return i, err
 }

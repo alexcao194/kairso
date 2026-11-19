@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PartyInfo } from "@/lib/api/schema";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
+import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr, type Lang } from "@/lib/i18n";
 
 function fmtDocDate(d: string | undefined, lang: Lang) {
@@ -45,7 +46,7 @@ export function QuotePrint({ id }: { id: string }) {
   const hasLineDiscount = quote.items.some((it) => it.discountPercent > 0);
 
   return (
-    <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0">
+    <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(workspace?.brandColor) as CSSProperties | undefined}>
       <style>{`
         @page { size: A4; margin: 12mm 0 12mm; }
         @page :first { margin-top: 0; }
