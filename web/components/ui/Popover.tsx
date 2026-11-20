@@ -1,6 +1,7 @@
 "use client";
 
 import { IconCheck } from "@/components/icons";
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 interface TriggerProps {
@@ -90,7 +91,7 @@ export function Popover({
         "aria-expanded": open,
         "aria-controls": open ? id : undefined,
       })}
-      {open && (
+      {open && createPortal(
         <div
           ref={panel}
           id={id}
@@ -106,7 +107,8 @@ export function Popover({
           className="z-50 overflow-y-auto rounded-lg border border-line-strong bg-surface p-1 shadow-overlay"
         >
           {children(close)}
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

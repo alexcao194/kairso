@@ -1233,6 +1233,10 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      signatures:
+        items:
+          $ref: '#/definitions/Signature'
+        type: array
       summary:
         type: string
       title:
@@ -2163,6 +2167,10 @@ definitions:
       sentAt:
         format: date-time
         type: string
+      signatures:
+        items:
+          $ref: '#/definitions/Signature'
+        type: array
       status:
         type: string
       subtotal:
@@ -2721,6 +2729,21 @@ definitions:
   SetQuoteStatusRequest:
     properties:
       status:
+        type: string
+    type: object
+  Signature:
+    properties:
+      name:
+        type: string
+      role:
+        enum:
+        - preparer
+        - controller
+        type: string
+      signedAt:
+        format: date-time
+        type: string
+      userId:
         type: string
     type: object
   SprintStatus:
@@ -4869,6 +4892,81 @@ paths:
       security:
       - BearerAuth: []
       summary: Update meeting minutes
+      tags:
+      - Meetings
+  /v1/meetings/{meetingId}/signatures/{role}:
+    delete:
+      description: Only the signer or the workspace holder can remove it.
+      parameters:
+      - description: Meeting minutes ID
+        in: path
+        name: meetingId
+        required: true
+        type: string
+      - description: Signature role
+        enum:
+        - preparer
+        - controller
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MeetingMinutesResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a meeting signature
+      tags:
+      - Meetings
+    post:
+      description: 'Stamps the caller''s name and the current time. role=preparer:
+        the note-taker (creator or a listed recorder); role=controller: the workspace
+        holder.'
+      parameters:
+      - description: Meeting minutes ID
+        in: path
+        name: meetingId
+        required: true
+        type: string
+      - description: Signature role
+        enum:
+        - preparer
+        - controller
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/MeetingMinutesResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Sign meeting minutes
       tags:
       - Meetings
   /v1/modules/{moduleId}:
@@ -10350,6 +10448,87 @@ paths:
       security:
       - BearerAuth: []
       summary: Send a quote
+      tags:
+      - Quotes
+  /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}:
+    delete:
+      description: Only the signer or the workspace holder can remove it.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Quote ID
+        in: path
+        name: quoteId
+        required: true
+        type: string
+      - description: Signature role
+        enum:
+        - preparer
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/QuoteResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a quote signature
+      tags:
+      - Quotes
+    post:
+      description: Stamps the caller's name and the current time. Managers only.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Quote ID
+        in: path
+        name: quoteId
+        required: true
+        type: string
+      - description: Signature role
+        enum:
+        - preparer
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/QuoteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Sign a quote as its preparer
       tags:
       - Quotes
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/status:

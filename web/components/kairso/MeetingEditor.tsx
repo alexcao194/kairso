@@ -19,6 +19,10 @@ import { StatusChip } from "@/components/kairso/StatusChip";
 import { IconArrowRight, IconClose, IconCopy, IconDownload, IconMore, IconPlus, IconSearch, IconTrash } from "@/components/icons";
 import { ParticipantPicker } from "./ParticipantPicker";
 import { tr } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
+import { useConfirm } from "@/components/ui/Confirm";
+import { SignaturesPanel, type SignRole } from "@/components/kairso/DocSignatures";
 
 interface Draft {
   title: string;
@@ -50,7 +54,10 @@ const cellInput =
 export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: ResourceScope; meeting: MeetingMinutesResponse | null; onClose: () => void; onCreated: (id: string) => void }) {
   const toast = useToast();
   const { openCreateTask } = useDialogs();
-  const { create, update } = useMeetingMutations(scope);
+  const { create, update, sign, unsign } = useMeetingMutations(scope);
+  const { user } = useAuth();
+  const { isHolder } = useWorkspace();
+  const confirm = useConfirm();
   const modules = useProjectModules(scope.ws, scope.projectId ?? "");
   const others = useMeetings(scope);
   const [draft, setDraft] = useState<Draft>(() => fromServer(meeting));
@@ -186,6 +193,29 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
           onCreateTask={(it) => meeting && openCreateTask({ projectId: scope.projectId, meetingId: meeting.id, meetingItemId: it.id })}
         />
       ))}
+
+      {meeting && (
+        <SignaturesPanel
+          busy={sign.isPending || unsign.isPending}
+          slots={(["preparer", "controller"] as const).map((role) => {
+            const sig = (meeting.signatures ?? []).find((x) => x.role === role);
+            const isNoteTaker = meeting.createdBy?.id === user?.id || (meeting.recorders ?? []).some((r) => r.kind === "user" && r.userId === user?.id);
+            const allowed = role === "preparer" ? isNoteTaker : isHolder;
+            return {
+              role,
+              label: role === "preparer" ? tr().docSign.preparer : tr().docSign.controller,
+              sig,
+              blocked: allowed ? undefined : role === "preparer" ? tr().docSign.onlyRecorder : tr().docSign.onlyHolder,
+              canRemove: !!sig && (sig.userId === user?.id || isHolder),
+            };
+          })}
+          onSign={(role: SignRole) => sign.mutate({ id: meeting.id, role }, { onSuccess: () => toast.success(tr().docSign.signedOk), onError: (e) => toast.error(e) })}
+          onUnsign={async (role: SignRole) => {
+            if (!(await confirm({ title: tr().docSign.unsignConfirm, message: tr().docSign.unsignDesc, danger: true, confirmLabel: tr().docSign.unsign }))) return;
+            unsign.mutate({ id: meeting.id, role }, { onSuccess: () => toast.success(tr().docSign.unsignedOk), onError: (e) => toast.error(e) });
+          }}
+        />
+      )}
 
       <div className="sticky -bottom-4 z-10 -mx-5 -mb-4 flex flex-wrap items-center gap-2 border-t border-line bg-surface px-5 py-3">
         {meeting && <span className="text-[11.5px] text-ink-faint max-sm:hidden">{tr().meetingEd.editedAgo(meeting.createdBy?.name ?? "", fmtRelative(meeting.updatedAt))}</span>}

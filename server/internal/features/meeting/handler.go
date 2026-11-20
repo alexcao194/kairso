@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/pagination"
 )
@@ -24,14 +25,18 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("GET /v1/meetings/{meetingId}", authMid.Handle(h.GetMeeting))
 	mux.HandleFunc("PATCH /v1/meetings/{meetingId}", authMid.Handle(h.UpdateMeeting))
 	mux.HandleFunc("DELETE /v1/meetings/{meetingId}", authMid.Handle(h.DeleteMeeting))
+	mux.HandleFunc("POST /v1/meetings/{meetingId}/signatures/{role}", authMid.Handle(h.SignMeeting))
+	mux.HandleFunc("DELETE /v1/meetings/{meetingId}/signatures/{role}", authMid.Handle(h.UnsignMeeting))
 }
 
 func writeServiceError(w http.ResponseWriter, err error, fallback string) {
 	switch {
 	case errors.Is(err, ErrForbidden):
 		httpx.Error(w, http.StatusForbidden, err.Error())
-	case errors.Is(err, ErrNotFound):
+	case errors.Is(err, ErrNotFound), errors.Is(err, docsign.ErrNoSignature):
 		httpx.Error(w, http.StatusNotFound, err.Error())
+	case errors.Is(err, docsign.ErrAlreadySigned):
+		httpx.Error(w, http.StatusConflict, err.Error())
 	case errors.Is(err, ErrInvalid):
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 	default:

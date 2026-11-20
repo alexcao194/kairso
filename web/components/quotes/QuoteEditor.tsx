@@ -19,6 +19,8 @@ import { Menu } from "@/components/ui/Popover";
 import { useConfirm } from "@/components/ui/Confirm";
 import { IconChevronDown, IconChevronUp, IconCopy, IconDownload, IconMore, IconPlus, IconSave, IconSend, IconTrash, IconClose, IconCheck } from "@/components/icons";
 import { CurrencySelect, QuoteStatusBadge } from "./shared";
+import { SignaturesPanel, type SignRole } from "@/components/kairso/DocSignatures";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { CustomerModal } from "./QuotesHome";
 
 type Line = { key: string; name: string; description: string; unit: string; quantity: string; unitPrice: string; discount: string };
@@ -101,7 +103,8 @@ export function QuoteEditor({ id }: { id: string }) {
   const toast = useToast();
   const confirm = useConfirm();
   const router = useRouter();
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, isManager, isHolder } = useWorkspace();
+  const { user } = useAuth();
   const q = useQuote(workspaceId, id);
   const customers = useCustomers(workspaceId);
   const currencies = useCurrencies();
@@ -159,6 +162,12 @@ export function QuoteEditor({ id }: { id: string }) {
     if (await confirm({ title: t.quoteEditor.newVersionConfirm, message: t.quoteEditor.newVersionDesc, confirmLabel: t.quoteEditor.newVersion })) {
       m.newVersion.mutate(id, { onSuccess: (d) => { toast.success(t.quoteEditor.newVersionOk); router.push(`/quotes/${d.id}`); }, onError: (e) => toast.error(e) });
     }
+  };
+  const sign = (role: SignRole) =>
+    m.sign.mutate({ id, role }, { onSuccess: () => toast.success(t.docSign.signedOk), onError: (e) => toast.error(e) });
+  const unsign = async (role: SignRole) => {
+    if (!(await confirm({ title: t.docSign.unsignConfirm, message: t.docSign.unsignDesc, danger: true, confirmLabel: t.docSign.unsign }))) return;
+    m.unsign.mutate({ id, role }, { onSuccess: () => toast.success(t.docSign.unsignedOk), onError: (e) => toast.error(e) });
   };
   const remove = async () => {
     if (await confirm({ title: t.quoteEditor.removeConfirm(quote.number), danger: true })) {
@@ -340,6 +349,17 @@ export function QuoteEditor({ id }: { id: string }) {
               </dl>
             </div>
           </section>
+
+          <SignaturesPanel
+            hint={t.docSign.quoteHint}
+            busy={m.sign.isPending || m.unsign.isPending}
+            slots={(() => {
+              const sig = quote.signatures.find((x) => x.role === "preparer");
+              return [{ role: "preparer" as const, label: t.docSign.preparer, sig, blocked: isManager ? undefined : t.docSign.onlyManager, canRemove: !!sig && (sig.userId === user?.id || isHolder) }];
+            })()}
+            onSign={sign}
+            onUnsign={unsign}
+          />
 
           {quote.versions.length > 1 && (
             <section className="rounded-lg border border-line bg-surface">

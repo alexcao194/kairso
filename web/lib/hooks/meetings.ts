@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteMeeting, getMeeting, getTask, getWorkspaceMeetings, patchMeeting, postWorkspaceMeetings } from "@/lib/api/endpoints";
+import { deleteMeeting, deleteMeetingSignature, getMeeting, postMeetingSignature, getTask, getWorkspaceMeetings, patchMeeting, postWorkspaceMeetings } from "@/lib/api/endpoints";
 import type { CreateMeetingMinutesRequest, MeetingMinutesResponse, TaskResponse, UpdateMeetingMinutesRequest } from "@/lib/api/schema";
 import { fetchAll } from "@/lib/query/paged";
 import { qk } from "@/lib/query/keys";
@@ -30,6 +30,8 @@ export function useMeetingMutations(s: ResourceScope) {
       onSuccess: sync,
     }),
     update: useMutation({ mutationFn: ({ id, body }: { id: string; body: UpdateMeetingMinutesRequest }) => patchMeeting(id, body), onSuccess: sync }),
+    sign: useMutation({ mutationFn: ({ id, role }: { id: string; role: string }) => postMeetingSignature(id, role), onSuccess: sync }),
+    unsign: useMutation({ mutationFn: ({ id, role }: { id: string; role: string }) => deleteMeetingSignature(id, role), onSuccess: sync }),
     remove: useMutation({ mutationFn: (id: string) => deleteMeeting(id), onSuccess: () => qc.invalidateQueries({ queryKey: ["meetings"] }) }),
   };
 }

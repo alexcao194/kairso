@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/currency"
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/pagination"
@@ -38,6 +39,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/duplicate", authMid.Handle(h.DuplicateQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version", authMid.Handle(h.NewVersion))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/status", authMid.Handle(h.SetStatus))
+	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}", authMid.Handle(h.SignQuote))
+	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}", authMid.Handle(h.UnsignQuote))
 }
 
 func (h *Handler) caller(w http.ResponseWriter, r *http.Request) (string, bool) {
@@ -53,9 +56,9 @@ func writeErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, ErrForbidden):
 		httpx.Error(w, http.StatusForbidden, err.Error())
-	case errors.Is(err, ErrNotFound), errors.Is(err, ErrCustomerAbsent):
+	case errors.Is(err, ErrNotFound), errors.Is(err, ErrCustomerAbsent), errors.Is(err, docsign.ErrNoSignature):
 		httpx.Error(w, http.StatusNotFound, err.Error())
-	case errors.Is(err, ErrNotEditable), errors.Is(err, ErrBadTransition):
+	case errors.Is(err, ErrNotEditable), errors.Is(err, ErrBadTransition), errors.Is(err, docsign.ErrAlreadySigned):
 		httpx.Error(w, http.StatusConflict, err.Error())
 	default:
 		var ve ValidationError

@@ -1221,6 +1221,118 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/meetings/{meetingId}/signatures/{role}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: the workspace holder.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Meetings"
+                ],
+                "summary": "Sign meeting minutes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Meeting minutes ID",
+                        "name": "meetingId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "preparer",
+                            "controller"
+                        ],
+                        "type": "string",
+                        "description": "Signature role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MeetingMinutesResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Only the signer or the workspace holder can remove it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Meetings"
+                ],
+                "summary": "Remove a meeting signature",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Meeting minutes ID",
+                        "name": "meetingId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "preparer",
+                            "controller"
+                        ],
+                        "type": "string",
+                        "description": "Signature role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/MeetingMinutesResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/modules/{moduleId}": {
             "delete": {
                 "security": [
@@ -9812,6 +9924,130 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Stamps the caller's name and the current time. Managers only.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Sign a quote as its preparer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Quote ID",
+                        "name": "quoteId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "preparer"
+                        ],
+                        "type": "string",
+                        "description": "Signature role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/QuoteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Only the signer or the workspace holder can remove it.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Remove a quote signature",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Quote ID",
+                        "name": "quoteId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "preparer"
+                        ],
+                        "type": "string",
+                        "description": "Signature role",
+                        "name": "role",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/QuoteResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/workspaces/{workspaceId}/quotes/{quoteId}/status": {
             "post": {
                 "security": [
@@ -13023,6 +13259,12 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "signatures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Signature"
+                    }
+                },
                 "summary": {
                     "type": "string"
                 },
@@ -14412,6 +14654,12 @@ const docTemplate = `{
                     "type": "string",
                     "format": "date-time"
                 },
+                "signatures": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Signature"
+                    }
+                },
                 "status": {
                     "type": "string"
                 },
@@ -15264,6 +15512,28 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "Signature": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "preparer",
+                        "controller"
+                    ]
+                },
+                "signedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "userId": {
                     "type": "string"
                 }
             }

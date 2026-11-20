@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -13,6 +14,7 @@ import (
 
 type Repository interface {
 	ExecTx(ctx context.Context, fn func(Repository) error) error
+	Signatures() *docsign.Store
 	GetCallerRole(ctx context.Context, workspaceID, userID pgtype.UUID) (workspace.WorkspaceRole, error)
 
 	ListCustomers(ctx context.Context, workspaceID pgtype.UUID) ([]database.Customer, error)
@@ -143,6 +145,8 @@ func (r *repository) MarkQuoteSent(ctx context.Context, arg database.MarkQuoteSe
 func (r *repository) SetQuoteStatus(ctx context.Context, arg database.SetQuoteStatusParams) error {
 	return r.queries.SetQuoteStatus(ctx, arg)
 }
+
+func (r *repository) Signatures() *docsign.Store { return docsign.NewStore(r.queries) }
 
 func (r *repository) DeleteQuote(ctx context.Context, id, workspaceID pgtype.UUID) (int64, error) {
 	return r.queries.DeleteQuote(ctx, database.DeleteQuoteParams{ID: id, WorkspaceID: workspaceID})
