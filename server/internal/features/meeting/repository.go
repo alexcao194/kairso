@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
 	"github.com/jackc/pgx/v5"
@@ -15,6 +16,7 @@ import (
 
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceID, callerID string) (string, error)
+	Signatures() *docsign.Store
 	ProjectBelongsToWorkspace(ctx context.Context, projectID, workspaceID string) (bool, error)
 	Create(ctx context.Context, workspaceID, callerID string, req CreateMeetingMinutesRequest) (*MeetingMinutesResponse, error)
 	Get(ctx context.Context, id string) (*MeetingMinutesResponse, error)
@@ -30,6 +32,8 @@ type repository struct {
 func NewRepository(pool *pgxpool.Pool) Repository {
 	return &repository{queries: database.New(pool)}
 }
+
+func (r *repository) Signatures() *docsign.Store { return docsign.NewStore(r.queries) }
 
 func (r *repository) GetCallerRole(ctx context.Context, workspaceID, callerID string) (string, error) {
 	wid, err := pgutil.ParseUUID(workspaceID)

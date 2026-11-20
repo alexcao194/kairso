@@ -286,8 +286,6 @@ function SettingsTab() {
             <Field label={t.quoteSettings.website}>{(p) => <Input {...p} disabled={ro} value={form.website} onChange={text("website")} />}</Field>
             <Field label={t.quoteSettings.address} className="col-span-2">{(p) => <Input {...p} disabled={ro} value={form.address} onChange={text("address")} />}</Field>
             <Field label={t.quoteSettings.bankInfo} className="col-span-2">{(p) => <Textarea {...p} disabled={ro} rows={3} value={form.bankInfo} onChange={text("bankInfo")} />}</Field>
-            <Field label={t.quoteSettings.logoUrl}>{(p) => <Input {...p} disabled={ro} value={form.logoUrl} onChange={text("logoUrl")} />}</Field>
-            <Field label={t.quoteSettings.signatureUrl}>{(p) => <Input {...p} disabled={ro} value={form.signatureUrl} onChange={text("signatureUrl")} />}</Field>
           </div>
         </section>
         <section className="flex flex-col gap-3">

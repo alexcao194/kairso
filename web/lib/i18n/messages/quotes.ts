@@ -187,6 +187,7 @@ export const quotes = defineMessages({
       notes: "Ghi chú",
       terms: "Điều khoản & điều kiện",
       bank: "Thông tin chuyển khoản",
+      preparer: "Người lập báo giá",
       issuerSign: "Đại diện đơn vị báo giá",
       customerSign: "Xác nhận của khách hàng",
       signHint: "(Ký, ghi rõ họ tên)",
@@ -195,6 +196,7 @@ export const quotes = defineMessages({
       failed: "Không tải được báo giá.",
       hint: "Chọn “Lưu thành PDF” trong hộp thoại in để xuất file.",
       printBtn: "In / Lưu PDF",
+      fitOne: "Vừa 1 trang",
     },
   },
   en: {
@@ -383,6 +385,7 @@ export const quotes = defineMessages({
       notes: "Notes",
       terms: "Terms & conditions",
       bank: "Payment details",
+      preparer: "Prepared by",
       issuerSign: "For the issuer",
       customerSign: "Customer acceptance",
       signHint: "(Signature & full name)",
@@ -391,6 +394,7 @@ export const quotes = defineMessages({
       failed: "Could not load the quote.",
       hint: "Choose “Save as PDF” in the print dialog to export a file.",
       printBtn: "Print / Save PDF",
+      fitOne: "Fit to 1 page",
     },
   },
 });

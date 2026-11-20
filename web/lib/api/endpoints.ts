@@ -165,6 +165,18 @@ export const deleteMeeting = (meetingId: string, opts?: RequestOptions): Promise
 export const patchMeeting = (meetingId: string, body: S.UpdateMeetingMinutesRequest, opts?: RequestOptions): Promise<S.MeetingMinutesResponse> =>
   request<S.MeetingMinutesResponse>("PATCH", `/v1/meetings/${enc(meetingId)}`, { body, ...opts });
 
+/** POST /v1/meetings/{meetingId}/signatures/{role}
+ * Sign meeting minutes
+ * Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: the workspace holder. */
+export const postMeetingSignature = (meetingId: string, role: string, opts?: RequestOptions): Promise<S.MeetingMinutesResponse> =>
+  request<S.MeetingMinutesResponse>("POST", `/v1/meetings/${enc(meetingId)}/signatures/${enc(role)}`, { ...opts });
+
+/** DELETE /v1/meetings/{meetingId}/signatures/{role}
+ * Remove a meeting signature
+ * Only the signer or the workspace holder can remove it. */
+export const deleteMeetingSignature = (meetingId: string, role: string, opts?: RequestOptions): Promise<S.MeetingMinutesResponse> =>
+  request<S.MeetingMinutesResponse>("DELETE", `/v1/meetings/${enc(meetingId)}/signatures/${enc(role)}`, { ...opts });
+
 /** DELETE /v1/modules/{moduleId}
  * Delete Module */
 export const deleteModule = (moduleId: string, opts?: RequestOptions): Promise<void> =>
@@ -1344,6 +1356,18 @@ export const postWorkspaceQuoteNewVersion = (workspaceId: string, quoteId: strin
  * Locks the draft and snapshots customer + issuer details */
 export const postWorkspaceQuoteSend = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/send`, { ...opts });
+
+/** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}
+ * Sign a quote as its preparer
+ * Stamps the caller's name and the current time. Managers only. */
+export const postWorkspaceQuoteSignature = (workspaceId: string, quoteId: string, role: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
+  request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/signatures/${enc(role)}`, { ...opts });
+
+/** DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}
+ * Remove a quote signature
+ * Only the signer or the workspace holder can remove it. */
+export const deleteWorkspaceQuoteSignature = (workspaceId: string, quoteId: string, role: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
+  request<S.QuoteResponse>("DELETE", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/signatures/${enc(role)}`, { ...opts });
 
 /** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/status
  * Set quote status

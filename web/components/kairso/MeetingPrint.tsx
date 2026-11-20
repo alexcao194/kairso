@@ -8,7 +8,8 @@ import { fmtDate } from "@/lib/domain/format";
 import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
-import { tr } from "@/lib/i18n";
+import { dateLocale, tr } from "@/lib/i18n";
+import { PrintSignatures } from "@/components/kairso/DocSignatures";
 
 export function MeetingPrint({ id }: { id: string }) {
   const sp = useSearchParams();
@@ -57,34 +58,35 @@ export function MeetingPrint({ id }: { id: string }) {
       </div>
 
       <article className="doc mx-auto w-[210mm] max-w-full bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
-        <header className="flex items-start gap-6 px-[16mm] pb-[9mm] pt-[11mm] text-white" style={{ background: "linear-gradient(90deg, var(--doc-brand), var(--doc-brand-2))" }}>
+        <header className="flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm]">
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] opacity-90">{tr().meetingPrint.title}</p>
-            <h1 className="mt-2 text-[27px] font-bold leading-tight">{m.title}</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-(--doc-brand)">{tr().meetingPrint.title}</p>
+            <h1 className="mt-1 text-[21px] font-bold leading-tight">{m.title}</h1>
           </div>
-          <div className="grid size-[19mm] shrink-0 place-items-center overflow-hidden rounded-xl bg-(--doc-paper)">
+          <div className="grid size-[15mm] shrink-0 place-items-center overflow-hidden rounded-md border border-(--doc-line) bg-(--doc-paper)">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={ws?.avatar || "/icon-192.png"} alt={ws?.name ?? "Logo"} className="size-[14mm] object-contain" />
+            <img src={ws?.avatar || "/icon-192.png"} alt={ws?.name ?? "Logo"} className="size-[12mm] object-contain" />
           </div>
         </header>
+        <div className="mx-[14mm] h-[1.5px] bg-(--doc-brand)" />
 
-        <div className="flex flex-col gap-[7mm] px-[16mm] pb-[14mm] pt-[7mm]">
-          <div className="keep overflow-hidden rounded-lg border border-(--doc-tint-line) bg-(--doc-tint)">
-            <div className="grid grid-cols-[1fr_1.6fr_1.2fr] divide-x divide-(--doc-tint-line)">
+        <div className="flex flex-col gap-[5mm] px-[14mm] pb-[12mm] pt-[5mm]">
+          <div className="keep border-b border-(--doc-line) pb-[4mm]">
+            <div className="grid grid-cols-[1fr_1.6fr_1.2fr] gap-5">
               <InfoCard label={tr().meetingPrint.time} value={fmtDate(m.meetingDate)} />
               <InfoCard label={tr().meetingPrint.location} value={m.location} />
               <InfoCard label={tr().meetingPrint.recorders} value={(m.recorders ?? []).map((p) => p.name).join(", ")} />
             </div>
-            <div className="border-t border-(--doc-tint-line)">
+            <div className="mt-2.5">
               <InfoCard label={tr().meetingPrint.attendees} value={(m.attendees ?? []).map((p) => p.name).join(", ")} />
             </div>
           </div>
 
           {(lead || m.summary) && (
             <Section n={1} title={tr().meetingPrint.general}>
-              {lead && <p className="text-[13px] leading-relaxed text-(--doc-ink-2)">{lead}</p>}
+              {lead && <p className="text-[12px] leading-relaxed text-(--doc-ink-2)">{lead}</p>}
               {m.summary && (
-                <p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed text-(--doc-ink-2)">
+                <p className="mt-1.5 whitespace-pre-line text-[12px] leading-relaxed text-(--doc-ink-2)">
                   <b className="text-(--doc-ink)">{tr().meetingPrint.summary}</b> {m.summary}
                 </p>
               )}
@@ -95,12 +97,22 @@ export function MeetingPrint({ id }: { id: string }) {
             <Section key={s} n={i + (lead || m.summary ? 2 : 1)} title={sectionTitle(s, rows)}>
               {rows.length > 0 && <ItemsTable section={s} rows={rows} tasks={linked.map} />}
               {note && (
-                <p className="keep mt-3 whitespace-pre-line rounded-md border border-(--doc-tint-line) border-l-4 border-l-(--doc-brand) bg-(--doc-tint) px-4 py-3 text-[13px] text-(--doc-ink-2)">
+                <p className="keep mt-2.5 whitespace-pre-line border-l-2 border-(--doc-brand) pl-3 text-[12px] text-(--doc-ink-2)">
                   <b className="text-(--doc-ink)">{tr().meetingPrint.note}</b> {note}
                 </p>
               )}
             </Section>
           ))}
+
+          <PrintSignatures
+            formatDate={(iso) => new Date(iso).toLocaleDateString(dateLocale(), { day: "2-digit", month: "2-digit", year: "numeric" })}
+            slots={(["preparer", "controller"] as const).map((role) => ({
+              role,
+              label: role === "preparer" ? tr().docSign.preparer : tr().docSign.controller,
+              hint: tr().docSign.printHint,
+              sig: (m.signatures ?? []).find((x) => x.role === role),
+            }))}
+          />
         </div>
       </article>
     </div>
@@ -113,9 +125,9 @@ function Center({ children }: { children: ReactNode }) {
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-3.5 py-2.5">
-      <p className="text-[9.5px] font-semibold uppercase tracking-wide text-(--doc-brand)">{label}</p>
-      <p className="mt-1 text-[13px] leading-snug text-(--doc-ink)">{value || "—"}</p>
+    <div>
+      <p className="text-[9px] font-semibold uppercase tracking-wider text-(--doc-brand)">{label}</p>
+      <p className="mt-0.5 text-[12px] leading-snug text-(--doc-ink)">{value || "—"}</p>
     </div>
   );
 }
@@ -123,8 +135,8 @@ function InfoCard({ label, value }: { label: string; value: string }) {
 function Section({ n, title, children }: { n: number; title: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="keep mb-3 flex items-center gap-3 text-[17px] font-semibold text-(--doc-ink)" style={{ breakAfter: "avoid" }}>
-        <span className="grid size-7 place-items-center rounded-full bg-(--doc-brand) text-[13px] font-semibold text-white">{n}</span>
+      <h2 className="keep mb-2 flex items-center gap-2.5 text-[14px] font-semibold text-(--doc-ink)" style={{ breakAfter: "avoid" }}>
+        <span className="grid size-[6mm] place-items-center rounded-full bg-(--doc-brand) text-[11px] font-semibold text-white">{n}</span>
         {title}
       </h2>
       {children}
@@ -140,15 +152,15 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
   const showPriority = meta.tasks;
 
   return (
-    <table className="w-full border-separate border-spacing-0 overflow-hidden rounded-lg border border-(--doc-line) text-[13px]">
+    <table className="w-full border-collapse text-[12px]">
       <thead>
-        <tr className="bg-(--doc-brand) text-left text-[10.5px] font-semibold uppercase tracking-wide text-white">
-          <th className="w-[13mm] px-4 py-3">STT</th>
-          <th className="w-[34mm] px-3 py-3">{tr().meetingPrint.module}</th>
-          <th className="px-3 py-3">{meta.contentLabel}</th>
-          {showDue && <th className="w-[24mm] px-3 py-3">{tr().meetingPrint.due}</th>}
-          {showStatus && <th className="w-[28mm] px-3 py-3">{tr().meetingPrint.status}</th>}
-          {showPriority && <th className="w-[22mm] px-3 py-3">{tr().meetingPrint.priority}</th>}
+        <tr className="bg-(--doc-brand) text-left text-[9.5px] font-semibold uppercase tracking-wide text-white">
+          <th className="w-[13mm] px-3 py-1.5">STT</th>
+          <th className="w-[34mm] px-3 py-1.5">{tr().meetingPrint.module}</th>
+          <th className="px-3 py-1.5">{meta.contentLabel}</th>
+          {showDue && <th className="w-[24mm] px-3 py-1.5">{tr().meetingPrint.due}</th>}
+          {showStatus && <th className="w-[28mm] px-3 py-1.5">{tr().meetingPrint.status}</th>}
+          {showPriority && <th className="w-[22mm] px-3 py-1.5">{tr().meetingPrint.priority}</th>}
         </tr>
       </thead>
       <tbody>
@@ -156,13 +168,13 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
           const a = assign.get(r.id)!;
           const codes = (r.tasks ?? []).map((t) => tasks.get(t.id)?.code ?? t.code);
           return (
-            <tr key={r.id} className={i % 2 === 0 ? "bg-(--doc-row-alt)" : "bg-(--doc-paper)"}>
+            <tr key={r.id}>
               <Td className="font-semibold text-(--doc-brand)">{i + 1}</Td>
               <Td className="font-semibold">{r.module}</Td>
               <Td>
                 <span className="whitespace-pre-line">{r.content}</span>
                 {(r.note || codes.length > 0) && (
-                  <span className="mt-1 block text-[11.5px] text-(--doc-muted)">
+                  <span className="mt-0.5 block text-[10.5px] text-(--doc-muted)">
                     {r.note}
                     {r.note && codes.length > 0 && " · "}
                     {codes.length > 0 && <span className="font-mono">{codes.join(", ")}</span>}
@@ -173,7 +185,7 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
               {showStatus && <Td className="text-[12.5px]">{meta.status![r.status === "done" ? 1 : 0]}</Td>}
               {showPriority && (
                 <Td>
-                  {r.priority && <span className="inline-block whitespace-nowrap rounded-full bg-(--doc-brand) px-2.5 py-0.5 text-[11px] font-semibold text-white">{tr().meetingPrint.priority}</span>}
+                  {r.priority && <span className="inline-block whitespace-nowrap rounded-full bg-(--doc-brand) px-2 py-0.5 text-[10px] font-semibold text-white">{tr().meetingPrint.priority}</span>}
                 </Td>
               )}
             </tr>
@@ -185,5 +197,5 @@ function ItemsTable({ section, rows, tasks }: { section: MeetingItem["section"];
 }
 
 const Td = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
-  <td className={`border-t border-(--doc-line) px-3 py-3 align-top leading-snug first:px-4 ${className}`}>{children}</td>
+  <td className={`border-b border-(--doc-line) px-3 py-1.5 align-top leading-snug ${className}`}>{children}</td>
 );

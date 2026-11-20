@@ -676,6 +676,7 @@ export interface MeetingMinutesResponse {
   projectId?: string;
   recorders: MeetingParticipant[];
   sectionNotes: Record<string, string>;
+  signatures: Signature[];
   summary: string;
   title: string;
   updatedAt: string;
@@ -1147,6 +1148,7 @@ export interface QuoteResponse {
   projectId: string;
   projectName: string;
   sentAt?: string;
+  signatures: Signature[];
   status: string;
   subtotal: number;
   taxTotal: number;
@@ -1246,6 +1248,13 @@ export interface SetAttitudeRequest {
 
 export interface SetQuoteStatusRequest {
   status: string;
+}
+
+export interface Signature {
+  name: string;
+  role: "preparer" | "controller";
+  signedAt: string;
+  userId: string;
 }
 
 export type SprintStatus = "planned" | "active" | "completed";

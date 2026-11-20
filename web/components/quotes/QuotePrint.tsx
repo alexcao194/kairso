@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PartyInfo } from "@/lib/api/schema";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
@@ -8,7 +8,14 @@ import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
+import { PrintSignatures } from "@/components/kairso/DocSignatures";
 import { dateLocale, tr, type Lang } from "@/lib/i18n";
+
+const MIN_SCALE = 0.55;
+
+function fmtStamp(iso: string, lang: Lang) {
+  return new Date(iso).toLocaleDateString(dateLocale(lang), { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 function fmtDocDate(d: string | undefined, lang: Lang) {
   if (!d) return "—";
@@ -26,6 +33,55 @@ export function QuotePrint({ id }: { id: string }) {
   useEffect(() => {
     if (quote) document.title = quote.number;
   }, [quote]);
+
+  // Fit the whole document on one A4 page by scaling it, so Chrome and Safari
+  // paginate identically instead of each breaking the table in a different place.
+  const [fit, setFit] = useState(sp.get("fit") !== "0");
+  const [scale, setScale] = useState(1);
+  const [boxH, setBoxH] = useState<number | undefined>(undefined);
+  const inner = useRef<HTMLDivElement>(null);
+  const measure = useCallback(() => {
+    const el = inner.current;
+    if (!el) return;
+    if (!fit) {
+      setScale(1);
+      setBoxH(undefined);
+      return;
+    }
+    const pageH = 297 * (96 / 25.4) - 4; // A4 height in CSS px, minus a rounding margin
+    let lo = MIN_SCALE;
+    let hi = 1;
+    let best = MIN_SCALE;
+    for (let i = 0; i < 9; i++) {
+      const s = (lo + hi) / 2;
+      el.style.width = `${210 / s}mm`;
+      el.style.transform = `scale(${s})`;
+      if (el.scrollHeight * s <= pageH) {
+        best = s;
+        lo = s;
+      } else {
+        hi = s;
+      }
+    }
+    // The widest scale at which the content still fits (1 when it already does).
+    el.style.width = `${210}mm`;
+    el.style.transform = "";
+    if (el.scrollHeight <= pageH) best = 1;
+    else {
+      el.style.width = `${210 / best}mm`;
+      el.style.transform = `scale(${best})`;
+    }
+    setScale(best);
+    setBoxH(el.scrollHeight * best);
+  }, [fit]);
+
+  useLayoutEffect(() => {
+    if (!quote) return;
+    measure();
+    document.fonts?.ready.then(measure);
+    window.addEventListener("beforeprint", measure);
+    return () => window.removeEventListener("beforeprint", measure);
+  }, [quote, measure]);
 
   const printed = useRef(false);
   useEffect(() => {
@@ -48,8 +104,7 @@ export function QuotePrint({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(workspace?.brandColor) as CSSProperties | undefined}>
       <style>{`
-        @page { size: A4; margin: 12mm 0 12mm; }
-        @page :first { margin-top: 0; }
+        ${fit ? "@page { size: A4; margin: 0; }" : "@page { size: A4; margin: 12mm 0 12mm; } @page :first { margin-top: 0; }"}
         @media print { html, body { background: var(--doc-paper) !important; } }
         .doc, .doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .doc tr, .doc .keep { break-inside: avoid; }
@@ -57,96 +112,103 @@ export function QuotePrint({ id }: { id: string }) {
 
       <div className="mx-auto mb-4 flex w-[210mm] max-w-full items-center justify-end gap-2 px-2 print:hidden">
         <span className="mr-auto text-[12.5px] text-(--doc-muted)">{tr().quotePrint.hint}</span>
+        <label className="flex items-center gap-1.5 text-[12.5px] text-(--doc-ink-2)">
+          <input type="checkbox" checked={fit} onChange={(e) => setFit(e.target.checked)} />
+          {tr().quotePrint.fitOne}
+        </label>
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {tr().quotePrint.printBtn}
         </button>
       </div>
 
-      <article className="doc relative mx-auto w-[210mm] max-w-full overflow-hidden bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
+      <div className="mx-auto w-[210mm] max-w-full overflow-hidden" style={fit ? { height: boxH } : undefined}>
+      <div ref={inner} style={fit ? { width: `${210 / scale}mm`, transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
+      <article className="doc relative mx-auto w-full overflow-hidden bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
         {quote.status === "draft" && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
             <span className="-rotate-30 select-none text-[110px] font-bold tracking-[0.15em] text-(--doc-tint-line) opacity-60">{p.draftMark}</span>
           </div>
         )}
 
-        <header className="flex items-start gap-6 px-[16mm] pb-[8mm] pt-[11mm] text-white" style={{ background: "linear-gradient(90deg, var(--doc-brand), var(--doc-brand-2))" }}>
-          <div className="grid size-[18mm] shrink-0 place-items-center overflow-hidden rounded-xl bg-(--doc-paper)">
+        <header className="flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm]">
+          <div className="grid size-[15mm] shrink-0 place-items-center overflow-hidden rounded-md border border-(--doc-line) bg-(--doc-paper)">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={issuer.logoUrl || workspace?.avatar || "/icon-192.png"} alt={issuer.name || "Logo"} className="size-[14mm] object-contain" />
+            <img src={workspace?.avatar || "/icon-192.png"} alt={issuer.name || "Logo"} className="size-[12mm] object-contain" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold leading-tight">{issuer.name || workspace?.name}</p>
-            <PartyLines party={issuer} p={p} light />
+            <p className="text-[14px] font-bold leading-tight">{issuer.name || workspace?.name}</p>
+            <PartyLines party={issuer} p={p} />
           </div>
           <div className="shrink-0 text-right">
-            <p className="text-[24px] font-bold tracking-[0.12em]">{p.docTitle}</p>
-            <p className="mt-1 text-[12px] opacity-90">{p.number}: <b className="font-mono">{quote.number}</b></p>
-            <p className="text-[12px] opacity-90">{p.date}: {fmtDocDate(quote.issueDate, lang)}</p>
-            {quote.validUntil && <p className="text-[12px] opacity-90">{p.validUntil}: {fmtDocDate(quote.validUntil, lang)}</p>}
+            <p className="text-[22px] font-bold leading-none tracking-[0.1em] text-(--doc-brand)">{p.docTitle}</p>
+            <p className="mt-1.5 text-[11px] text-(--doc-ink-2)">{p.number}: <b className="font-mono text-(--doc-ink)">{quote.number}</b></p>
+            <p className="text-[11px] text-(--doc-ink-2)">{p.date}: {fmtDocDate(quote.issueDate, lang)}</p>
+            {quote.validUntil && <p className="text-[11px] text-(--doc-ink-2)">{p.validUntil}: {fmtDocDate(quote.validUntil, lang)}</p>}
           </div>
         </header>
+        <div className="mx-[14mm] h-[1.5px] bg-(--doc-brand)" />
 
-        <div className="relative flex flex-col gap-[6mm] px-[16mm] pb-[14mm] pt-[7mm]">
-          <div className="keep grid grid-cols-[1.4fr_1fr] gap-4 rounded-lg border border-(--doc-tint-line) bg-(--doc-tint) px-4 py-3">
+        <div className="relative flex flex-col gap-[4.5mm] px-[14mm] pb-[12mm] pt-[5mm]">
+          <div className="keep grid grid-cols-[1.4fr_1fr] gap-6 border-b border-(--doc-line) pb-[4mm]">
             <div>
-              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-(--doc-brand)">{p.to}</p>
-              <p className="mt-1 text-[14px] font-semibold">{quote.customer.name || "—"}</p>
+              <p className="text-[9px] font-semibold uppercase tracking-wider text-(--doc-brand)">{p.to}</p>
+              <p className="mt-0.5 text-[13px] font-semibold">{quote.customer.name || "—"}</p>
               <PartyLines party={quote.customer} p={p} />
             </div>
-            <div className="text-[12.5px]">
-              <p className="text-[9.5px] font-semibold uppercase tracking-wide text-(--doc-brand)">{p.project}</p>
-              <p className="mt-1 font-medium">{quote.projectName}</p>
-              <p className="mt-2 text-[9.5px] font-semibold uppercase tracking-wide text-(--doc-brand)">{p.module}</p>
-              <p className="mt-1 font-medium">{quote.moduleName}</p>
+            <div className="text-[11.5px]">
+              <p className="text-[9px] font-semibold uppercase tracking-wider text-(--doc-brand)">{p.project}</p>
+              <p className="mt-0.5 font-medium">{quote.projectName}</p>
+              <p className="mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-(--doc-brand)">{p.module}</p>
+              <p className="mt-0.5 font-medium">{quote.moduleName}</p>
             </div>
           </div>
 
-          {quote.title && <h1 className="text-[18px] font-bold leading-snug">{quote.title}</h1>}
+          {quote.title && <h1 className="text-[16px] font-bold leading-snug">{quote.title}</h1>}
 
-          <table className="w-full border-collapse text-[12px]">
+          <table className="w-full border-collapse text-[11.5px]">
             <thead>
-              <tr className="bg-(--doc-brand) text-left text-[10.5px] uppercase tracking-wide text-white">
-                <th className="w-9 px-2 py-2 text-center">{p.no}</th>
-                <th className="px-2 py-2">{p.item}</th>
-                <th className="w-14 px-2 py-2">{p.unit}</th>
-                <th className="w-14 px-2 py-2 text-right">{p.qty}</th>
-                <th className="w-28 px-2 py-2 text-right">{p.unitPrice}</th>
-                {hasLineDiscount && <th className="w-12 px-2 py-2 text-right">{p.discount}</th>}
-                <th className="w-32 px-2 py-2 text-right">{p.amount}</th>
+              <tr className="bg-(--doc-brand) text-left text-[9.5px] uppercase tracking-wide text-white">
+                <th className="w-8 px-2 py-1.5 text-center">{p.no}</th>
+                <th className="px-2 py-1.5">{p.item}</th>
+                <th className="w-12 px-2 py-1.5">{p.unit}</th>
+                <th className="w-14 px-2 py-1.5 text-right">{p.qty}</th>
+                <th className="w-28 px-2 py-1.5 text-right">{p.unitPrice}</th>
+                {hasLineDiscount && <th className="w-12 px-2 py-1.5 text-right">{p.discount}</th>}
+                <th className="w-32 px-2 py-1.5 text-right">{p.amount}</th>
               </tr>
             </thead>
             <tbody>
               {quote.items.map((it, i) => (
-                <tr key={it.id} className="border-b border-(--doc-tint-line) align-top even:bg-(--doc-tint)">
-                  <td className="px-2 py-2 text-center text-(--doc-muted)">{i + 1}</td>
-                  <td className="px-2 py-2">
+                <tr key={it.id} className="border-b border-(--doc-line) align-top">
+                  <td className="px-2 py-1.5 text-center text-(--doc-muted)">{i + 1}</td>
+                  <td className="px-2 py-1.5">
                     <p className="font-medium">{it.name}</p>
-                    {it.description && <p className="mt-0.5 whitespace-pre-line text-[11px] text-(--doc-ink-2)">{it.description}</p>}
+                    {it.description && <p className="mt-0.5 whitespace-pre-line text-[10.5px] text-(--doc-ink-2)">{it.description}</p>}
                   </td>
-                  <td className="px-2 py-2">{it.unit}</td>
-                  <td className="px-2 py-2 text-right font-mono">{formatNumber(it.quantity, 3, lang)}</td>
-                  <td className="px-2 py-2 text-right font-mono">{money(it.unitPrice)}</td>
-                  {hasLineDiscount && <td className="px-2 py-2 text-right font-mono">{it.discountPercent ? `${formatNumber(it.discountPercent, 2, lang)}%` : ""}</td>}
-                  <td className="px-2 py-2 text-right font-mono">{money(it.lineTotal)}</td>
+                  <td className="px-2 py-1.5">{it.unit}</td>
+                  <td className="px-2 py-1.5 text-right font-mono">{formatNumber(it.quantity, 3, lang)}</td>
+                  <td className="px-2 py-1.5 text-right font-mono">{money(it.unitPrice)}</td>
+                  {hasLineDiscount && <td className="px-2 py-1.5 text-right font-mono">{it.discountPercent ? `${formatNumber(it.discountPercent, 2, lang)}%` : ""}</td>}
+                  <td className="px-2 py-1.5 text-right font-mono">{money(it.lineTotal)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
           <div className="keep flex justify-end">
-            <dl className="w-[85mm] text-[12.5px]">
+            <dl className="w-[80mm] text-[12px]">
               <TotalRow label={p.subtotal} value={money(quote.subtotal)} />
               {quote.discountTotal > 0 && (
                 <TotalRow label={quote.discountType === "percent" ? `${p.discountTotal} (${formatNumber(quote.discountPercent, 2, lang)}%)` : p.discountTotal} value={`− ${money(quote.discountTotal)}`} />
               )}
               <TotalRow label={p.vat(formatNumber(quote.vatRate, 2, lang))} value={money(quote.taxTotal)} />
-              <div className="mt-1 flex items-baseline justify-between rounded-md bg-(--doc-brand) px-3 py-2 text-white">
-                <dt className="text-[13px] font-semibold">{p.grand}</dt>
-                <dd className="font-mono text-[15px] font-bold">{money(quote.grandTotal)}</dd>
+              <div className="mt-1 flex items-baseline justify-between bg-(--doc-brand) px-3 py-1.5 text-white">
+                <dt className="text-[12px] font-semibold">{p.grand}</dt>
+                <dd className="font-mono text-[14px] font-bold">{money(quote.grandTotal)}</dd>
               </div>
             </dl>
           </div>
-          <p className="keep -mt-2 text-[12px] italic text-(--doc-ink-2)">
+          <p className="keep -mt-1.5 text-[11.5px] italic text-(--doc-ink-2)">
             <b className="not-italic text-(--doc-ink)">{p.inWords}:</b> {quote.amountInWords}.
           </p>
 
@@ -154,33 +216,31 @@ export function QuotePrint({ id }: { id: string }) {
           {quote.terms && <Block title={p.terms}>{quote.terms}</Block>}
           {issuer.bankInfo && <Block title={p.bank}>{issuer.bankInfo}</Block>}
 
-          <div className="keep mt-[6mm] grid grid-cols-2 gap-8 text-center text-[12px]">
-            <div>
-              <p className="font-semibold">{p.customerSign}</p>
-              <p className="text-[11px] italic text-(--doc-muted)">{p.signHint}</p>
-              <div className="h-[24mm]" />
-            </div>
-            <div>
-              <p className="font-semibold">{p.issuerSign}</p>
-              <p className="text-[11px] italic text-(--doc-muted)">{p.signHint}</p>
-              <div className="grid h-[24mm] place-items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {issuer.signatureUrl && <img src={issuer.signatureUrl} alt="" className="max-h-[22mm] object-contain" />}
-              </div>
-            </div>
-          </div>
+          <PrintSignatures
+            formatDate={(iso) => fmtStamp(iso, lang)}
+            slots={[
+              {
+                role: "preparer",
+                label: p.preparer,
+                hint: p.signHint,
+                sig: quote.signatures.find((x) => x.role === "preparer"),
+              },
+            ]}
+          />
         </div>
       </article>
+      </div>
+      </div>
     </div>
   );
 }
 
 type PrintMessages = (typeof dict)["vi"]["quotePrint"];
 
-function PartyLines({ party, p, light }: { party: PartyInfo; p: PrintMessages; light?: boolean }) {
-  const cls = light ? "text-[11px] leading-snug opacity-90" : "text-[12px] leading-snug text-(--doc-ink-2)";
+function PartyLines({ party, p }: { party: PartyInfo; p: PrintMessages }) {
+  const cls = "text-[11px] leading-snug text-(--doc-ink-2)";
   return (
-    <div className={`mt-1 flex flex-col ${cls}`}>
+    <div className={`mt-0.5 flex flex-col ${cls}`}>
       {party.address && <span>{party.address}</span>}
       {party.taxCode && <span>{p.taxCode}: {party.taxCode}</span>}
       {(party.phone || party.email) && <span>{[party.phone && `${p.tel}: ${party.phone}`, party.email].filter(Boolean).join(" · ")}</span>}
@@ -192,7 +252,7 @@ function PartyLines({ party, p, light }: { party: PartyInfo; p: PrintMessages; l
 
 function TotalRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline justify-between border-b border-(--doc-tint-line) px-3 py-1.5">
+    <div className="flex items-baseline justify-between border-b border-(--doc-line) px-3 py-1">
       <dt className="text-(--doc-ink-2)">{label}</dt>
       <dd className="font-mono">{value}</dd>
     </div>
@@ -201,9 +261,9 @@ function TotalRow({ label, value }: { label: string; value: string }) {
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="keep rounded-md border border-(--doc-tint-line) border-l-4 border-l-(--doc-brand) bg-(--doc-tint) px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-(--doc-brand)">{title}</p>
-      <p className="mt-1 whitespace-pre-line text-[12.5px] leading-relaxed text-(--doc-ink-2)">{children}</p>
+    <div className="keep border-l-2 border-(--doc-brand) pl-3">
+      <p className="text-[9.5px] font-semibold uppercase tracking-wider text-(--doc-brand)">{title}</p>
+      <p className="mt-0.5 whitespace-pre-line text-[11.5px] leading-relaxed text-(--doc-ink-2)">{children}</p>
     </div>
   );
 }

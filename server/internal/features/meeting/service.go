@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/pagination"
+	"github.com/alexcao194/kairso/pkg/pgutil"
 	"github.com/alexcao194/kairso/pkg/realtime"
 	"github.com/google/uuid"
 )
@@ -32,6 +34,8 @@ type Service interface {
 	List(ctx context.Context, workspaceID, callerID string, filter ListMeetingMinutesFilter, params pagination.Params) (pagination.Response[MeetingMinutesResponse], error)
 	Update(ctx context.Context, id, callerID string, req UpdateMeetingMinutesRequest) (*MeetingMinutesResponse, error)
 	Delete(ctx context.Context, id, callerID string) error
+	Sign(ctx context.Context, id, callerID, role string) (*MeetingMinutesResponse, error)
+	Unsign(ctx context.Context, id, callerID, role string) (*MeetingMinutesResponse, error)
 }
 
 type service struct {
@@ -219,6 +223,9 @@ func (s *service) Get(ctx context.Context, id, callerID string) (*MeetingMinutes
 	if _, err := s.callerRole(ctx, m.WorkspaceID, callerID); err != nil {
 		return nil, err
 	}
+	if err := s.attachSignatures(ctx, m); err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
@@ -272,6 +279,9 @@ func (s *service) Update(ctx context.Context, id, callerID string, req UpdateMee
 	if err != nil {
 		return nil, err
 	}
+	if err := s.attachSignatures(ctx, resp); err != nil {
+		return nil, err
+	}
 	s.broadcast(ctx, resp.WorkspaceID, "meeting.updated", resp.ID, callerID, resp)
 	return resp, nil
 }
@@ -290,6 +300,9 @@ func (s *service) Delete(ctx context.Context, id, callerID string) error {
 	}
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err
+	}
+	if mid, err := pgutil.ParseUUID(id); err == nil {
+		_ = s.repo.Signatures().Clear(ctx, docsign.TypeMeeting, mid)
 	}
 	s.broadcast(ctx, m.WorkspaceID, "meeting.deleted", id, callerID, nil)
 	return nil

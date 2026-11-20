@@ -9,6 +9,7 @@ import (
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/currency"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
@@ -416,6 +417,9 @@ func (s *Service) load(ctx context.Context, ws, id pgtype.UUID) (*QuoteResponse,
 		return nil, err
 	}
 	resp := quoteResponse(row, items, events, versions, live, st)
+	if resp.Signatures, err = s.repo.Signatures().List(ctx, docsign.TypeQuote, id); err != nil {
+		return nil, err
+	}
 	return &resp, nil
 }
 
@@ -575,6 +579,7 @@ func (s *Service) DeleteQuote(ctx context.Context, workspaceID, callerID, quoteI
 	if _, err = s.repo.DeleteQuote(ctx, id, ws); err != nil {
 		return err
 	}
+	_ = s.repo.Signatures().Clear(ctx, docsign.TypeQuote, id)
 	s.emit(ctx, "quote.deleted", workspaceID, callerID, quoteID, map[string]string{"id": quoteID})
 	return nil
 }

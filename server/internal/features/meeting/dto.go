@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/pgutil"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -108,6 +109,7 @@ type MeetingMinutesResponse struct {
 	Summary      string               `json:"summary"`
 	Items        []MeetingItem        `json:"items"`
 	SectionNotes map[string]string    `json:"sectionNotes"`
+	Signatures   []docsign.Signature  `json:"signatures"`
 	CreatedBy    MeetingCreator       `json:"createdBy"`
 	CreatedAt    time.Time            `json:"createdAt" swaggertype:"string" format:"date-time"`
 	UpdatedAt    time.Time            `json:"updatedAt" swaggertype:"string" format:"date-time"`
@@ -146,6 +148,7 @@ func meetingResponseFromRow(row database.GetMeetingMinutesRow) MeetingMinutesRes
 		Summary:      row.Summary,
 		Items:        items,
 		SectionNotes: notes,
+		Signatures:   []docsign.Signature{},
 		CreatedBy: MeetingCreator{
 			ID:     pgutil.UUIDToString(row.CreatedByID),
 			Name:   row.CreatorName,

@@ -2,6 +2,7 @@ package quote
 
 import (
 	"encoding/json"
+	"github.com/alexcao194/kairso/internal/features/docsign"
 	"math"
 	"time"
 
@@ -170,6 +171,7 @@ type QuoteResponse struct {
 	ID              string                 `json:"id"`
 	Version         int                    `json:"version"`
 	Versions        []QuoteVersionResponse `json:"versions"`
+	Signatures      []docsign.Signature    `json:"signatures"`
 	Number          string                 `json:"number"`
 	Title           string                 `json:"title"`
 	Status          string                 `json:"status"`
@@ -375,6 +377,7 @@ func quoteResponse(row database.GetQuoteRow, items []database.QuoteItem, events 
 		ID:            pgutil.UUIDToString(row.ID),
 		Version:       int(row.Version),
 		Versions:      make([]QuoteVersionResponse, 0, len(versions)),
+		Signatures:    []docsign.Signature{},
 		Number:        row.Number,
 		Title:         row.Title,
 		Status:        effectiveStatus(row.Status, row.ValidUntil),

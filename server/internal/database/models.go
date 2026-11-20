@@ -334,6 +334,15 @@ type DeviceToken struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type DocumentSignature struct {
+	DocType  string             `json:"doc_type"`
+	DocID    pgtype.UUID        `json:"doc_id"`
+	Role     string             `json:"role"`
+	UserID   pgtype.UUID        `json:"user_id"`
+	Name     string             `json:"name"`
+	SignedAt pgtype.Timestamptz `json:"signed_at"`
+}
+
 type EmployeeMonthlyAttitude struct {
 	ID          pgtype.UUID        `json:"id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
