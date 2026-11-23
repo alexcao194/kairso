@@ -108,7 +108,9 @@ export function Popover({
         >
           {children(close)}
         </div>,
-        document.body,
+        // A modal <dialog> sits in the browser's top layer, above anything in <body>,
+        // so a popover opened from inside one must live inside that dialog.
+        triggerEl.current?.closest("dialog") ?? document.body,
       )}
     </>
   );
