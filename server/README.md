@@ -2,7 +2,7 @@
 
 The backend for **Kairso**, a platform for managing workspaces, projects, KPIs, attendance and initiatives for teams. This is the `server/` folder of the [Kairso monorepo](../README.md): the Go API server: a REST API, a realtime WebSocket hub, and database migrations.
 
-- 🌐 Website & docs: **https://home.kairso.com** (see the [Install & self-host guide](https://home.kairso.com/install))
+- 🌐 Website & docs: **https://kairso.com** (see the [Install & self-host guide](https://kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
 - 🧩 Web front end: **[`web/`](../web)** — the other half of the stack
 - 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
@@ -86,7 +86,7 @@ Open http://localhost:8080/swagger/ for the API explorer.
 
 ## Self-host
 
-The server is not meant to run alone. Self-hosters run the all-in-one image [`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso) (web + API in one container) from Docker Hub — follow the guide there or at https://home.kairso.com/install.
+The server is not meant to run alone. Self-hosters run the all-in-one image [`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso) (web + API in one container) from Docker Hub — follow the guide there or at https://kairso.com/install.
 
 ---
 

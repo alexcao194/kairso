@@ -2,7 +2,7 @@
 
 The web front end for **Kairso**, a platform for managing workspaces, projects, KPIs, attendance and initiatives for teams. This is the `web/` folder of the [Kairso monorepo](../README.md): the Next.js app. It also proxies REST calls to the backend so the signing secret never reaches the browser.
 
-- 🌐 Website & docs: **https://home.kairso.com** (see the [Install & self-host guide](https://home.kairso.com/install))
+- 🌐 Website & docs: **https://kairso.com** (see the [Install & self-host guide](https://kairso.com/install))
 - 🚀 Hosted app: **https://app.kairso.com**
 - 🧩 Backend: **[`server/`](../server)** — the other half of the stack
 - 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
@@ -72,6 +72,6 @@ Open http://localhost:3000.
 
 ## Self-host
 
-The web app ships together with the API in the all-in-one image [`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso) on Docker Hub — follow the guide there or at https://home.kairso.com/install.
+The web app ships together with the API in the all-in-one image [`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso) on Docker Hub — follow the guide there or at https://kairso.com/install.
 
 The image is configured **at runtime**: on startup it writes `/env-config.js` from environment variables, so Firebase config and the WebSocket origin are injected when the container starts, not baked into the bundle, and the same image runs on any domain.

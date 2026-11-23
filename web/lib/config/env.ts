@@ -27,9 +27,9 @@ export const Configs = {
     "626351558175-md9sie4jo4duhjqvk3smhi14dohpp5c8.apps.googleusercontent.com",
   supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@kairso.com",
   termsOfServiceUrl:
-    process.env.NEXT_PUBLIC_TERMS_OF_SERVICE_URL || "https://home.kairso.com/tos",
+    process.env.NEXT_PUBLIC_TERMS_OF_SERVICE_URL || "https://kairso.com/tos",
   privacyPolicyUrl:
-    process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL || "https://home.kairso.com/privacy",
+    process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL || "https://kairso.com/privacy",
   isProduction: process.env.NODE_ENV === "production",
   isDevelopment: process.env.NODE_ENV !== "production",
 } as const;

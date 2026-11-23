@@ -6,7 +6,7 @@ This is the **all-in-one image**: the web app, the API and realtime WebSocket in
 
 - **Multi-arch:** `linux/amd64`, `linux/arm64`
 - **Tags:** `latest`, and one per release (e.g. `v0.2.0`)
-- **Docs:** https://home.kairso.com/install
+- **Docs:** https://kairso.com/install
 
 ## Quick start
 
