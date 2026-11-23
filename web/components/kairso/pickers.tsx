@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ModuleResponse, TaskLabelResponse, TaskStatus } from "@/lib/api/schema";
 import { PRIORITY_LEVELS, PRIORITY_META, TASK_STATUSES, priorityLevel, priorityToApi } from "@/lib/domain/task";
 import { DEFAULT_LABEL_COLOR, LABEL_COLORS } from "@/lib/domain/label";
@@ -138,6 +138,30 @@ export function PriorityPicker({
   );
 }
 
+/**
+ * Multi-select editors keep a local draft so several picks can be made in a row without the
+ * popover closing; the change is sent once, when the popover closes (click outside / Esc).
+ */
+function useCommitOnClose<T>(draft: T, initial: T, same: (a: T, b: T) => boolean, commit: (v: T) => void) {
+  const latest = useRef({ draft, initial, same, commit });
+  useEffect(() => {
+    latest.current = { draft, initial, same, commit };
+  });
+  useEffect(
+    () => () => {
+      const { draft, initial, same, commit } = latest.current;
+      if (!same(draft, initial)) commit(draft);
+    },
+    [],
+  );
+}
+
+const sameWeights = (a: Record<string, number>, b: Record<string, number>) => {
+  const ak = Object.keys(a);
+  return ak.length === Object.keys(b).length && ak.every((k) => a[k] === b[k]);
+};
+const sameIds = (a: Set<string>, b: Set<string>) => a.size === b.size && [...a].every((x) => b.has(x));
+
 interface PickablePerson extends Person {
   id: string;
   alias?: string;
@@ -184,7 +208,7 @@ export function PeoplePicker({
         </PickerTrigger>
       )}
     >
-      {(close) => <PeopleEditor title={title} people={people} initial={value} onApply={(v) => { close(); onChange(v); }} onCancel={close} />}
+      {() => <PeopleEditor title={title} people={people} initial={value} onCommit={onChange} />}
     </Popover>
   );
 }
@@ -193,16 +217,15 @@ function PeopleEditor({
   title,
   people,
   initial,
-  onApply,
-  onCancel,
+  onCommit,
 }: {
   title: string;
   people: PickablePerson[];
   initial: Record<string, number>;
-  onApply: (v: Record<string, number>) => void;
-  onCancel: () => void;
+  onCommit: (v: Record<string, number>) => void;
 }) {
   const [draft, setDraft] = useState(initial);
+  useCommitOnClose(draft, initial, sameWeights, onCommit);
   const [q, setQ] = useState("");
   const list = people.filter((p) => `${p.name} ${p.alias ?? ""}`.toLowerCase().includes(q.toLowerCase()));
   return (
@@ -252,14 +275,6 @@ function PeopleEditor({
         })}
         {list.length === 0 && <li className="px-2 py-3 text-center text-[12px] text-ink-muted">{tr().pickers.nobody}</li>}
       </ul>
-      <div className="flex justify-end gap-1.5 border-t border-line px-1 pb-1 pt-2">
-        <Button size="sm" onClick={onCancel}>
-          {tr().pickers.cancel}
-        </Button>
-        <Button size="sm" variant="primary" onClick={() => onApply(draft)}>
-          {tr().pickers.apply}
-        </Button>
-      </div>
     </div>
   );
 }
@@ -296,7 +311,7 @@ export function LabelPicker({
         </PickerTrigger>
       )}
     >
-      {(close) => <LabelEditor labels={labels} initial={value} onApply={(v) => { close(); onChange(v); }} onCancel={close} onCreate={onCreate} />}
+      {() => <LabelEditor labels={labels} initial={value} onCommit={onChange} onCreate={onCreate} />}
     </Popover>
   );
 }
@@ -304,17 +319,16 @@ export function LabelPicker({
 function LabelEditor({
   labels,
   initial,
-  onApply,
-  onCancel,
+  onCommit,
   onCreate,
 }: {
   labels: TaskLabelResponse[];
   initial: string[];
-  onApply: (v: string[]) => void;
-  onCancel: () => void;
+  onCommit: (v: string[]) => void;
   onCreate?: (name: string, color: string) => Promise<TaskLabelResponse | void>;
 }) {
   const [draft, setDraft] = useState(new Set(initial));
+  useCommitOnClose(draft, new Set(initial), sameIds, (v) => onCommit([...v]));
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(DEFAULT_LABEL_COLOR);
   const [busy, setBusy] = useState(false);
@@ -387,14 +401,6 @@ function LabelEditor({
           </div>
         </div>
       )}
-      <div className="mt-2 flex justify-end gap-1.5 border-t border-line px-1 pb-1 pt-2">
-        <Button size="sm" onClick={onCancel}>
-          {tr().pickers.cancel}
-        </Button>
-        <Button size="sm" variant="primary" onClick={() => onApply([...draft])}>
-          {tr().pickers.apply}
-        </Button>
-      </div>
     </div>
   );
 }
