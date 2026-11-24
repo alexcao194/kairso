@@ -22,7 +22,7 @@ func (s *service) attachSignatures(ctx context.Context, m *MeetingMinutesRespons
 }
 
 // canSign: the preparer is whoever took the minutes (the creator or a listed recorder);
-// the controller is the workspace holder.
+// the controller is any workspace manager (holder or admin).
 func canSign(m *MeetingMinutesResponse, callerID, wsRole, role string) bool {
 	switch role {
 	case docsign.RolePreparer:
@@ -36,7 +36,7 @@ func canSign(m *MeetingMinutesResponse, callerID, wsRole, role string) bool {
 		}
 		return false
 	case docsign.RoleController:
-		return wsRole == string(workspace.WorkspaceRoleHolder)
+		return workspace.WorkspaceRole(wsRole).CanManageMembers()
 	}
 	return false
 }
@@ -55,7 +55,7 @@ func (s *service) Sign(ctx context.Context, id, callerID, role string) (*Meeting
 	}
 	if !canSign(m, callerID, wsRole, role) {
 		if role == docsign.RoleController {
-			return nil, fmt.Errorf("%w: chỉ chủ workspace mới ký ở vai trò người kiểm soát", ErrForbidden)
+			return nil, fmt.Errorf("%w: chỉ quản lý workspace (chủ hoặc quản trị viên) mới ký ở vai trò người kiểm soát", ErrForbidden)
 		}
 		return nil, fmt.Errorf("%w: chỉ người ghi chép mới ký ở vai trò người lập", ErrForbidden)
 	}
@@ -96,8 +96,8 @@ func (s *service) Unsign(ctx context.Context, id, callerID, role string) (*Meeti
 	if !ok {
 		return nil, docsign.ErrNoSignature
 	}
-	if sig.UserID != callerID && wsRole != string(workspace.WorkspaceRoleHolder) {
-		return nil, fmt.Errorf("%w: chỉ người đã ký hoặc chủ workspace mới gỡ được chữ ký", ErrForbidden)
+	if sig.UserID != callerID && !workspace.WorkspaceRole(wsRole).CanManageMembers() {
+		return nil, fmt.Errorf("%w: chỉ người đã ký hoặc quản lý workspace mới gỡ được chữ ký", ErrForbidden)
 	}
 	if err := s.repo.Signatures().Unsign(ctx, docsign.TypeMeeting, mid, role); err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s *service) afterSign(ctx context.Context, m *MeetingMinutesResponse, call
 }
 
 // @Summary Sign meeting minutes
-// @Description Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: the workspace holder.
+// @Description Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: a workspace holder or admin.
 // @Tags Meetings
 // @Security BearerAuth
 // @Produce json
@@ -139,7 +139,7 @@ func (h *Handler) SignMeeting(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Remove a meeting signature
-// @Description Only the signer or the workspace holder can remove it.
+// @Description Only the signer or a workspace manager can remove it.
 // @Tags Meetings
 // @Security BearerAuth
 // @Produce json

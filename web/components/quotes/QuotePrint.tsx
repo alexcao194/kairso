@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PartyInfo } from "@/lib/api/schema";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
@@ -8,6 +8,7 @@ import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
+import { PrintPaged } from "@/components/kairso/PrintPaged";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
 import { dateLocale, tr, type Lang } from "@/lib/i18n";
 
@@ -40,6 +41,8 @@ export function QuotePrint({ id }: { id: string }) {
   const [scale, setScale] = useState(1);
   const [boxH, setBoxH] = useState<number | undefined>(undefined);
   const inner = useRef<HTMLDivElement>(null);
+  // One-page mode scales the whole sheet, so it needs no repeating margin rows.
+  const Paged = fit ? Fragment : PrintPaged;
   const measure = useCallback(() => {
     const el = inner.current;
     if (!el) return;
@@ -104,7 +107,7 @@ export function QuotePrint({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(workspace?.brandColor) as CSSProperties | undefined}>
       <style>{`
-        ${fit ? "@page { size: A4; margin: 0; }" : "@page { size: A4; margin: 12mm 0 12mm; } @page :first { margin-top: 0; }"}
+        @page { size: A4; margin: 0; }
         @media print { html, body { background: var(--doc-paper) !important; } }
         .doc, .doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .doc tr, .doc .keep { break-inside: avoid; }
@@ -123,6 +126,7 @@ export function QuotePrint({ id }: { id: string }) {
 
       <div className="mx-auto w-[210mm] max-w-full overflow-hidden" style={fit ? { height: boxH } : undefined}>
       <div ref={inner} style={fit ? { width: `${210 / scale}mm`, transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
+      <Paged>
       <article className="doc relative mx-auto w-full overflow-hidden bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
         {quote.status === "draft" && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -130,7 +134,7 @@ export function QuotePrint({ id }: { id: string }) {
           </div>
         )}
 
-        <header className="flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm]">
+        <header className={`flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm] ${fit ? "" : "print:pt-[2mm]"}`}>
           <div className="grid size-[15mm] shrink-0 place-items-center overflow-hidden rounded-md border border-(--doc-line) bg-(--doc-paper)">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={workspace?.avatar || "/icon-192.png"} alt={issuer.name || "Logo"} className="size-[12mm] object-contain" />
@@ -229,6 +233,7 @@ export function QuotePrint({ id }: { id: string }) {
           />
         </div>
       </article>
+      </Paged>
       </div>
       </div>
     </div>

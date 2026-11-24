@@ -4896,7 +4896,7 @@ paths:
       - Meetings
   /v1/meetings/{meetingId}/signatures/{role}:
     delete:
-      description: Only the signer or the workspace holder can remove it.
+      description: Only the signer or a workspace manager can remove it.
       parameters:
       - description: Meeting minutes ID
         in: path
@@ -4933,8 +4933,8 @@ paths:
       - Meetings
     post:
       description: 'Stamps the caller''s name and the current time. role=preparer:
-        the note-taker (creator or a listed recorder); role=controller: the workspace
-        holder.'
+        the note-taker (creator or a listed recorder); role=controller: a workspace
+        holder or admin.'
       parameters:
       - description: Meeting minutes ID
         in: path
@@ -10452,7 +10452,7 @@ paths:
       - Quotes
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}:
     delete:
-      description: Only the signer or the workspace holder can remove it.
+      description: Only the signer or a workspace manager can remove it.
       parameters:
       - description: Workspace ID
         in: path

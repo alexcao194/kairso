@@ -9,6 +9,7 @@ import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr } from "@/lib/i18n";
+import { PrintPaged } from "@/components/kairso/PrintPaged";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
 
 export function MeetingPrint({ id }: { id: string }) {
@@ -43,8 +44,7 @@ export function MeetingPrint({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(ws?.brandColor) as CSSProperties | undefined}>
       <style>{`
-        @page { size: A4; margin: 12mm 0 12mm; }
-        @page :first { margin-top: 0; }
+        @page { size: A4; margin: 0; }
         @media print { html, body { background: var(--doc-paper) !important; } }
         .doc, .doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .doc tr, .doc .keep { break-inside: avoid; }
@@ -57,8 +57,9 @@ export function MeetingPrint({ id }: { id: string }) {
         </button>
       </div>
 
+      <PrintPaged>
       <article className="doc mx-auto w-[210mm] max-w-full bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
-        <header className="flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm]">
+        <header className="flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm] print:pt-[2mm]">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-(--doc-brand)">{tr().meetingPrint.title}</p>
             <h1 className="mt-1 text-[21px] font-bold leading-tight">{m.title}</h1>
@@ -115,6 +116,7 @@ export function MeetingPrint({ id }: { id: string }) {
           />
         </div>
       </article>
+      </PrintPaged>
     </div>
   );
 }

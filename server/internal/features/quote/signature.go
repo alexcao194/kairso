@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/features/docsign"
-	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/httpx"
 )
 
@@ -46,7 +45,7 @@ func (s *Service) SignQuote(ctx context.Context, workspaceID, callerID, quoteID,
 	return resp, nil
 }
 
-// UnsignQuote removes the stamp. Only the signer or the workspace holder may do so.
+// UnsignQuote removes the stamp. Only the signer or a workspace manager may do so.
 func (s *Service) UnsignQuote(ctx context.Context, workspaceID, callerID, quoteID, role string) (*QuoteResponse, error) {
 	ws, caller, err := s.access(ctx, workspaceID, callerID, true)
 	if err != nil {
@@ -75,7 +74,7 @@ func (s *Service) UnsignQuote(ctx context.Context, workspaceID, callerID, quoteI
 	if err != nil {
 		return nil, err
 	}
-	if sig.UserID != callerID && r != workspace.WorkspaceRoleHolder {
+	if sig.UserID != callerID && !r.CanManageMembers() {
 		return nil, ErrForbidden
 	}
 	if err := s.repo.Signatures().Unsign(ctx, docsign.TypeQuote, id, role); err != nil {
@@ -115,7 +114,7 @@ func (h *Handler) SignQuote(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Remove a quote signature
-// @Description Only the signer or the workspace holder can remove it.
+// @Description Only the signer or a workspace manager can remove it.
 // @Tags Quotes
 // @Security BearerAuth
 // @Produce json

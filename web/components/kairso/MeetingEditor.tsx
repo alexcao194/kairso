@@ -56,7 +56,7 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
   const { openCreateTask } = useDialogs();
   const { create, update, sign, unsign } = useMeetingMutations(scope);
   const { user } = useAuth();
-  const { isHolder } = useWorkspace();
+  const { isManager } = useWorkspace();
   const confirm = useConfirm();
   const modules = useProjectModules(scope.ws, scope.projectId ?? "");
   const others = useMeetings(scope);
@@ -200,13 +200,13 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
           slots={(["preparer", "controller"] as const).map((role) => {
             const sig = (meeting.signatures ?? []).find((x) => x.role === role);
             const isNoteTaker = meeting.createdBy?.id === user?.id || (meeting.recorders ?? []).some((r) => r.kind === "user" && r.userId === user?.id);
-            const allowed = role === "preparer" ? isNoteTaker : isHolder;
+            const allowed = role === "preparer" ? isNoteTaker : isManager;
             return {
               role,
               label: role === "preparer" ? tr().docSign.preparer : tr().docSign.controller,
               sig,
-              blocked: allowed ? undefined : role === "preparer" ? tr().docSign.onlyRecorder : tr().docSign.onlyHolder,
-              canRemove: !!sig && (sig.userId === user?.id || isHolder),
+              blocked: allowed ? undefined : role === "preparer" ? tr().docSign.onlyRecorder : tr().docSign.onlyManager,
+              canRemove: !!sig && (sig.userId === user?.id || isManager),
             };
           })}
           onSign={(role: SignRole) => sign.mutate({ id: meeting.id, role }, { onSuccess: () => toast.success(tr().docSign.signedOk), onError: (e) => toast.error(e) })}

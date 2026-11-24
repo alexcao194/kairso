@@ -103,7 +103,7 @@ export function QuoteEditor({ id }: { id: string }) {
   const toast = useToast();
   const confirm = useConfirm();
   const router = useRouter();
-  const { workspaceId, isManager, isHolder } = useWorkspace();
+  const { workspaceId, isManager } = useWorkspace();
   const { user } = useAuth();
   const q = useQuote(workspaceId, id);
   const customers = useCustomers(workspaceId);
@@ -355,7 +355,7 @@ export function QuoteEditor({ id }: { id: string }) {
             busy={m.sign.isPending || m.unsign.isPending}
             slots={(() => {
               const sig = quote.signatures.find((x) => x.role === "preparer");
-              return [{ role: "preparer" as const, label: t.docSign.preparer, sig, blocked: isManager ? undefined : t.docSign.onlyManager, canRemove: !!sig && (sig.userId === user?.id || isHolder) }];
+              return [{ role: "preparer" as const, label: t.docSign.preparer, sig, blocked: isManager ? undefined : t.docSign.onlyManager, canRemove: !!sig && (sig.userId === user?.id || isManager) }];
             })()}
             onSign={sign}
             onUnsign={unsign}

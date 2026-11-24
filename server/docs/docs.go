@@ -1228,7 +1228,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: the workspace holder.",
+                "description": "Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: a workspace holder or admin.",
                 "produces": [
                     "application/json"
                 ],
@@ -1283,7 +1283,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Only the signer or the workspace holder can remove it.",
+                "description": "Only the signer or a workspace manager can remove it.",
                 "produces": [
                     "application/json"
                 ],
@@ -9992,7 +9992,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Only the signer or the workspace holder can remove it.",
+                "description": "Only the signer or a workspace manager can remove it.",
                 "produces": [
                     "application/json"
                 ],

@@ -167,13 +167,13 @@ export const patchMeeting = (meetingId: string, body: S.UpdateMeetingMinutesRequ
 
 /** POST /v1/meetings/{meetingId}/signatures/{role}
  * Sign meeting minutes
- * Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: the workspace holder. */
+ * Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: a workspace holder or admin. */
 export const postMeetingSignature = (meetingId: string, role: string, opts?: RequestOptions): Promise<S.MeetingMinutesResponse> =>
   request<S.MeetingMinutesResponse>("POST", `/v1/meetings/${enc(meetingId)}/signatures/${enc(role)}`, { ...opts });
 
 /** DELETE /v1/meetings/{meetingId}/signatures/{role}
  * Remove a meeting signature
- * Only the signer or the workspace holder can remove it. */
+ * Only the signer or a workspace manager can remove it. */
 export const deleteMeetingSignature = (meetingId: string, role: string, opts?: RequestOptions): Promise<S.MeetingMinutesResponse> =>
   request<S.MeetingMinutesResponse>("DELETE", `/v1/meetings/${enc(meetingId)}/signatures/${enc(role)}`, { ...opts });
 
@@ -1365,7 +1365,7 @@ export const postWorkspaceQuoteSignature = (workspaceId: string, quoteId: string
 
 /** DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}
  * Remove a quote signature
- * Only the signer or the workspace holder can remove it. */
+ * Only the signer or a workspace manager can remove it. */
 export const deleteWorkspaceQuoteSignature = (workspaceId: string, quoteId: string, role: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("DELETE", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/signatures/${enc(role)}`, { ...opts });
 
