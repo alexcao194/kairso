@@ -25,8 +25,9 @@ import { quotes } from "./messages/quotes";
 import { webhooks } from "./messages/webhooks";
 import { filesUi } from "./messages/filesUi";
 import { signatures } from "./messages/signatures";
+import { adminDoc } from "./messages/adminDoc";
 
-const modules = [core, home, ui, domain, authPages, dialogs, calendar1, calendar2, project1, project2, tasks, meetings, settings, pages, stats, files, analytics, analytics2, quotes, webhooks, filesUi, signatures] as const;
+const modules = [core, home, ui, domain, authPages, dialogs, calendar1, calendar2, project1, project2, tasks, meetings, settings, pages, stats, files, analytics, analytics2, quotes, webhooks, filesUi, signatures, adminDoc] as const;
 
 type Merge<M extends readonly { vi: object }[]> = M extends readonly [infer H extends { vi: object }, ...infer R extends readonly { vi: object }[]]
   ? H["vi"] & Merge<R>

@@ -10,11 +10,14 @@ import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr } from "@/lib/i18n";
 import { PrintPaged } from "@/components/kairso/PrintPaged";
+import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
+import { AdminMeetingPrint } from "./AdminMeetingPrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
 
 export function MeetingPrint({ id }: { id: string }) {
   const sp = useSearchParams();
   const auto = sp.get("auto") === "1";
+  const opts = usePrintOptions();
   const q = useMeeting(id);
   const { workspaces } = useWorkspace();
   const m = q.data;
@@ -37,6 +40,7 @@ export function MeetingPrint({ id }: { id: string }) {
 
   if (q.isLoading) return <Center>{tr().meetingPrint.loading}</Center>;
   if (!m) return <Center>{tr().meetingPrint.failed}</Center>;
+  if (opts.format === "admin") return <AdminMeetingPrint m={m} ws={ws} tasks={linked.map} />;
 
   const sections = SECTION_ORDER.map((s) => ({ s, rows: m.items.filter((i) => i.section === s), note: m.sectionNotes?.[s] ?? "" })).filter((x) => x.rows.length || x.note);
   const lead = meetingLead(m);
@@ -51,6 +55,7 @@ export function MeetingPrint({ id }: { id: string }) {
       `}</style>
 
       <div className="mx-auto mb-4 flex w-[210mm] max-w-full items-center justify-end gap-2 px-2 print:hidden">
+        <FormatSwitch />
         <span className="mr-auto text-[12.5px] text-(--doc-muted)">{tr().meetingPrint.hint}</span>
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {tr().meetingPrint.print}

@@ -9,6 +9,8 @@ import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
 import { PrintPaged } from "@/components/kairso/PrintPaged";
+import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
+import { AdminQuotePrint } from "./AdminQuotePrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
 import { dateLocale, tr, type Lang } from "@/lib/i18n";
 
@@ -27,6 +29,7 @@ function fmtDocDate(d: string | undefined, lang: Lang) {
 export function QuotePrint({ id }: { id: string }) {
   const sp = useSearchParams();
   const auto = sp.get("auto") === "1";
+  const opts = usePrintOptions();
   const { workspaceId, workspace } = useWorkspace();
   const q = useQuote(workspaceId, id);
   const quote = q.data;
@@ -96,6 +99,7 @@ export function QuotePrint({ id }: { id: string }) {
 
   if (q.isLoading || !workspaceId) return <Center>{tr().quotePrint.loading}</Center>;
   if (!quote) return <Center>{tr().quotePrint.failed}</Center>;
+  if (opts.format === "admin") return <AdminQuotePrint quote={quote} workspace={workspace} />;
 
   // The document follows the quote's language, not the viewer's UI language.
   const lang: Lang = quote.language === "en" ? "en" : "vi";
@@ -114,6 +118,7 @@ export function QuotePrint({ id }: { id: string }) {
       `}</style>
 
       <div className="mx-auto mb-4 flex w-[210mm] max-w-full items-center justify-end gap-2 px-2 print:hidden">
+        <FormatSwitch />
         <span className="mr-auto text-[12.5px] text-(--doc-muted)">{tr().quotePrint.hint}</span>
         <label className="flex items-center gap-1.5 text-[12.5px] text-(--doc-ink-2)">
           <input type="checkbox" checked={fit} onChange={(e) => setFit(e.target.checked)} />
