@@ -21,6 +21,7 @@ export function usePrintOptions() {
   const format: PrintFormat = sp.get("format") === "admin" ? "admin" : "modern";
   const sign: SignMode = sp.get("sign") === "wet" ? "wet" : "digital";
   const place = sp.get("place");
+  const signer = sp.get("signer");
   const set = useCallback(
     (k: string, v: string | null) => {
       const next = new URLSearchParams(sp.toString());
@@ -31,7 +32,7 @@ export function usePrintOptions() {
     },
     [sp, router, path],
   );
-  return { format, sign, place, set };
+  return { format, sign, place, signer, set };
 }
 
 export function FormatSwitch() {
@@ -68,15 +69,18 @@ export function AdminShell({
   defaultPlace,
   unsigned,
   printLabel,
+  signerDefault,
   children,
 }: {
   brandColor?: string | null;
   defaultPlace: string;
   unsigned: boolean;
   printLabel: string;
+  /** When set, the toolbar lets the user change the approver's title (defaults to this). */
+  signerDefault?: string;
   children: ReactNode;
 }) {
-  const { sign, place, set } = usePrintOptions();
+  const { sign, place, signer, set } = usePrintOptions();
   const t = tr().adminDoc;
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(brandColor) as CSSProperties | undefined}>
@@ -104,6 +108,19 @@ export function AdminShell({
             onBlur={(e) => set("place", e.target.value.trim() === defaultPlace ? null : e.target.value.trim())}
           />
         </label>
+        {signerDefault && (
+          <label className="flex items-center gap-1.5 text-[12.5px] text-(--doc-ink-2)">
+            {t.signerTitle}
+            <input
+              className="h-7 w-40 rounded-md border border-(--doc-line) bg-(--doc-paper) px-2 text-[12.5px] uppercase text-(--doc-ink)"
+              defaultValue={signer ?? signerDefault}
+              onBlur={(e) => {
+                const v = e.target.value.trim().toUpperCase();
+                set("signer", v === signerDefault || !v ? null : v);
+              }}
+            />
+          </label>
+        )}
         <span className="flex-1" />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {printLabel}
@@ -146,6 +163,8 @@ export interface AdminSlot {
   title: string;
   hint: string;
   sig?: Signature;
+  /** Always left empty to sign and seal by hand (no in-app signature for this role). */
+  blank?: boolean;
 }
 
 /** Signature columns: stamped in "digital" mode, left blank for a wet signature and seal otherwise. */
@@ -157,13 +176,13 @@ export function AdminSignatures({ left, slots }: { left?: ReactNode; slots: Admi
   };
   return (
     <div className="keep mt-[8mm] flex items-start justify-between gap-6">
-      <div className="min-w-0 flex-1 text-[11pt]">{left}</div>
+      {left !== undefined && <div className="min-w-0 flex-1 text-[11pt]">{left}</div>}
       {slots.map((s) => (
         <div key={s.title} className="w-[68mm] shrink-0 text-center">
           <p className="text-[13pt] font-bold">{s.title}</p>
           <p className="text-[12pt] italic">{s.hint}</p>
-          <div className="grid h-[30mm] place-items-center">{sign === "digital" && s.sig && <DocStamp name={s.sig.name} date={fmt(s.sig.signedAt)} />}</div>
-          <p className="text-[13pt] font-bold">{s.sig?.name ?? ""}</p>
+          <div className="grid h-[30mm] place-items-center">{sign === "digital" && !s.blank && s.sig && <DocStamp name={s.sig.name} date={fmt(s.sig.signedAt)} />}</div>
+          <p className="text-[13pt] font-bold">{s.blank ? "" : (s.sig?.name ?? "")}</p>
         </div>
       ))}
     </div>

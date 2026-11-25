@@ -14,7 +14,7 @@ function docDate(d?: string) {
 
 /** Quote laid out as a Vietnamese administrative document, for printing, signing and sealing. */
 export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; workspace?: WorkspaceResponse | null }) {
-  const { place } = usePrintOptions();
+  const { place, signer } = usePrintOptions();
   const a = A();
   const lang: Lang = quote.language === "en" ? "en" : "vi";
   const p = dict.vi.quotePrint;
@@ -28,7 +28,7 @@ export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; wo
   const fmt = (d?: string) => (d ? docDate(d).toLocaleDateString(dateLocale("vi"), { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
 
   return (
-    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn}>
+    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn} signerDefault={a.director}>
       <AdminHeader org={org} number={quote.number} date={docDate(quote.issueDate)} place={place ?? defaultPlace} />
 
       <div className="keep mt-[8mm] text-center">
@@ -94,7 +94,16 @@ export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; wo
         <p className="indent-[1cm]">{a.closing}</p>
       </div>
 
-      <AdminSignatures left={<Recipients />} slots={[{ title: a.quoteSigner, hint: a.hintSeal, sig }]} />
+      {/* A quote is issued under the director's signature and seal; the preparer signs alongside. */}
+      <AdminSignatures
+        slots={[
+          { title: a.quoteSigner, hint: a.hint, sig },
+          { title: signer || a.director, hint: a.hintSeal, blank: true },
+        ]}
+      />
+      <div className="keep mt-[4mm] text-[11pt]">
+        <Recipients />
+      </div>
     </AdminShell>
   );
 }
