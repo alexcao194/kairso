@@ -1347,7 +1347,7 @@ export const postWorkspaceQuoteDuplicate = (workspaceId: string, quoteId: string
 
 /** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version
  * Create the next version of a quote
- * Copies a sent/decided quote into a new editable draft with the next version number (BG-…-v2, -v3, …). */
+ * Copies a sent/decided quote into a new editable draft with the next version number; the quote number stays the same. */
 export const postWorkspaceQuoteNewVersion = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/new-version`, { ...opts });
 

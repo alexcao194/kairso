@@ -115,6 +115,7 @@ function QuoteList() {
                 <tr key={r.id} className="h-row border-b border-line-row hover:bg-row-hover">
                   <td className="px-4 font-mono text-[12px]">
                     <Link href={`/quotes/${r.id}`} className="font-medium text-ink hover:text-accent-ink">{r.number}</Link>
+                    {r.version > 1 && <span className="ml-1.5 rounded-full border border-line px-1.5 text-[11px] text-ink-muted">v{r.version}</span>}
                   </td>
                   <td className="max-w-64 truncate px-2">{r.title || "—"}</td>
                   <td className="max-w-56 truncate px-2 text-ink-2">{r.projectName} · {r.moduleName}</td>

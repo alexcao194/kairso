@@ -1212,6 +1212,7 @@ export interface QuoteSummaryResponse {
   status: string;
   title: string;
   validUntil?: string;
+  version: number;
 }
 
 export interface QuoteVersionResponse {

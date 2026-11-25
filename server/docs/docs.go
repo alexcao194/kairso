@@ -9831,7 +9831,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Copies a sent/decided quote into a new editable draft with the next version number (BG-…-v2, -v3, …).",
+                "description": "Copies a sent/decided quote into a new editable draft with the next version number; the quote number stays the same.",
                 "produces": [
                     "application/json"
                 ],
@@ -14845,6 +14845,9 @@ const docTemplate = `{
                 "validUntil": {
                     "type": "string",
                     "format": "date"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },

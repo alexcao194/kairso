@@ -210,6 +210,7 @@ type QuoteResponse struct {
 type QuoteSummaryResponse struct {
 	ID           string     `json:"id"`
 	Number       string     `json:"number"`
+	Version      int        `json:"version"`
 	Title        string     `json:"title"`
 	Status       string     `json:"status"`
 	Currency     string     `json:"currency"`
@@ -446,6 +447,7 @@ func quoteSummaryResponse(row database.ListQuotesRow) QuoteSummaryResponse {
 	return QuoteSummaryResponse{
 		ID:           pgutil.UUIDToString(row.ID),
 		Number:       row.Number,
+		Version:      int(row.Version),
 		Title:        row.Title,
 		Status:       effectiveStatus(row.Status, row.ValidUntil),
 		Currency:     row.Currency,

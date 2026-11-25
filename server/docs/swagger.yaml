@@ -2296,6 +2296,8 @@ definitions:
       validUntil:
         format: date
         type: string
+      version:
+        type: integer
     type: object
   QuoteVersionResponse:
     properties:
@@ -10388,7 +10390,7 @@ paths:
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version:
     post:
       description: Copies a sent/decided quote into a new editable draft with the
-        next version number (BG-…-v2, -v3, …).
+        next version number; the quote number stays the same.
       parameters:
       - description: Workspace ID
         in: path

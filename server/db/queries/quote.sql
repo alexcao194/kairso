@@ -75,7 +75,7 @@ LEFT JOIN customers c ON c.id = q.customer_id
 WHERE q.id = $1 AND q.workspace_id = $2;
 
 -- name: ListQuotes :many
-SELECT q.id, q.project_id, q.module_id, q.customer_id, q.number, q.title, q.status, q.currency, q.issue_date,
+SELECT q.id, q.project_id, q.module_id, q.customer_id, q.number, q.version, q.title, q.status, q.currency, q.issue_date,
        q.valid_until, q.grand_total, q.customer_snapshot, q.sent_at, q.created_at, q.updated_at,
        m.name AS module_name, p.name AS project_name,
        COALESCE(c.name, '') AS customer_name

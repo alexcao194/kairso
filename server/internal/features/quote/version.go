@@ -11,7 +11,8 @@ import (
 )
 
 // NewVersion copies a sent/decided quote into the next revision of the same chain
-// (BG-2026-0001 → BG-2026-0001-v2) as an editable draft. The source keeps its status and
+// as an editable draft. Every version keeps the root's number (BG-2026-0001); the version is
+// stored separately, never appended to the number. The source keeps its status and
 // snapshots untouched; both quotes get a history event pointing at each other.
 func (s *Service) NewVersion(ctx context.Context, workspaceID, callerID, quoteID string) (*QuoteResponse, error) {
 	ws, caller, err := s.access(ctx, workspaceID, callerID, true)
@@ -72,7 +73,7 @@ func (s *Service) NewVersion(ctx context.Context, workspaceID, callerID, quoteID
 				next = v.Version + 1
 			}
 		}
-		number := fmt.Sprintf("%s-v%d", versions[0].Number, next) // versions[0] is the root (v1)
+		number := versions[0].Number // versions[0] is the root (v1)
 		newID, err = tx.CreateQuote(ctx, database.CreateQuoteParams{
 			WorkspaceID: ws, ProjectID: src.ProjectID, ModuleID: src.ModuleID, CustomerID: src.CustomerID,
 			Number: number, Title: src.Title, Currency: src.Currency, Language: src.Language,
@@ -97,10 +98,10 @@ func (s *Service) NewVersion(ctx context.Context, workspaceID, callerID, quoteID
 		if err := tx.ReplaceItems(ctx, newID, items); err != nil {
 			return err
 		}
-		if err := tx.InsertEvent(ctx, newID, "created", caller, "version:"+src.Number); err != nil {
+		if err := tx.InsertEvent(ctx, newID, "created", caller, fmt.Sprintf("version:v%d", src.Version)); err != nil {
 			return err
 		}
-		return tx.InsertEvent(ctx, id, "new_version", caller, number)
+		return tx.InsertEvent(ctx, id, "new_version", caller, fmt.Sprintf("v%d", next))
 	})
 	if err != nil {
 		return nil, err
@@ -109,7 +110,7 @@ func (s *Service) NewVersion(ctx context.Context, workspaceID, callerID, quoteID
 }
 
 // @Summary Create the next version of a quote
-// @Description Copies a sent/decided quote into a new editable draft with the next version number (BG-…-v2, -v3, …).
+// @Description Copies a sent/decided quote into a new editable draft with the next version number; the quote number stays the same.
 // @Tags Quotes
 // @Security BearerAuth
 // @Produce json
