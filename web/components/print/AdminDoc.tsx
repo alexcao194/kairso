@@ -22,6 +22,7 @@ export function usePrintOptions() {
   const sign: SignMode = sp.get("sign") === "wet" ? "wet" : "digital";
   const place = sp.get("place");
   const signer = sp.get("signer");
+  const merge = sp.get("merge");
   const set = useCallback(
     (k: string, v: string | null) => {
       const next = new URLSearchParams(sp.toString());
@@ -32,7 +33,7 @@ export function usePrintOptions() {
     },
     [sp, router, path],
   );
-  return { format, sign, place, signer, set };
+  return { format, sign, place, signer, merge, set };
 }
 
 export function FormatSwitch() {
@@ -70,6 +71,7 @@ export function AdminShell({
   unsigned,
   printLabel,
   signerDefault,
+  extra,
   children,
 }: {
   brandColor?: string | null;
@@ -78,6 +80,8 @@ export function AdminShell({
   printLabel: string;
   /** When set, the toolbar lets the user change the approver's title (defaults to this). */
   signerDefault?: string;
+  /** Extra toolbar controls specific to the document. */
+  extra?: ReactNode;
   children: ReactNode;
 }) {
   const { sign, place, signer, set } = usePrintOptions();
@@ -121,6 +125,7 @@ export function AdminShell({
             />
           </label>
         )}
+        {extra}
         <span className="flex-1" />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {printLabel}

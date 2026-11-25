@@ -1,6 +1,7 @@
 "use client";
 
 import type { QuoteResponse, WorkspaceResponse } from "@/lib/api/schema";
+import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { dateLocale, tr, type Lang } from "@/lib/i18n";
@@ -14,7 +15,8 @@ function docDate(d?: string) {
 
 /** Quote laid out as a Vietnamese administrative document, for printing, signing and sealing. */
 export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; workspace?: WorkspaceResponse | null }) {
-  const { place, signer } = usePrintOptions();
+  const { place, signer, merge, set } = usePrintOptions();
+  const { members } = useWorkspace();
   const a = A();
   const lang: Lang = quote.language === "en" ? "en" : "vi";
   const p = dict.vi.quotePrint;
@@ -25,10 +27,23 @@ export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; wo
   const hasLineDiscount = quote.items.some((it) => it.discountPercent > 0);
   const cols = hasLineDiscount ? 7 : 6;
   const sig = quote.signatures.find((x) => x.role === "preparer");
+  // When the director prepares and signs the quote themselves, print one director block with
+  // their stamp instead of two. Defaults to on when the preparer is the workspace holder.
+  const holderId = members.find((x) => x.role === "holder")?.userId;
+  const single = merge === null ? !!sig && sig.userId === holderId : merge === "1";
+  const title = signer || a.director;
   const fmt = (d?: string) => (d ? docDate(d).toLocaleDateString(dateLocale("vi"), { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
 
   return (
-    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn} signerDefault={a.director}>
+    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn}
+      signerDefault={a.director}
+      extra={
+        <label className="flex items-center gap-1.5 text-[12.5px] text-(--doc-ink-2)">
+          <input type="checkbox" checked={single} onChange={(e) => set("merge", e.target.checked ? "1" : "0")} />
+          {tr().adminDoc.sameSigner}
+        </label>
+      }
+    >
       <AdminHeader org={org} number={quote.number} date={docDate(quote.issueDate)} place={place ?? defaultPlace} />
 
       <div className="keep mt-[8mm] text-center">
@@ -95,15 +110,21 @@ export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; wo
       </div>
 
       {/* A quote is issued under the director's signature and seal; the preparer signs alongside. */}
-      <AdminSignatures
-        slots={[
-          { title: a.quoteSigner, hint: a.hint, sig },
-          { title: signer || a.director, hint: a.hintSeal, blank: true },
-        ]}
-      />
-      <div className="keep mt-[4mm] text-[11pt]">
-        <Recipients />
-      </div>
+      {single ? (
+        <AdminSignatures left={<Recipients />} slots={[{ title, hint: a.hintSeal, sig }]} />
+      ) : (
+        <>
+          <AdminSignatures
+            slots={[
+              { title: a.quoteSigner, hint: a.hint, sig },
+              { title, hint: a.hintSeal, blank: true },
+            ]}
+          />
+          <div className="keep mt-[4mm] text-[11pt]">
+            <Recipients />
+          </div>
+        </>
+      )}
     </AdminShell>
   );
 }
