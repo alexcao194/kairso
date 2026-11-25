@@ -20,6 +20,7 @@ export const adminDoc = defineMessages({
       dateLine: (place: string, d: string, m: string, y: string) => `${place || "……………"}, ngày ${d} tháng ${m} năm ${y}`,
       about: "V/v",
       to: "Kính gửi",
+      issuer: "Đơn vị báo giá",
       quoteTitle: "BẢNG BÁO GIÁ",
       quoteIntro: (issuer: string, module: string, project: string) =>
         `${issuer} trân trọng gửi tới Quý khách bảng báo giá cho hạng mục “${module}” thuộc dự án “${project}” như sau:`,
@@ -70,6 +71,7 @@ export const adminDoc = defineMessages({
       dateLine: (place: string, d: string, m: string, y: string) => `${place || "……………"}, ${d}/${m}/${y}`,
       about: "Re",
       to: "To",
+      issuer: "Quoted by",
       quoteTitle: "QUOTATION",
       quoteIntro: (issuer: string, module: string, project: string) =>
         `${issuer} is pleased to send you the quotation for “${module}” of the “${project}” project as follows:`,

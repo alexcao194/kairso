@@ -59,6 +59,16 @@ export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; wo
         {(quote.customer.taxCode || quote.customer.phone || quote.customer.email) && (
           <p>{[quote.customer.taxCode && `${p.taxCode}: ${quote.customer.taxCode}`, quote.customer.phone && `${p.tel}: ${quote.customer.phone}`, quote.customer.email].filter(Boolean).join(" · ")}</p>
         )}
+        <p className="mt-2">
+          {a.issuer}: <b>{org}</b>
+        </p>
+        {issuer.address && <p>{issuer.address}</p>}
+        {(issuer.taxCode || issuer.phone || issuer.email) && (
+          <p>{[issuer.taxCode && `${p.taxCode}: ${issuer.taxCode}`, issuer.phone && `${p.tel}: ${issuer.phone}`, issuer.email].filter(Boolean).join(" · ")}</p>
+        )}
+        {(issuer.contactName || issuer.website) && (
+          <p>{[issuer.contactName && `${p.contact}: ${issuer.contactName}`, issuer.website].filter(Boolean).join(" · ")}</p>
+        )}
         <p className="mt-3 indent-[1cm]">{a.quoteIntro(org, quote.moduleName, quote.projectName)}</p>
       </div>
 
