@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { MeetingItem, TaskResponse } from "@/lib/api/schema";
 import { SECTION_META, SECTION_ORDER, itemAssignment, meetingLead, sectionTitle, toDateInput } from "@/lib/domain/meeting";
@@ -9,14 +9,13 @@ import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr } from "@/lib/i18n";
-import { PrintPaged } from "@/components/kairso/PrintPaged";
+import { pageRule } from "@/components/kairso/PrintPaged";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminMeetingPrint } from "./AdminMeetingPrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
 
 export function MeetingPrint({ id }: { id: string }) {
   const sp = useSearchParams();
-  const auto = sp.get("auto") === "1";
   const opts = usePrintOptions();
   const q = useMeeting(id);
   const { workspaces } = useWorkspace();
@@ -24,19 +23,10 @@ export function MeetingPrint({ id }: { id: string }) {
   const taskIds = useMemo(() => [...new Set((m?.items ?? []).flatMap((i) => (i.tasks ?? []).map((t) => t.id)))], [m]);
   const linked = useLinkedTasks(taskIds);
   const ws = workspaces.find((w) => w.id === m?.workspaceId);
-  const ready = !!m && !linked.isLoading;
 
   useEffect(() => {
     if (m) document.title = `Bien-ban-hop-${toDateInput(m.meetingDate).split("-").reverse().join("-")}`;
-  }, [m]);
-
-  const printed = useRef(false);
-  useEffect(() => {
-    if (!auto || !ready || printed.current) return;
-    printed.current = true;
-    const t = setTimeout(() => document.fonts.ready.then(() => window.print()), 300);
-    return () => clearTimeout(t);
-  }, [auto, ready]);
+  }, [m, sp]);
 
   if (q.isLoading) return <Center>{tr().meetingPrint.loading}</Center>;
   if (!m) return <Center>{tr().meetingPrint.failed}</Center>;
@@ -48,7 +38,7 @@ export function MeetingPrint({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(ws?.brandColor) as CSSProperties | undefined}>
       <style>{`
-        @page { size: A4; margin: 0; }
+        ${pageRule("10mm 0")}
         @media print { html, body { background: var(--doc-paper) !important; } }
         .doc, .doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .doc tr, .doc .keep { break-inside: avoid; }
@@ -62,7 +52,6 @@ export function MeetingPrint({ id }: { id: string }) {
         </button>
       </div>
 
-      <PrintPaged>
       <article className="doc mx-auto w-[210mm] max-w-full bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
         <header className="flex items-start gap-4 px-[14mm] pb-[4mm] pt-[11mm] print:pt-[2mm]">
           <div className="min-w-0 flex-1">
@@ -121,7 +110,6 @@ export function MeetingPrint({ id }: { id: string }) {
           />
         </div>
       </article>
-      </PrintPaged>
     </div>
   );
 }

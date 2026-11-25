@@ -224,7 +224,7 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
         <Button size="sm" variant="ghost" onClick={copyMarkdown}><IconCopy size={13} /> Markdown</Button>
         {meeting && (
           <a
-            href={savedBlock ? undefined : `/print/meetings/${meeting.id}?auto=1`}
+            href={savedBlock ? undefined : `/print/meetings/${meeting.id}`}
             target="_blank"
             rel="noreferrer"
             aria-disabled={!!savedBlock}

@@ -8,7 +8,7 @@ import { dict } from "@/lib/i18n/dict";
 import { tr } from "@/lib/i18n";
 import { SegmentedControl } from "@/components/ui/form";
 import { DocStamp } from "@/components/kairso/DocSignatures";
-import { PrintPaged } from "@/components/kairso/PrintPaged";
+import { pageRule } from "@/components/kairso/PrintPaged";
 
 export type PrintFormat = "modern" | "admin";
 export type SignMode = "digital" | "wet";
@@ -89,7 +89,7 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(brandColor) as CSSProperties | undefined}>
       <style>{`
-        @page { size: A4; margin: 0; }
+        ${pageRule("20mm 15mm 20mm 30mm")}
         @media print { html, body { background: var(--doc-paper) !important; } }
         .adoc, .adoc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .adoc tr, .adoc .keep { break-inside: avoid; }
@@ -132,14 +132,12 @@ export function AdminShell({
         </button>
         {sign === "digital" && unsigned && <p className="w-full text-[12px] text-(--doc-muted)">{t.notSigned}</p>}
       </div>
-      <PrintPaged margin="20mm">
         <article
-          className="adoc mx-auto w-[210mm] max-w-full bg-(--doc-paper) pb-[20mm] pl-[30mm] pr-[15mm] pt-[20mm] text-[13pt] leading-[1.35] text-(--doc-ink) shadow-overlay print:py-0 print:shadow-none"
+          className="adoc mx-auto w-[210mm] max-w-full bg-(--doc-paper) pb-[20mm] pl-[30mm] pr-[15mm] pt-[20mm] text-[13pt] leading-[1.35] text-(--doc-ink) shadow-overlay print:p-0 print:shadow-none"
           style={{ fontFamily: '"Times New Roman", Times, serif' }}
         >
           {children}
         </article>
-      </PrintPaged>
     </div>
   );
 }

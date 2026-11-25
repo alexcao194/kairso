@@ -198,7 +198,7 @@ export function QuoteEditor({ id }: { id: string }) {
         {quote.versions.length > 1 && <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-ink-muted">v{quote.version}</span>}
         {editable && dirty && <span className="text-[12px] text-warning">{t.quoteEditor.unsaved}</span>}
         <TopBarSpacer />
-        <Button size="sm" variant="ghost" onClick={() => window.open(`/print/quotes/${id}?auto=1`, "_blank")}>
+        <Button size="sm" variant="ghost" onClick={() => window.open(`/print/quotes/${id}`, "_blank")}>
           <IconDownload size={13} /> {t.quoteEditor.print}
         </Button>
         {editable && (

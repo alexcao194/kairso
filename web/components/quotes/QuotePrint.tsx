@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { PartyInfo } from "@/lib/api/schema";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
@@ -8,7 +8,7 @@ import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
-import { PrintPaged } from "@/components/kairso/PrintPaged";
+import { pageRule } from "@/components/kairso/PrintPaged";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminQuotePrint } from "./AdminQuotePrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
@@ -28,15 +28,15 @@ function fmtDocDate(d: string | undefined, lang: Lang) {
 
 export function QuotePrint({ id }: { id: string }) {
   const sp = useSearchParams();
-  const auto = sp.get("auto") === "1";
   const opts = usePrintOptions();
   const { workspaceId, workspace } = useWorkspace();
   const q = useQuote(workspaceId, id);
   const quote = q.data;
 
+  // The title names the saved PDF; a soft navigation (changing an option) resets it, so re-apply.
   useEffect(() => {
     if (quote) document.title = quote.number;
-  }, [quote]);
+  }, [quote, sp]);
 
   // Fit the whole document on one A4 page by scaling it, so Chrome and Safari
   // paginate identically instead of each breaking the table in a different place.
@@ -44,8 +44,6 @@ export function QuotePrint({ id }: { id: string }) {
   const [scale, setScale] = useState(1);
   const [boxH, setBoxH] = useState<number | undefined>(undefined);
   const inner = useRef<HTMLDivElement>(null);
-  // One-page mode scales the whole sheet, so it needs no repeating margin rows.
-  const Paged = fit ? Fragment : PrintPaged;
   const measure = useCallback(() => {
     const el = inner.current;
     if (!el) return;
@@ -89,14 +87,6 @@ export function QuotePrint({ id }: { id: string }) {
     return () => window.removeEventListener("beforeprint", measure);
   }, [quote, measure]);
 
-  const printed = useRef(false);
-  useEffect(() => {
-    if (!auto || !quote || printed.current) return;
-    printed.current = true;
-    const timer = setTimeout(() => document.fonts.ready.then(() => window.print()), 300);
-    return () => clearTimeout(timer);
-  }, [auto, quote]);
-
   if (q.isLoading || !workspaceId) return <Center>{tr().quotePrint.loading}</Center>;
   if (!quote) return <Center>{tr().quotePrint.failed}</Center>;
   if (opts.format === "admin") return <AdminQuotePrint quote={quote} workspace={workspace} />;
@@ -111,7 +101,7 @@ export function QuotePrint({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-(--doc-backdrop) py-8 print:bg-(--doc-paper) print:py-0" style={docTokens(workspace?.brandColor) as CSSProperties | undefined}>
       <style>{`
-        @page { size: A4; margin: 0; }
+        ${pageRule(fit ? "0" : "10mm 0")}
         @media print { html, body { background: var(--doc-paper) !important; } }
         .doc, .doc * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .doc tr, .doc .keep { break-inside: avoid; }
@@ -129,9 +119,8 @@ export function QuotePrint({ id }: { id: string }) {
         </button>
       </div>
 
-      <div className="mx-auto w-[210mm] max-w-full overflow-hidden" style={fit ? { height: boxH } : undefined}>
+      <div className={`mx-auto w-[210mm] max-w-full ${fit ? "overflow-hidden" : ""}`} style={fit ? { height: boxH } : undefined}>
       <div ref={inner} style={fit ? { width: `${210 / scale}mm`, transform: `scale(${scale})`, transformOrigin: "top left" } : undefined}>
-      <Paged>
       <article className="doc relative mx-auto w-full overflow-hidden bg-(--doc-paper) font-sans text-(--doc-ink) shadow-overlay print:shadow-none">
         {quote.status === "draft" && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -238,7 +227,6 @@ export function QuotePrint({ id }: { id: string }) {
           />
         </div>
       </article>
-      </Paged>
       </div>
       </div>
     </div>
