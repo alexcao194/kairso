@@ -1,5 +1,6 @@
 export const qk = {
   me: () => ["me"] as const,
+  apiKeys: () => ["me", "api-keys"] as const,
   workspaces: () => ["workspaces"] as const,
   invitations: () => ["invitations"] as const,
   members: (ws: string) => ["members", ws] as const,

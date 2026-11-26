@@ -230,6 +230,18 @@ func (ns NullWorkspaceRole) Value() (driver.Value, error) {
 	return string(ns.WorkspaceRole), nil
 }
 
+type ApiKey struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	Name       string             `json:"name"`
+	Prefix     string             `json:"prefix"`
+	KeyHash    string             `json:"key_hash"`
+	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type AttendanceCorrectionRequest struct {
 	ID                     pgtype.UUID        `json:"id"`
 	CreatedAt              pgtype.Timestamptz `json:"created_at"`

@@ -41,16 +41,28 @@ func VerifySignature(token, secret, method, path, timestamp string) (bool, error
 
 type AppTokenMiddleware struct {
 	secret string
+	keys   APIKeyResolver
 }
 
 func NewAppTokenMiddleware(secret string) *AppTokenMiddleware {
 	return &AppTokenMiddleware{secret: secret}
 }
 
+// SetAPIKeyResolver lets requests carrying a valid personal API key skip the app signature:
+// the key itself is the credential (scripts, AI assistants).
+func (m *AppTokenMiddleware) SetAPIKeyResolver(r APIKeyResolver) { m.keys = r }
+
 func (m *AppTokenMiddleware) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/auth/firebase/login" {
 			next.ServeHTTP(w, r)
+			return
+		}
+		if key := BearerAPIKey(r); key != "" {
+			r, ok := authenticateAPIKey(w, r, m.keys, key)
+			if ok {
+				next.ServeHTTP(w, r)
+			}
 			return
 		}
 

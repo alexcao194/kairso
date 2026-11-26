@@ -9,6 +9,15 @@ export interface Paged<T> {
   hasMore: boolean;
 }
 
+export interface APIKeyResponse {
+  createdAt: string;
+  expiresAt?: string;
+  id: string;
+  lastUsedAt?: string;
+  name: string;
+  prefix: string;
+}
+
 export interface AddProjectMemberRequest {
   role: ProjectRole;
   userId: string;
@@ -239,6 +248,12 @@ export interface CalendarSessionInfo {
   checkOut?: CalendarEventCheckInfo;
 }
 
+export interface CreateAPIKeyRequest {
+  /** ExpiresInDays limits the key's lifetime; omit or 0 for a key that never expires. */
+  expiresInDays?: number;
+  name: string;
+}
+
 export interface CreateFeedbackRequest {
   beneficiaries: BeneficiaryRequest[];
   content: string;
@@ -419,6 +434,16 @@ export interface CreateWorkspaceNoteRequest {
 
 export interface CreateWorkspaceRequest {
   name: string;
+}
+
+export interface CreatedAPIKeyResponse {
+  createdAt?: string;
+  expiresAt?: string;
+  id?: string;
+  key: string;
+  lastUsedAt?: string;
+  name?: string;
+  prefix?: string;
 }
 
 export interface Currency {

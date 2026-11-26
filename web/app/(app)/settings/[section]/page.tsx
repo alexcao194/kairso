@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Invites, Members, Roles } from "@/components/settings/People";
 import { AttendanceSection, AuditSection, IntegrationsSection, KpiSection, LabelsSection, NotificationsSection, ResourcesSection, ShiftsSection, WhatsNewSection, WorkspaceSection } from "@/components/settings/Ops";
 import { WebhooksSection } from "@/components/settings/Webhooks";
+import { ApiKeysSection } from "@/components/settings/ApiKeys";
 import { tr } from "@/lib/i18n";
 
 const SECTIONS: Record<string, { title: string; el: () => React.ReactNode }> = {
@@ -20,6 +21,7 @@ const SECTIONS: Record<string, { title: string; el: () => React.ReactNode }> = {
   notifications: { get title() { return tr().sectionTitle.notifications; }, el: () => <NotificationsSection /> },
   integrations: { get title() { return tr().sectionTitle.integrations; }, el: () => <IntegrationsSection /> },
   webhooks: { get title() { return tr().sectionTitle.webhooks; }, el: () => <WebhooksSection /> },
+  ai: { get title() { return tr().sectionTitle.ai; }, el: () => <ApiKeysSection /> },
   audit: { get title() { return tr().sectionTitle.audit; }, el: () => <AuditSection /> },
   "whats-new": { get title() { return tr().sectionTitle.whatsNew; }, el: () => <WhatsNewSection /> },
 };

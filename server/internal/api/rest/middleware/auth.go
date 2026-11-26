@@ -20,13 +20,30 @@ const ConnIDHeader = "X-Conn-Id"
 
 type AuthMiddleware struct {
 	jwtSvc jwt.TokenService
+	keys   APIKeyResolver
 }
 
 func NewAuthMiddleware(jwtSvc jwt.TokenService) *AuthMiddleware {
 	return &AuthMiddleware{jwtSvc: jwtSvc}
 }
+
+// SetAPIKeyResolver accepts "Authorization: Bearer ksk_..." personal API keys besides JWTs.
+func (m *AuthMiddleware) SetAPIKeyResolver(r APIKeyResolver) { m.keys = r }
+
 func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Already authenticated by an API key upstream (app token middleware, MCP tool calls).
+		if IsAPIKeyRequest(r.Context()) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if key := BearerAPIKey(r); key != "" {
+			r, ok := authenticateAPIKey(w, r, m.keys, key)
+			if ok {
+				next.ServeHTTP(w, r)
+			}
+			return
+		}
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			httpx.Error(w, http.StatusUnauthorized, "Thiếu header Authorization")

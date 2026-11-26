@@ -3151,6 +3151,128 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/users/me/api-keys": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Personal API keys of the caller (without their secrets)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "API keys"
+                ],
+                "summary": "List my API keys",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/APIKeyResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a personal API key. The plain key is returned only in this response.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "API keys"
+                ],
+                "summary": "Create an API key",
+                "parameters": [
+                    {
+                        "description": "Key name and lifetime",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateAPIKeyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/CreatedAPIKeyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/me/api-keys/{keyId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "API keys"
+                ],
+                "summary": "Revoke an API key",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "API key ID",
+                        "name": "keyId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/whats-new": {
             "get": {
                 "security": [
@@ -11509,6 +11631,32 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "APIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "lastUsedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "prefix": {
+                    "type": "string"
+                }
+            }
+        },
         "AddProjectMemberRequest": {
             "type": "object",
             "properties": {
@@ -12146,6 +12294,18 @@ const docTemplate = `{
                 }
             }
         },
+        "CreateAPIKeyRequest": {
+            "type": "object",
+            "properties": {
+                "expiresInDays": {
+                    "description": "ExpiresInDays limits the key's lifetime; omit or 0 for a key that never expires.",
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "CreateFeedbackRequest": {
             "type": "object",
             "properties": {
@@ -12609,6 +12769,35 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "CreatedAPIKeyResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "lastUsedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "prefix": {
                     "type": "string"
                 }
             }

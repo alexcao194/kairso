@@ -1,5 +1,23 @@
 basePath: /api
 definitions:
+  APIKeyResponse:
+    properties:
+      createdAt:
+        format: date-time
+        type: string
+      expiresAt:
+        format: date-time
+        type: string
+      id:
+        type: string
+      lastUsedAt:
+        format: date-time
+        type: string
+      name:
+        type: string
+      prefix:
+        type: string
+    type: object
   AddProjectMemberRequest:
     properties:
       role:
@@ -426,6 +444,15 @@ definitions:
       checkOut:
         $ref: '#/definitions/CalendarEventCheckInfo'
     type: object
+  CreateAPIKeyRequest:
+    properties:
+      expiresInDays:
+        description: ExpiresInDays limits the key's lifetime; omit or 0 for a key
+          that never expires.
+        type: integer
+      name:
+        type: string
+    type: object
   CreateFeedbackRequest:
     properties:
       beneficiaries:
@@ -729,6 +756,26 @@ definitions:
   CreateWorkspaceRequest:
     properties:
       name:
+        type: string
+    type: object
+  CreatedAPIKeyResponse:
+    properties:
+      createdAt:
+        format: date-time
+        type: string
+      expiresAt:
+        format: date-time
+        type: string
+      id:
+        type: string
+      key:
+        type: string
+      lastUsedAt:
+        format: date-time
+        type: string
+      name:
+        type: string
+      prefix:
         type: string
     type: object
   Currency:
@@ -6121,6 +6168,83 @@ paths:
       summary: Update Current User
       tags:
       - Users
+  /v1/users/me/api-keys:
+    get:
+      description: Personal API keys of the caller (without their secrets)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/APIKeyResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List my API keys
+      tags:
+      - API keys
+    post:
+      consumes:
+      - application/json
+      description: Create a personal API key. The plain key is returned only in this
+        response.
+      parameters:
+      - description: Key name and lifetime
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/CreateAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/CreatedAPIKeyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create an API key
+      tags:
+      - API keys
+  /v1/users/me/api-keys/{keyId}:
+    delete:
+      parameters:
+      - description: API key ID
+        in: path
+        name: keyId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke an API key
+      tags:
+      - API keys
   /v1/whats-new:
     get:
       description: List paginated app release notes ("what's new"), newest first

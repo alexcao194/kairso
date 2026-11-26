@@ -12,11 +12,13 @@ import (
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/config"
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/internal/features/apikey"
 	"github.com/alexcao194/kairso/internal/features/attendance"
 	"github.com/alexcao194/kairso/internal/features/auth"
 	"github.com/alexcao194/kairso/internal/features/device"
 	"github.com/alexcao194/kairso/internal/features/event"
 	"github.com/alexcao194/kairso/internal/features/files"
+	"github.com/alexcao194/kairso/internal/features/mcp"
 	"github.com/alexcao194/kairso/internal/features/meeting"
 	"github.com/alexcao194/kairso/internal/features/module"
 	"github.com/alexcao194/kairso/internal/features/notification"
@@ -66,6 +68,8 @@ type Server struct {
 	realtimeHandler  *RealtimeHandler
 	projectFeedback  *projectfeedback.Handler
 	publicFeedback   *projectfeedback.PublicHandler
+	apiKeySvc        apikey.Service
+	apiKey           *apikey.Handler
 	authMid          *middleware.AuthMiddleware
 	appTokenMid      *middleware.AppTokenMiddleware
 	errorLogMid      *middleware.ErrorLogMiddleware
@@ -173,6 +177,12 @@ func NewServer(cfg config.Config, db *pgxpool.Pool) *Server {
 	quoteSvc := quote.NewService(quote.NewRepository(db))
 	quoteSvc.SetRealtime(events)
 
+	apiKeySvc := apikey.NewService(apikey.NewRepository(db))
+	authMid := middleware.NewAuthMiddleware(jwtSvc)
+	authMid.SetAPIKeyResolver(apiKeySvc)
+	appTokenMid := middleware.NewAppTokenMiddleware(cfg.App.AppTokenSecret)
+	appTokenMid.SetAPIKeyResolver(apiKeySvc)
+
 	s := &Server{
 		cfg:              cfg,
 		db:               db,
@@ -197,8 +207,10 @@ func NewServer(cfg config.Config, db *pgxpool.Pool) *Server {
 		realtimeHandler:  NewRealtimeHandler(realtimeHub, jwtSvc, database.New(db)),
 		projectFeedback:  projectfeedback.NewHandler(projectFeedbackSvc),
 		publicFeedback:   projectfeedback.NewPublicHandler(projectFeedbackSvc, minIOClient),
-		authMid:          middleware.NewAuthMiddleware(jwtSvc),
-		appTokenMid:      middleware.NewAppTokenMiddleware(cfg.App.AppTokenSecret),
+		apiKeySvc:        apiKeySvc,
+		apiKey:           apikey.NewHandler(apiKeySvc),
+		authMid:          authMid,
+		appTokenMid:      appTokenMid,
 		errorLogMid:      middleware.NewErrorLogMiddleware(),
 		corsMid:          middleware.NewCORSMiddleware(),
 		backgroundCancel: backgroundCancel,
@@ -245,8 +257,11 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	s.whatsNewHandler.RegisterRoutes(apiMux, s.authMid)
 	s.meeting.RegisterRoutes(apiMux, s.authMid)
 	s.uploadHandler.RegisterRoutes(apiMux, s.authMid)
+	s.apiKey.RegisterRoutes(apiMux, s.authMid)
 
 	mux.Handle("/api/", s.appTokenMid.Handle(http.StripPrefix("/api", apiMux)))
+	// MCP for AI assistants: API key auth, tools run through apiMux as the key's owner.
+	mcp.NewHandler(apiMux, s.apiKeySvc).RegisterRoutes(mux)
 }
 
 func (s *Server) Run() error {

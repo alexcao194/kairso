@@ -405,6 +405,23 @@ export const getUsersMe = (opts?: RequestOptions): Promise<S.UserResponse> =>
 export const patchUsersMe = (body: S.UpdateMeRequest, opts?: RequestOptions): Promise<S.UserResponse> =>
   request<S.UserResponse>("PATCH", `/v1/users/me`, { body, ...opts });
 
+/** GET /v1/users/me/api-keys
+ * List my API keys
+ * Personal API keys of the caller (without their secrets) */
+export const getUsersMeApiKeys = (opts?: RequestOptions): Promise<S.APIKeyResponse[]> =>
+  request<S.APIKeyResponse[]>("GET", `/v1/users/me/api-keys`, { ...opts });
+
+/** POST /v1/users/me/api-keys
+ * Create an API key
+ * Create a personal API key. The plain key is returned only in this response. */
+export const postUsersMeApiKeys = (body: S.CreateAPIKeyRequest, opts?: RequestOptions): Promise<S.CreatedAPIKeyResponse> =>
+  request<S.CreatedAPIKeyResponse>("POST", `/v1/users/me/api-keys`, { body, ...opts });
+
+/** DELETE /v1/users/me/api-keys/{keyId}
+ * Revoke an API key */
+export const deleteUsersMeApiKey = (keyId: string, opts?: RequestOptions): Promise<void> =>
+  request<void>("DELETE", `/v1/users/me/api-keys/${enc(keyId)}`, { ...opts });
+
 export interface GetWhatsNewQuery {
   limit?: number;
   page?: number;
