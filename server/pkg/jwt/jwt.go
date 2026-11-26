@@ -44,6 +44,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// AuthorizesRequests reports whether the token may authenticate API and WebSocket requests:
+// access tokens and render tokens. Refresh tokens are only good for /auth/refresh.
+func (c *Claims) AuthorizesRequests() bool {
+	return c.TokenType == TokenTypeAccess || c.TokenType == TokenTypeRender
+}
+
 func (s *jwtService) GenerateToken(cfg *config.AppConfig, userID string) (string, string, error) {
 	if userID == "" {
 		return "", "", errors.New("userId không được để trống")

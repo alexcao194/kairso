@@ -41,6 +41,10 @@ func (h *RealtimeHandler) Serve(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, err.Error())
 		return
 	}
+	if !claims.AuthorizesRequests() {
+		httpx.Error(w, http.StatusUnauthorized, jwt.ErrInvalidToken.Error())
+		return
+	}
 	userID, err := pgutil.ParseUUID(claims.UserID)
 	if err != nil {
 		httpx.Error(w, http.StatusUnauthorized, "Người dùng không hợp lệ")
