@@ -17,7 +17,7 @@ import { Alert, ErrorState, SkeletonRows } from "@/components/ui/feedback";
 import { Field, Input, SegmentedControl, Select, Textarea } from "@/components/ui/form";
 import { Menu } from "@/components/ui/Popover";
 import { useConfirm } from "@/components/ui/Confirm";
-import { IconChevronDown, IconChevronUp, IconCopy, IconDownload, IconMore, IconPlus, IconSave, IconSend, IconTrash, IconClose, IconCheck } from "@/components/icons";
+import { IconChevronDown, IconChevronUp, IconCopy, IconDownload, IconExternal, IconMore, IconPlus, IconSave, IconSend, IconTrash, IconClose, IconCheck } from "@/components/icons";
 import { CurrencySelect, QuoteStatusBadge } from "./shared";
 import { SignaturesPanel, type SignRole } from "@/components/kairso/DocSignatures";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -102,7 +102,7 @@ export function QuoteEditor({ id }: { id: string }) {
   const t = useT();
   const { lang } = useLocale();
   const toast = useToast();
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"pdf" | "xlsx" | null>(null);
   const confirm = useConfirm();
   const router = useRouter();
   const { workspaceId, isManager } = useWorkspace();
@@ -177,14 +177,15 @@ export function QuoteEditor({ id }: { id: string }) {
     }
   };
 
-  const exportExcel = async () => {
-    setExporting(true);
+  const exportFile = async (kind: "pdf" | "xlsx") => {
+    setExporting(kind);
     try {
-      await downloadFile(`/v1/workspaces/${workspaceId}/quotes/${id}/export`, `${safeFilename(quote.number)}.xlsx`);
+      const path = kind === "pdf" ? "pdf" : "export";
+      await downloadFile(`/v1/workspaces/${workspaceId}/quotes/${id}/${path}`, `${safeFilename(quote.number)}.${kind}`);
     } catch (e) {
       toast.error(e);
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -212,9 +213,12 @@ export function QuoteEditor({ id }: { id: string }) {
         {editable && dirty && <span className="text-[12px] text-warning">{t.quoteEditor.unsaved}</span>}
         <TopBarSpacer />
         <Button size="sm" variant="ghost" onClick={() => window.open(`/print/quotes/${id}`, "_blank")}>
-          <IconDownload size={13} /> {t.quoteEditor.print}
+          <IconExternal size={13} /> {t.quoteEditor.print}
         </Button>
-        <Button size="sm" variant="ghost" loading={exporting} onClick={exportExcel}>
+        <Button size="sm" variant="ghost" loading={exporting === "pdf"} disabled={!!exporting} onClick={() => exportFile("pdf")}>
+          <IconDownload size={13} /> {t.quoteEditor.pdf}
+        </Button>
+        <Button size="sm" variant="ghost" loading={exporting === "xlsx"} disabled={!!exporting} onClick={() => exportFile("xlsx")}>
           <IconDownload size={13} /> {t.quoteEditor.excel}
         </Button>
         {editable && (

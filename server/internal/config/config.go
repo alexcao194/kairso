@@ -15,6 +15,7 @@ type Config struct {
 	App     AppConfig
 	Redis   RedisConfig
 	Storage StorageConfig
+	PDF     PDFConfig
 }
 type DBConfig struct {
 	Host     string
@@ -37,6 +38,17 @@ type StorageConfig struct {
 	UseSSL          bool
 	PublicURL       string
 }
+
+// PDFConfig drives server-side PDF export: a headless Chromium prints the web app's print pages.
+type PDFConfig struct {
+	// WebURL is the web app's base URL as reachable from the server; empty disables PDF export.
+	WebURL string
+	// ChromeURL is the DevTools endpoint of a remote Chromium; empty starts a local one.
+	ChromeURL string
+	// ChromePath overrides the local Chromium binary.
+	ChromePath string
+}
+
 type AppConfig struct {
 	JWTSecret               string
 	AccessTokenDuration     time.Duration
@@ -76,6 +88,11 @@ func Load() Config {
 			FirebaseCredentialsPath:  mustEnv("FIREBASE_CREDENTIALS_PATH"),
 			AppTokenSecret:           mustEnv("APP_TOKEN_SECRET"),
 			WebhookAllowPrivateHosts: parseBool(envDefault("WEBHOOK_ALLOW_PRIVATE_HOSTS", "false")),
+		},
+		PDF: PDFConfig{
+			WebURL:     envDefault("PDF_WEB_URL", "http://localhost:3000"),
+			ChromeURL:  envDefault("PDF_CHROME_URL", ""),
+			ChromePath: envDefault("PDF_CHROME_PATH", ""),
 		},
 		Redis: RedisConfig{
 			Port:    mustEnv("REDIS_PORT"),

@@ -142,6 +142,7 @@ REDIS_HOST=your-redis
 | `FIREBASE_CREDENTIALS_JSON` / `FIREBASE_CREDENTIALS_PATH` | `/etc/kairso/firebase-credentials.json` | Firebase service account (content or path) |
 | `JWT_SECRET` `APP_TOKEN_SECRET` | generated into `/data/secrets.env` | Session and internal signing secrets |
 | `MAX_UPLOAD_SIZE` | `200m` | Upload size limit |
+| `PDF_WEB_URL` | `http://127.0.0.1:3000` | Web app opened by the bundled Chromium for PDF export; empty disables PDF export |
 
 Behind HTTPS: put Caddy, Traefik or nginx in front of `PUBLIC_PORT` and set `PUBLIC_URL=https://your-domain`.
 

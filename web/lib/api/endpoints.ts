@@ -170,6 +170,20 @@ export const patchMeeting = (meetingId: string, body: S.UpdateMeetingMinutesRequ
 export const getMeetingExport = (meetingId: string, opts?: RequestOptions): Promise<unknown> =>
   request<unknown>("GET", `/v1/meetings/${enc(meetingId)}/export`, { ...opts });
 
+export interface GetMeetingPdfQuery {
+  /** Layout */
+  template?: "modern" | "admin";
+  /** Signature block (admin layout): digital stamps or blank for wet ink */
+  sign?: "digital" | "wet";
+  /** Place in the date line (admin layout) */
+  place?: string;
+}
+/** GET /v1/meetings/{meetingId}/pdf
+ * Export meeting minutes as a PDF
+ * Prints the minutes' A4 print page on the server, the same document the browser print page shows. */
+export const getMeetingPdf = (meetingId: string, query?: GetMeetingPdfQuery, opts?: RequestOptions): Promise<unknown> =>
+  request<unknown>("GET", `/v1/meetings/${enc(meetingId)}/pdf`, { query, ...opts });
+
 /** POST /v1/meetings/{meetingId}/signatures/{role}
  * Sign meeting minutes
  * Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: a workspace holder or admin. */
@@ -1393,6 +1407,26 @@ export const getWorkspaceQuoteExport = (workspaceId: string, quoteId: string, op
  * Copies a sent/decided quote into a new editable draft with the next version number; the quote number stays the same. */
 export const postWorkspaceQuoteNewVersion = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/new-version`, { ...opts });
+
+export interface GetWorkspaceQuotePdfQuery {
+  /** Layout */
+  template?: "modern" | "admin";
+  /** Signature block (admin layout): digital stamps or blank for wet ink */
+  sign?: "digital" | "wet";
+  /** Place in the date line (admin layout) */
+  place?: string;
+  /** Approver title (admin layout) */
+  signer?: string;
+  /** 1: one signature block for preparer and approver, 0: two (admin layout) */
+  merge?: "0" | "1";
+  /** 0: let a long quote run onto more pages instead of shrinking it onto one (modern layout) */
+  fit?: "0" | "1";
+}
+/** GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf
+ * Export a quote as a PDF
+ * Prints the quote's A4 print page on the server, the same document the browser print page shows. */
+export const getWorkspaceQuotePdf = (workspaceId: string, quoteId: string, query?: GetWorkspaceQuotePdfQuery, opts?: RequestOptions): Promise<unknown> =>
+  request<unknown>("GET", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/pdf`, { query, ...opts });
 
 /** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/send
  * Send a quote

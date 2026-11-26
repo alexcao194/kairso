@@ -9,28 +9,34 @@ import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr } from "@/lib/i18n";
-import { pageRule } from "@/components/kairso/PrintPaged";
+import { PdfDownloadButton, pageRule, usePrintReady } from "@/components/kairso/PrintPaged";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminMeetingPrint } from "./AdminMeetingPrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
+
+const pdfName = (meetingDate: string) => `Bien-ban-hop-${toDateInput(meetingDate).split("-").reverse().join("-")}`;
 
 export function MeetingPrint({ id }: { id: string }) {
   const sp = useSearchParams();
   const opts = usePrintOptions();
   const q = useMeeting(id);
-  const { workspaces } = useWorkspace();
+  const { workspaces, isLoading: wsLoading } = useWorkspace();
+  const { user } = useAuth();
   const m = q.data;
   const taskIds = useMemo(() => [...new Set((m?.items ?? []).flatMap((i) => (i.tasks ?? []).map((t) => t.id)))], [m]);
   const linked = useLinkedTasks(taskIds);
   const ws = workspaces.find((w) => w.id === m?.workspaceId);
+  usePrintReady(q.isLoading || linked.isLoading || wsLoading || !user ? "loading" : m ? "ready" : "error");
 
   useEffect(() => {
-    if (m) document.title = `Bien-ban-hop-${toDateInput(m.meetingDate).split("-").reverse().join("-")}`;
+    if (m) document.title = pdfName(m.meetingDate);
   }, [m, sp]);
 
   if (q.isLoading) return <Center>{tr().meetingPrint.loading}</Center>;
   if (!m) return <Center>{tr().meetingPrint.failed}</Center>;
-  if (opts.format === "admin") return <AdminMeetingPrint m={m} ws={ws} tasks={linked.map} />;
+  const pdf = { path: `/v1/meetings/${m.id}/pdf`, filename: `${pdfName(m.meetingDate)}.pdf` };
+  if (opts.format === "admin") return <AdminMeetingPrint m={m} ws={ws} tasks={linked.map} pdf={pdf} />;
 
   const sections = SECTION_ORDER.map((s) => ({ s, rows: m.items.filter((i) => i.section === s), note: m.sectionNotes?.[s] ?? "" })).filter((x) => x.rows.length || x.note);
   const lead = meetingLead(m);
@@ -47,6 +53,7 @@ export function MeetingPrint({ id }: { id: string }) {
       <div className="mx-auto mb-4 flex w-[210mm] max-w-full items-center justify-end gap-2 px-2 print:hidden">
         <FormatSwitch />
         <span className="mr-auto text-[12.5px] text-(--doc-muted)">{tr().meetingPrint.hint}</span>
+        <PdfDownloadButton path={pdf.path} filename={pdf.filename} />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {tr().meetingPrint.print}
         </button>

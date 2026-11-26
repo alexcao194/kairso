@@ -91,6 +91,11 @@ services:
       MINIO_BUCKET: ${MINIO_BUCKET:-kairso}
       MINIO_USE_SSL: "false"
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:?MINIO_PUBLIC_URL is required}
+      # PDF export: the bundled Chromium opens the web app's print pages (kairso-web on the edge network).
+      PDF_WEB_URL: ${PDF_WEB_URL:-http://kairso-web:3000}
+    networks:
+      - default
+      - edge
     depends_on:
       postgres:
         condition: service_healthy

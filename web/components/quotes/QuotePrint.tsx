@@ -8,7 +8,9 @@ import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
-import { pageRule } from "@/components/kairso/PrintPaged";
+import { PdfDownloadButton, pageRule, usePrintReady } from "@/components/kairso/PrintPaged";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { safeFilename } from "@/lib/download";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminQuotePrint } from "./AdminQuotePrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
@@ -29,9 +31,11 @@ function fmtDocDate(d: string | undefined, lang: Lang) {
 export function QuotePrint({ id }: { id: string }) {
   const sp = useSearchParams();
   const opts = usePrintOptions();
-  const { workspaceId, workspace } = useWorkspace();
+  const { workspaceId, workspace, isLoading: wsLoading } = useWorkspace();
+  const { user } = useAuth();
   const q = useQuote(workspaceId, id);
   const quote = q.data;
+  usePrintReady(q.isLoading || !workspaceId || wsLoading || !user ? "loading" : quote ? "ready" : "error");
 
   // The title names the saved PDF; a soft navigation (changing an option) resets it, so re-apply.
   useEffect(() => {
@@ -89,7 +93,9 @@ export function QuotePrint({ id }: { id: string }) {
 
   if (q.isLoading || !workspaceId) return <Center>{tr().quotePrint.loading}</Center>;
   if (!quote) return <Center>{tr().quotePrint.failed}</Center>;
-  if (opts.format === "admin") return <AdminQuotePrint quote={quote} workspace={workspace} />;
+  const pdfPath = `/v1/workspaces/${workspaceId}/quotes/${quote.id}/pdf`;
+  const pdfName = `${safeFilename(quote.number)}.pdf`;
+  if (opts.format === "admin") return <AdminQuotePrint quote={quote} workspace={workspace} pdf={{ path: pdfPath, filename: pdfName }} />;
 
   // The document follows the quote's language, not the viewer's UI language.
   const lang: Lang = quote.language === "en" ? "en" : "vi";
@@ -114,6 +120,7 @@ export function QuotePrint({ id }: { id: string }) {
           <input type="checkbox" checked={fit} onChange={(e) => setFit(e.target.checked)} />
           {tr().quotePrint.fitOne}
         </label>
+        <PdfDownloadButton path={pdfPath} filename={pdfName} extra={{ fit: fit ? undefined : "0" }} />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {tr().quotePrint.printBtn}
         </button>

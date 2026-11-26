@@ -1272,6 +1272,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/meetings/{meetingId}/pdf": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Prints the minutes' A4 print page on the server, the same document the browser print page shows.",
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "Meetings"
+                ],
+                "summary": "Export meeting minutes as a PDF",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Meeting minutes ID",
+                        "name": "meetingId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "modern",
+                            "admin"
+                        ],
+                        "type": "string",
+                        "description": "Layout",
+                        "name": "template",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "digital",
+                            "wet"
+                        ],
+                        "type": "string",
+                        "description": "Signature block (admin layout): digital stamps or blank for wet ink",
+                        "name": "sign",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Place in the date line (admin layout)",
+                        "name": "place",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Minutes (.pdf)",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/meetings/{meetingId}/signatures/{role}": {
             "post": {
                 "security": [
@@ -10193,6 +10277,117 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Prints the quote's A4 print page on the server, the same document the browser print page shows.",
+                "produces": [
+                    "application/pdf"
+                ],
+                "tags": [
+                    "Quotes"
+                ],
+                "summary": "Export a quote as a PDF",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Workspace ID",
+                        "name": "workspaceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Quote ID",
+                        "name": "quoteId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "modern",
+                            "admin"
+                        ],
+                        "type": "string",
+                        "description": "Layout",
+                        "name": "template",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "digital",
+                            "wet"
+                        ],
+                        "type": "string",
+                        "description": "Signature block (admin layout): digital stamps or blank for wet ink",
+                        "name": "sign",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Place in the date line (admin layout)",
+                        "name": "place",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Approver title (admin layout)",
+                        "name": "signer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "0",
+                            "1"
+                        ],
+                        "type": "string",
+                        "description": "1: one signature block for preparer and approver, 0: two (admin layout)",
+                        "name": "merge",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "0",
+                            "1"
+                        ],
+                        "type": "string",
+                        "description": "0: let a long quote run onto more pages instead of shrinking it onto one (modern layout)",
+                        "name": "fit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Quote (.pdf)",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/ErrorResponse"
                         }

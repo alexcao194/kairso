@@ -4,7 +4,7 @@ import type { MeetingItem, MeetingMinutesResponse, TaskResponse, WorkspaceRespon
 import { SECTION_META, SECTION_ORDER, itemAssignment, meetingLead, sectionTitle } from "@/lib/domain/meeting";
 import { fmtDate } from "@/lib/domain/format";
 import { tr } from "@/lib/i18n";
-import { A, AdminHeader, AdminShell, AdminSignatures, Cell, usePrintOptions } from "@/components/print/AdminDoc";
+import { A, AdminHeader, AdminShell, AdminSignatures, Cell, usePrintOptions, type PdfTarget } from "@/components/print/AdminDoc";
 
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -14,7 +14,7 @@ function meetingDay(d: string) {
 }
 
 /** Meeting minutes laid out as a Vietnamese administrative "biên bản", for printing, signing and sealing. */
-export function AdminMeetingPrint({ m, ws, tasks }: { m: MeetingMinutesResponse; ws?: WorkspaceResponse; tasks: Map<string, TaskResponse> }) {
+export function AdminMeetingPrint({ m, ws, tasks, pdf }: { m: MeetingMinutesResponse; ws?: WorkspaceResponse; tasks: Map<string, TaskResponse>; pdf: PdfTarget }) {
   const { place } = usePrintOptions();
   const a = A();
   const sigs = m.signatures ?? [];
@@ -23,7 +23,7 @@ export function AdminMeetingPrint({ m, ws, tasks }: { m: MeetingMinutesResponse;
   const names = (ps: MeetingMinutesResponse["attendees"]) => (ps ?? []).map((p) => p.name).join(", ");
 
   return (
-    <AdminShell brandColor={ws?.brandColor} defaultPlace="" unsigned={sigs.length < 2} printLabel={tr().meetingPrint.print}>
+    <AdminShell brandColor={ws?.brandColor} defaultPlace="" unsigned={sigs.length < 2} printLabel={tr().meetingPrint.print} pdf={pdf}>
       <AdminHeader org={ws?.name ?? ""} number="" date={meetingDay(m.meetingDate)} place={place ?? ""} />
 
       <div className="keep mt-[8mm] text-center">

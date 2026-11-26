@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/feedback";
 import { Menu } from "@/components/ui/Popover";
 import { MeetingTaskPicker } from "@/components/kairso/MeetingTaskPicker";
 import { StatusChip } from "@/components/kairso/StatusChip";
-import { IconArrowRight, IconClose, IconCopy, IconDownload, IconMore, IconPlus, IconSearch, IconTrash } from "@/components/icons";
+import { IconArrowRight, IconClose, IconCopy, IconDownload, IconExternal, IconMore, IconPlus, IconSearch, IconTrash } from "@/components/icons";
 import { ParticipantPicker } from "./ParticipantPicker";
 import { tr } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth/AuthContext";
@@ -54,15 +54,16 @@ const cellInput =
 
 export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: ResourceScope; meeting: MeetingMinutesResponse | null; onClose: () => void; onCreated: (id: string) => void }) {
   const toast = useToast();
-  const [exporting, setExporting] = useState(false);
-  const exportExcel = async (id: string, date: string) => {
-    setExporting(true);
+  const [exporting, setExporting] = useState<"pdf" | "xlsx" | null>(null);
+  const exportFile = async (kind: "pdf" | "xlsx", id: string, date: string) => {
+    setExporting(kind);
     try {
-      await downloadFile(`/v1/meetings/${id}/export`, `Bien-ban-hop-${toDateInput(date).split("-").reverse().join("-")}.xlsx`);
+      const path = kind === "pdf" ? "pdf" : "export";
+      await downloadFile(`/v1/meetings/${id}/${path}`, `Bien-ban-hop-${toDateInput(date).split("-").reverse().join("-")}.${kind}`);
     } catch (e) {
       toast.error(e);
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
   const { openCreateTask } = useDialogs();
@@ -243,17 +244,29 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
             title={savedBlock ? tr().meetingEd.blockedPdf(savedBlock === "new") : undefined}
             className={`inline-flex h-ctl-sm items-center gap-1.5 rounded-md border border-line-strong px-2.5 text-[12.5px] font-medium text-ink ${savedBlock ? "pointer-events-none opacity-50" : "hover:bg-hover"}`}
           >
-            <IconDownload size={13} /> {tr().meetingEd.exportPdf}
+            <IconExternal size={13} /> {tr().meetingEd.printPreview}
           </a>
         )}
         {meeting && (
           <Button
             size="sm"
             variant="ghost"
-            disabled={!!savedBlock}
+            disabled={!!savedBlock || !!exporting}
             title={savedBlock ? tr().meetingEd.blockedPdf(savedBlock === "new") : undefined}
-            loading={exporting}
-            onClick={() => exportExcel(meeting.id, meeting.meetingDate)}
+            loading={exporting === "pdf"}
+            onClick={() => exportFile("pdf", meeting.id, meeting.meetingDate)}
+          >
+            <IconDownload size={13} /> {tr().meetingEd.exportPdf}
+          </Button>
+        )}
+        {meeting && (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={!!savedBlock || !!exporting}
+            title={savedBlock ? tr().meetingEd.blockedPdf(savedBlock === "new") : undefined}
+            loading={exporting === "xlsx"}
+            onClick={() => exportFile("xlsx", meeting.id, meeting.meetingDate)}
           >
             <IconDownload size={13} /> {tr().meetingEd.exportExcel}
           </Button>

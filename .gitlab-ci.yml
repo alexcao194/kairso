@@ -11,7 +11,8 @@
 #   Server:     APP_TOKEN_SECRET, JWT_SECRET, DB_PASSWORD, MINIO_ACCESS_KEY, MINIO_SECRET_KEY,
 #               MINIO_PUBLIC_URL, FIREBASE_CREDENTIALS_JSON (File)
 #               optional (default): DB_USER (kairso), DB_NAME (kairso), DB_PORT (5432, host port),
-#               MINIO_BUCKET (kairso), JWT_ACCESS_EXPIRATION (15m), JWT_REFRESH_EXPIRATION (168h)
+#               MINIO_BUCKET (kairso), JWT_ACCESS_EXPIRATION (15m), JWT_REFRESH_EXPIRATION (168h),
+#               PDF_WEB_URL (http://kairso-web:3000, web app as seen by the server's Chromium)
 #   Web:        WEB_ENV_PRODUCTION (File) — contents of .env.production
 #   Docker Hub: DOCKERHUB_USER, DOCKERHUB_TOKEN, DOCKERHUB_NAMESPACE → publishes <namespace>/kairso
 
@@ -114,7 +115,7 @@ server:deploy:
         echo "APP_IMAGE=$APP_IMAGE"
         echo "TUNNEL_TOKEN=$TUNNEL_TOKEN"
         for v in APP_TOKEN_SECRET JWT_SECRET DB_PASSWORD MINIO_ACCESS_KEY MINIO_SECRET_KEY MINIO_PUBLIC_URL \
-                 DB_USER DB_NAME DB_PORT MINIO_BUCKET JWT_ACCESS_EXPIRATION JWT_REFRESH_EXPIRATION; do
+                 DB_USER DB_NAME DB_PORT MINIO_BUCKET JWT_ACCESS_EXPIRATION JWT_REFRESH_EXPIRATION PDF_WEB_URL; do
           eval "val=\"\${$v:-}\""
           if [ -n "$val" ]; then printf '%s=%s\n' "$v" "$val"; fi
         done

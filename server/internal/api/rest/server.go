@@ -16,6 +16,7 @@ import (
 	"github.com/alexcao194/kairso/internal/features/attendance"
 	"github.com/alexcao194/kairso/internal/features/auth"
 	"github.com/alexcao194/kairso/internal/features/device"
+	"github.com/alexcao194/kairso/internal/features/docpdf"
 	"github.com/alexcao194/kairso/internal/features/event"
 	"github.com/alexcao194/kairso/internal/features/files"
 	"github.com/alexcao194/kairso/internal/features/mcp"
@@ -36,6 +37,7 @@ import (
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/jwt"
 	storage "github.com/alexcao194/kairso/pkg/minio"
+	"github.com/alexcao194/kairso/pkg/pdfrender"
 	"github.com/alexcao194/kairso/pkg/realtime"
 
 	"github.com/ThreeDotsLabs/watermill"
@@ -45,6 +47,7 @@ import (
 )
 
 type Server struct {
+	pdfRenderer      *pdfrender.Renderer
 	cfg              config.Config
 	db               *pgxpool.Pool
 	http             *http.Server
@@ -218,6 +221,17 @@ func NewServer(cfg config.Config, db *pgxpool.Pool) *Server {
 		corsMid:          middleware.NewCORSMiddleware(),
 		backgroundCancel: backgroundCancel,
 	}
+	if cfg.PDF.WebURL != "" {
+		renderer, err := pdfrender.New(pdfrender.Config{WebURL: cfg.PDF.WebURL, ChromeURL: cfg.PDF.ChromeURL, ChromePath: cfg.PDF.ChromePath})
+		if err != nil {
+			slog.Error("PDF export disabled", "error", err)
+		} else {
+			s.pdfRenderer = renderer
+			pdf := docpdf.New(renderer, jwtSvc)
+			s.quote.SetPDF(pdf)
+			s.meeting.SetPDF(pdf)
+		}
+	}
 	mux := http.NewServeMux()
 	s.setupRoutes(mux)
 	s.http = &http.Server{
@@ -278,7 +292,11 @@ func (s *Server) Run() error {
 func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Shutting down REST server")
 	s.backgroundCancel()
-	return s.http.Shutdown(ctx)
+	err := s.http.Shutdown(ctx)
+	if s.pdfRenderer != nil {
+		s.pdfRenderer.Close()
+	}
+	return err
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

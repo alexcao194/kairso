@@ -5014,6 +5014,63 @@ paths:
       summary: Export meeting minutes as an Excel workbook
       tags:
       - Meetings
+  /v1/meetings/{meetingId}/pdf:
+    get:
+      description: Prints the minutes' A4 print page on the server, the same document
+        the browser print page shows.
+      parameters:
+      - description: Meeting minutes ID
+        in: path
+        name: meetingId
+        required: true
+        type: string
+      - description: Layout
+        enum:
+        - modern
+        - admin
+        in: query
+        name: template
+        type: string
+      - description: 'Signature block (admin layout): digital stamps or blank for
+          wet ink'
+        enum:
+        - digital
+        - wet
+        in: query
+        name: sign
+        type: string
+      - description: Place in the date line (admin layout)
+        in: query
+        name: place
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: Minutes (.pdf)
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export meeting minutes as a PDF
+      tags:
+      - Meetings
   /v1/meetings/{meetingId}/signatures/{role}:
     delete:
       description: Only the signer or a workspace manager can remove it.
@@ -10712,6 +10769,84 @@ paths:
       security:
       - BearerAuth: []
       summary: Create the next version of a quote
+      tags:
+      - Quotes
+  /v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf:
+    get:
+      description: Prints the quote's A4 print page on the server, the same document
+        the browser print page shows.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Quote ID
+        in: path
+        name: quoteId
+        required: true
+        type: string
+      - description: Layout
+        enum:
+        - modern
+        - admin
+        in: query
+        name: template
+        type: string
+      - description: 'Signature block (admin layout): digital stamps or blank for
+          wet ink'
+        enum:
+        - digital
+        - wet
+        in: query
+        name: sign
+        type: string
+      - description: Place in the date line (admin layout)
+        in: query
+        name: place
+        type: string
+      - description: Approver title (admin layout)
+        in: query
+        name: signer
+        type: string
+      - description: '1: one signature block for preparer and approver, 0: two (admin
+          layout)'
+        enum:
+        - "0"
+        - "1"
+        in: query
+        name: merge
+        type: string
+      - description: '0: let a long quote run onto more pages instead of shrinking
+          it onto one (modern layout)'
+        enum:
+        - "0"
+        - "1"
+        in: query
+        name: fit
+        type: string
+      produces:
+      - application/pdf
+      responses:
+        "200":
+          description: Quote (.pdf)
+          schema:
+            type: file
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export a quote as a PDF
       tags:
       - Quotes
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/send:

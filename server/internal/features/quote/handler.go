@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/docpdf"
 	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/currency"
 	"github.com/alexcao194/kairso/pkg/httpx"
@@ -13,6 +14,7 @@ import (
 
 type Handler struct {
 	svc *Service
+	pdf *docpdf.Exporter
 }
 
 func NewHandler(svc *Service) *Handler {
@@ -36,6 +38,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("PUT /v1/workspaces/{workspaceId}/quotes/{quoteId}", authMid.Handle(h.UpdateQuote))
 	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}", authMid.Handle(h.DeleteQuote))
 	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/export", authMid.Handle(h.ExportQuote))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf", authMid.Handle(h.ExportQuotePDF))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/send", authMid.Handle(h.SendQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/duplicate", authMid.Handle(h.DuplicateQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version", authMid.Handle(h.NewVersion))

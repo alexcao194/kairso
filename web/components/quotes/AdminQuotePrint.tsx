@@ -5,7 +5,7 @@ import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { dateLocale, tr, type Lang } from "@/lib/i18n";
-import { A, AdminHeader, AdminShell, AdminSignatures, Cell, Recipients, placeFromAddress, usePrintOptions } from "@/components/print/AdminDoc";
+import { A, AdminHeader, AdminShell, AdminSignatures, Cell, Recipients, placeFromAddress, usePrintOptions, type PdfTarget } from "@/components/print/AdminDoc";
 
 function docDate(d?: string) {
   if (!d) return new Date();
@@ -14,7 +14,7 @@ function docDate(d?: string) {
 }
 
 /** Quote laid out as a Vietnamese administrative document, for printing, signing and sealing. */
-export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; workspace?: WorkspaceResponse | null }) {
+export function AdminQuotePrint({ quote, workspace, pdf }: { quote: QuoteResponse; workspace?: WorkspaceResponse | null; pdf: PdfTarget }) {
   const { place, signer, merge, set } = usePrintOptions();
   const { members } = useWorkspace();
   const a = A();
@@ -35,7 +35,7 @@ export function AdminQuotePrint({ quote, workspace }: { quote: QuoteResponse; wo
   const fmt = (d?: string) => (d ? docDate(d).toLocaleDateString(dateLocale("vi"), { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
 
   return (
-    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn}
+    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn} pdf={pdf}
       signerDefault={a.director}
       extra={
         <label className="flex items-center gap-1.5 text-[12.5px] text-(--doc-ink-2)">

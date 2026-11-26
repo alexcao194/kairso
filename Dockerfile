@@ -33,7 +33,8 @@ RUN rm -f .env .env.production .env.local && npm run build
 
 # ---- runtime
 FROM node:20-alpine
-RUN apk add --no-cache nginx tzdata openssl
+# Chromium + fonts print the web app's print pages to PDF (Liberation stands in for Times New Roman).
+RUN apk add --no-cache nginx tzdata openssl chromium font-liberation font-noto
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 WORKDIR /opt/kairso
 

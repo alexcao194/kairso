@@ -10,8 +10,9 @@ COPY server .
 COPY --from=goose-builder /go/bin/goose /usr/local/bin/goose
 COPY db/migrations /app/db/migrations
 
-# Install tzdata for timezone support
-RUN apk add --no-cache tzdata
+# tzdata for timezone support; Chromium and fonts (Liberation stands in for Times New Roman,
+# Noto covers Vietnamese) print the web app's print pages to PDF.
+RUN apk add --no-cache tzdata chromium font-liberation font-noto
 
 EXPOSE 8080
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/docpdf"
 	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/pagination"
@@ -13,6 +14,7 @@ import (
 
 type Handler struct {
 	svc Service
+	pdf *docpdf.Exporter
 }
 
 func NewHandler(svc Service) *Handler {
@@ -26,6 +28,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("PATCH /v1/meetings/{meetingId}", authMid.Handle(h.UpdateMeeting))
 	mux.HandleFunc("DELETE /v1/meetings/{meetingId}", authMid.Handle(h.DeleteMeeting))
 	mux.HandleFunc("GET /v1/meetings/{meetingId}/export", authMid.Handle(h.ExportMeeting))
+	mux.HandleFunc("GET /v1/meetings/{meetingId}/pdf", authMid.Handle(h.ExportMeetingPDF))
 	mux.HandleFunc("POST /v1/meetings/{meetingId}/signatures/{role}", authMid.Handle(h.SignMeeting))
 	mux.HandleFunc("DELETE /v1/meetings/{meetingId}/signatures/{role}", authMid.Handle(h.UnsignMeeting))
 }

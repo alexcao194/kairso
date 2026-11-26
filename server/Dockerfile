@@ -3,7 +3,7 @@ FROM golang:1.26-alpine
 WORKDIR /app
 
 # Install dependencies needed for air and build tools
-RUN apk add --no-cache git curl build-base
+RUN apk add --no-cache git curl build-base chromium font-liberation font-noto
 
 # Install air for hot reloading and goose for migrations
 RUN go install github.com/air-verse/air@latest && \
