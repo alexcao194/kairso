@@ -18,15 +18,11 @@ var (
 const (
 	TokenTypeAccess  = "access"
 	TokenTypeRefresh = "refresh"
-	// TokenTypeRender is a short-lived, read-only token the server hands to its own headless
-	// browser so it can open a print page as the user (server-side PDF export).
-	TokenTypeRender = "render"
 )
 
 type TokenService interface {
 	GenerateToken(cfg *config.AppConfig, userID string) (string, string, error)
 	ValidateToken(tokenStr string) (*Claims, error)
-	GenerateRenderToken(userID string, ttl time.Duration) (string, error)
 }
 type jwtService struct {
 	secret []byte
@@ -45,9 +41,9 @@ type Claims struct {
 }
 
 // AuthorizesRequests reports whether the token may authenticate API and WebSocket requests:
-// access tokens and render tokens. Refresh tokens are only good for /auth/refresh.
+// only access tokens. Refresh tokens are only good for /auth/refresh.
 func (c *Claims) AuthorizesRequests() bool {
-	return c.TokenType == TokenTypeAccess || c.TokenType == TokenTypeRender
+	return c.TokenType == TokenTypeAccess
 }
 
 func (s *jwtService) GenerateToken(cfg *config.AppConfig, userID string) (string, string, error) {
@@ -89,23 +85,6 @@ func (s *jwtService) GenerateToken(cfg *config.AppConfig, userID string) (string
 	}
 
 	return accessToken, refreshToken, nil
-}
-
-// GenerateRenderToken signs a read-only token for userID that expires after ttl.
-func (s *jwtService) GenerateRenderToken(userID string, ttl time.Duration) (string, error) {
-	if userID == "" {
-		return "", errors.New("userId không được để trống")
-	}
-	now := time.Now()
-	claims := &Claims{
-		UserID:    userID,
-		TokenType: TokenTypeRender,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
-			IssuedAt:  jwt.NewNumericDate(now),
-		},
-	}
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(s.secret)
 }
 
 func (s *jwtService) ValidateToken(tokenStr string) (*Claims, error) {

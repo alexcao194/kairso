@@ -37,7 +37,6 @@ import (
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/jwt"
 	storage "github.com/alexcao194/kairso/pkg/minio"
-	"github.com/alexcao194/kairso/pkg/pdfrender"
 	"github.com/alexcao194/kairso/pkg/realtime"
 
 	"github.com/ThreeDotsLabs/watermill"
@@ -47,7 +46,6 @@ import (
 )
 
 type Server struct {
-	pdfRenderer      *pdfrender.Renderer
 	cfg              config.Config
 	db               *pgxpool.Pool
 	http             *http.Server
@@ -221,17 +219,9 @@ func NewServer(cfg config.Config, db *pgxpool.Pool) *Server {
 		corsMid:          middleware.NewCORSMiddleware(),
 		backgroundCancel: backgroundCancel,
 	}
-	if cfg.PDF.WebURL != "" {
-		renderer, err := pdfrender.New(pdfrender.Config{WebURL: cfg.PDF.WebURL, ChromeURL: cfg.PDF.ChromeURL, ChromePath: cfg.PDF.ChromePath})
-		if err != nil {
-			slog.Error("PDF export disabled", "error", err)
-		} else {
-			s.pdfRenderer = renderer
-			pdf := docpdf.New(renderer, jwtSvc)
-			s.quote.SetPDF(pdf)
-			s.meeting.SetPDF(pdf)
-		}
-	}
+	pdf := docpdf.New(cfg.PDF.FontDir, database.New(db))
+	s.quote.SetPDF(pdf)
+	s.meeting.SetPDF(pdf)
 	mux := http.NewServeMux()
 	s.setupRoutes(mux)
 	s.http = &http.Server{
@@ -293,9 +283,6 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	slog.Info("Shutting down REST server")
 	s.backgroundCancel()
 	err := s.http.Shutdown(ctx)
-	if s.pdfRenderer != nil {
-		s.pdfRenderer.Close()
-	}
 	return err
 }
 

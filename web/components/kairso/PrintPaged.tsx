@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { downloadFile } from "@/lib/download";
 import { useToast } from "@/lib/toast/ToastProvider";
@@ -23,47 +23,11 @@ export function pageRule(margin = "0") {
   return `@page { size: A4; margin: ${margin}; ${boxes} }`;
 }
 
-export type PrintState = "loading" | "ready" | "error";
-
-/**
- * Tells the server-side PDF renderer (headless Chromium) when the document is laid out, through
- * `<html data-print-state="ready|error">`. "ready" waits for web fonts, images and two frames,
- * so late layout work (the quote's fit-to-one-page scaling) is done before the page is printed.
- */
-export function usePrintReady(state: PrintState) {
-  useEffect(() => {
-    const root = document.documentElement;
-    if (state === "loading") return;
-    if (state === "error") {
-      root.setAttribute("data-print-state", "error");
-      return () => root.removeAttribute("data-print-state");
-    }
-    let cancelled = false;
-    (async () => {
-      await document.fonts?.ready;
-      await Promise.all(
-        Array.from(document.images)
-          .filter((img) => !img.complete)
-          .map((img) => new Promise((done) => {
-            img.addEventListener("load", done, { once: true });
-            img.addEventListener("error", done, { once: true });
-          })),
-      );
-      await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
-      if (!cancelled) root.setAttribute("data-print-state", "ready");
-    })();
-    return () => {
-      cancelled = true;
-      root.removeAttribute("data-print-state");
-    };
-  }, [state]);
-}
-
 /**
  * Downloads the document as a PDF built on the server, with the print options chosen on the
  * page (layout, signing mode, place, signer…), so it looks the same whatever the browser.
  */
-export function PdfDownloadButton({ path, filename, extra }: { path: string; filename: string; extra?: Record<string, string | undefined> }) {
+export function PdfDownloadButton({ path, filename }: { path: string; filename: string }) {
   const sp = useSearchParams();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -74,7 +38,6 @@ export function PdfDownloadButton({ path, filename, extra }: { path: string; fil
       const v = sp.get(k);
       if (v) q.set(k, v);
     }
-    for (const [k, v] of Object.entries(extra ?? {})) if (v) q.set(k, v);
     setBusy(true);
     try {
       const qs = q.toString();

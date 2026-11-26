@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/alexcao194/kairso/internal/features/access"
+	"time"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -18,6 +19,7 @@ import (
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceID, callerID string) (string, error)
 	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
+	TaskDueDates(ctx context.Context, ids []string) (map[string]time.Time, error)
 	Signatures() *docsign.Store
 	ProjectBelongsToWorkspace(ctx context.Context, projectID, workspaceID string) (bool, error)
 	Create(ctx context.Context, workspaceID, callerID string, req CreateMeetingMinutesRequest) (*MeetingMinutesResponse, error)
@@ -232,4 +234,28 @@ func (r *repository) Delete(ctx context.Context, id string) error {
 // GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
 func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
 	return access.Load(ctx, r.queries, workspaceID, callerID)
+}
+
+// TaskDueDates maps task IDs to their due dates (tasks without one are left out).
+func (r *repository) TaskDueDates(ctx context.Context, ids []string) (map[string]time.Time, error) {
+	out := map[string]time.Time{}
+	uuids := make([]pgtype.UUID, 0, len(ids))
+	for _, id := range ids {
+		if u, err := pgutil.ParseUUID(id); err == nil {
+			uuids = append(uuids, u)
+		}
+	}
+	if len(uuids) == 0 {
+		return out, nil
+	}
+	rows, err := r.queries.ListTaskEndDates(ctx, uuids)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		if row.EndDate.Valid {
+			out[pgutil.UUIDToString(row.ID)] = row.EndDate.Time
+		}
+	}
+	return out, nil
 }

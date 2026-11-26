@@ -173,14 +173,14 @@ export const getMeetingExport = (meetingId: string, opts?: RequestOptions): Prom
 export interface GetMeetingPdfQuery {
   /** Layout */
   template?: "modern" | "admin";
-  /** Signature block (admin layout): digital stamps or blank for wet ink */
+  /** Signature boxes (admin layout): stamped when signed in the app, or left blank to sign by hand */
   sign?: "digital" | "wet";
   /** Place in the date line (admin layout) */
   place?: string;
 }
 /** GET /v1/meetings/{meetingId}/pdf
  * Export meeting minutes as a PDF
- * Prints the minutes' A4 print page on the server, the same document the browser print page shows. */
+ * A4 PDF drawn on the server in Times New Roman, laid out like the print page. */
 export const getMeetingPdf = (meetingId: string, query?: GetMeetingPdfQuery, opts?: RequestOptions): Promise<unknown> =>
   request<unknown>("GET", `/v1/meetings/${enc(meetingId)}/pdf`, { query, ...opts });
 
@@ -1423,20 +1423,18 @@ export const postWorkspaceQuoteNewVersion = (workspaceId: string, quoteId: strin
 export interface GetWorkspaceQuotePdfQuery {
   /** Layout */
   template?: "modern" | "admin";
-  /** Signature block (admin layout): digital stamps or blank for wet ink */
+  /** Signature boxes (admin layout): stamped when signed in the app, or left blank to sign by hand */
   sign?: "digital" | "wet";
-  /** Place in the date line (admin layout) */
+  /** Place in the date line (admin layout); defaults to the end of the issuer's address */
   place?: string;
-  /** Approver title (admin layout) */
+  /** Approver title (admin layout), default GIÁM ĐỐC */
   signer?: string;
-  /** 1: one signature block for preparer and approver, 0: two (admin layout) */
+  /** 1: one signature block when the director prepares the quote, 0: two (admin layout); default: one when the workspace owner signed */
   merge?: "0" | "1";
-  /** 0: let a long quote run onto more pages instead of shrinking it onto one (modern layout) */
-  fit?: "0" | "1";
 }
 /** GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf
  * Export a quote as a PDF
- * Prints the quote's A4 print page on the server, the same document the browser print page shows. */
+ * A4 PDF drawn on the server in Times New Roman, laid out like the print page. */
 export const getWorkspaceQuotePdf = (workspaceId: string, quoteId: string, query?: GetWorkspaceQuotePdfQuery, opts?: RequestOptions): Promise<unknown> =>
   request<unknown>("GET", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/pdf`, { query, ...opts });
 

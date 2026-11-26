@@ -29,6 +29,7 @@ const (
 )
 
 type Service interface {
+	TaskDueDates(ctx context.Context, ids []string) (map[string]time.Time, error)
 	Create(ctx context.Context, workspaceID, callerID string, req CreateMeetingMinutesRequest) (*MeetingMinutesResponse, error)
 	Get(ctx context.Context, id, callerID string) (*MeetingMinutesResponse, error)
 	List(ctx context.Context, workspaceID, callerID string, filter ListMeetingMinutesFilter, params pagination.Params) (pagination.Response[MeetingMinutesResponse], error)

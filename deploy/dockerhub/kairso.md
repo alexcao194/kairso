@@ -142,9 +142,36 @@ REDIS_HOST=your-redis
 | `FIREBASE_CREDENTIALS_JSON` / `FIREBASE_CREDENTIALS_PATH` | `/etc/kairso/firebase-credentials.json` | Firebase service account (content or path) |
 | `JWT_SECRET` `APP_TOKEN_SECRET` | generated into `/data/secrets.env` | Session and internal signing secrets |
 | `MAX_UPLOAD_SIZE` | `200m` | Upload size limit |
-| `PDF_WEB_URL` | `http://127.0.0.1:3000` | Web app opened by the bundled Chromium for PDF export; empty disables PDF export |
+| `PDF_FONT_DIR` | `/data/fonts` | Folder with the Times New Roman `.ttf` files for PDF export (see below) |
 
 Behind HTTPS: put Caddy, Traefik or nginx in front of `PUBLIC_PORT` and set `PUBLIC_URL=https://your-domain`.
+
+## PDF font (Times New Roman)
+
+Quotes and meeting minutes are exported to PDF in **Times New Roman**. Its licence does not allow
+shipping it in this image, so the image uses **Liberation Serif** (same letter widths, full
+Vietnamese) until you add the real font:
+
+1. Copy the four Times New Roman files from a licensed Windows or macOS machine
+   (`C:\Windows\Fonts\times.ttf`, `timesbd.ttf`, `timesi.ttf`, `timesbi.ttf`, or on macOS
+   `/System/Library/Fonts/Supplemental/Times New Roman*.ttf`) into a `fonts` folder next to
+   `docker-compose.yml`.
+2. Mount it into the container and restart:
+
+   ```yaml
+   services:
+     kairso:
+       volumes:
+         - kairso-data:/data
+         - ./fonts:/data/fonts:ro
+   ```
+
+   ```bash
+   docker compose up -d
+   ```
+
+The log line `PDF font font="Times New Roman"` confirms it was picked up; `Times New Roman not
+found` means Liberation Serif is in use. Another folder works too: set `PDF_FONT_DIR`.
 
 ## Source code
 

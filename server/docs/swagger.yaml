@@ -5056,8 +5056,8 @@ paths:
       - Meetings
   /v1/meetings/{meetingId}/pdf:
     get:
-      description: Prints the minutes' A4 print page on the server, the same document
-        the browser print page shows.
+      description: A4 PDF drawn on the server in Times New Roman, laid out like the
+        print page.
       parameters:
       - description: Meeting minutes ID
         in: path
@@ -5071,8 +5071,8 @@ paths:
         in: query
         name: template
         type: string
-      - description: 'Signature block (admin layout): digital stamps or blank for
-          wet ink'
+      - description: 'Signature boxes (admin layout): stamped when signed in the app,
+          or left blank to sign by hand'
         enum:
         - digital
         - wet
@@ -10876,8 +10876,8 @@ paths:
       - Quotes
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf:
     get:
-      description: Prints the quote's A4 print page on the server, the same document
-        the browser print page shows.
+      description: A4 PDF drawn on the server in Times New Roman, laid out like the
+        print page.
       parameters:
       - description: Workspace ID
         in: path
@@ -10896,37 +10896,30 @@ paths:
         in: query
         name: template
         type: string
-      - description: 'Signature block (admin layout): digital stamps or blank for
-          wet ink'
+      - description: 'Signature boxes (admin layout): stamped when signed in the app,
+          or left blank to sign by hand'
         enum:
         - digital
         - wet
         in: query
         name: sign
         type: string
-      - description: Place in the date line (admin layout)
+      - description: Place in the date line (admin layout); defaults to the end of
+          the issuer's address
         in: query
         name: place
         type: string
-      - description: Approver title (admin layout)
+      - description: Approver title (admin layout), default GIÁM ĐỐC
         in: query
         name: signer
         type: string
-      - description: '1: one signature block for preparer and approver, 0: two (admin
-          layout)'
+      - description: '1: one signature block when the director prepares the quote,
+          0: two (admin layout); default: one when the workspace owner signed'
         enum:
         - "0"
         - "1"
         in: query
         name: merge
-        type: string
-      - description: '0: let a long quote run onto more pages instead of shrinking
-          it onto one (modern layout)'
-        enum:
-        - "0"
-        - "1"
-        in: query
-        name: fit
         type: string
       produces:
       - application/pdf

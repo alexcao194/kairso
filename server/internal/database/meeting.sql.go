@@ -250,6 +250,36 @@ func (q *Queries) ListMeetingMinutes(ctx context.Context, arg ListMeetingMinutes
 	return items, nil
 }
 
+const listTaskEndDates = `-- name: ListTaskEndDates :many
+SELECT id, end_date FROM tasks WHERE id = ANY($1::uuid[]) AND deleted_at IS NULL
+`
+
+type ListTaskEndDatesRow struct {
+	ID      pgtype.UUID        `json:"id"`
+	EndDate pgtype.Timestamptz `json:"end_date"`
+}
+
+// Due dates of the tasks linked to meeting items (printed in the minutes).
+func (q *Queries) ListTaskEndDates(ctx context.Context, ids []pgtype.UUID) ([]ListTaskEndDatesRow, error) {
+	rows, err := q.db.Query(ctx, listTaskEndDates, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTaskEndDatesRow{}
+	for rows.Next() {
+		var i ListTaskEndDatesRow
+		if err := rows.Scan(&i.ID, &i.EndDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const projectBelongsToWorkspace = `-- name: ProjectBelongsToWorkspace :one
 SELECT EXISTS (SELECT 1 FROM projects WHERE id = $1 AND workspace_id = $2)
 `

@@ -14,6 +14,9 @@ services:
     volumes:
       - kairso-data:/data
       - ./firebase-credentials.json:/etc/kairso/firebase-credentials.json:ro
+      # Times New Roman for PDF export: put times.ttf, timesbd.ttf, timesi.ttf, timesbi.ttf in ./fonts
+      # and uncomment. Without it PDFs use Liberation Serif (same metrics).
+      # - ./fonts:/data/fonts:ro
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

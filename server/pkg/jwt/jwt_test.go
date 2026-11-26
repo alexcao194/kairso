@@ -13,11 +13,7 @@ func TestAuthorizesRequests(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	render, err := svc.GenerateRenderToken("u", time.Minute)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for tok, want := range map[string]bool{access: true, render: true, refresh: false} {
+	for tok, want := range map[string]bool{access: true, refresh: false} {
 		c, err := svc.ValidateToken(tok)
 		if err != nil {
 			t.Fatal(err)

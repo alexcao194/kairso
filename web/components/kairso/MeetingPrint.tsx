@@ -9,8 +9,7 @@ import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr } from "@/lib/i18n";
-import { PdfDownloadButton, pageRule, usePrintReady } from "@/components/kairso/PrintPaged";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { PdfDownloadButton, pageRule } from "@/components/kairso/PrintPaged";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminMeetingPrint } from "./AdminMeetingPrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
@@ -21,13 +20,11 @@ export function MeetingPrint({ id }: { id: string }) {
   const sp = useSearchParams();
   const opts = usePrintOptions();
   const q = useMeeting(id);
-  const { workspaces, isLoading: wsLoading } = useWorkspace();
-  const { user } = useAuth();
+  const { workspaces } = useWorkspace();
   const m = q.data;
   const taskIds = useMemo(() => [...new Set((m?.items ?? []).flatMap((i) => (i.tasks ?? []).map((t) => t.id)))], [m]);
   const linked = useLinkedTasks(taskIds);
   const ws = workspaces.find((w) => w.id === m?.workspaceId);
-  usePrintReady(q.isLoading || linked.isLoading || wsLoading || !user ? "loading" : m ? "ready" : "error");
 
   useEffect(() => {
     if (m) document.title = pdfName(m.meetingDate);

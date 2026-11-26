@@ -63,3 +63,7 @@ DELETE FROM meeting_minutes WHERE id = $1;
 
 -- name: ProjectBelongsToWorkspace :one
 SELECT EXISTS (SELECT 1 FROM projects WHERE id = sqlc.arg(project_id) AND workspace_id = sqlc.arg(workspace_id));
+
+-- name: ListTaskEndDates :many
+-- Due dates of the tasks linked to meeting items (printed in the minutes).
+SELECT id, end_date FROM tasks WHERE id = ANY(sqlc.arg(ids)::uuid[]) AND deleted_at IS NULL;

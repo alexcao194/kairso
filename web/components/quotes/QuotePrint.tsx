@@ -8,8 +8,7 @@ import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
-import { PdfDownloadButton, pageRule, usePrintReady } from "@/components/kairso/PrintPaged";
-import { useAuth } from "@/lib/auth/AuthContext";
+import { PdfDownloadButton, pageRule } from "@/components/kairso/PrintPaged";
 import { safeFilename } from "@/lib/download";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminQuotePrint } from "./AdminQuotePrint";
@@ -31,11 +30,9 @@ function fmtDocDate(d: string | undefined, lang: Lang) {
 export function QuotePrint({ id }: { id: string }) {
   const sp = useSearchParams();
   const opts = usePrintOptions();
-  const { workspaceId, workspace, isLoading: wsLoading } = useWorkspace();
-  const { user } = useAuth();
+  const { workspaceId, workspace } = useWorkspace();
   const q = useQuote(workspaceId, id);
   const quote = q.data;
-  usePrintReady(q.isLoading || !workspaceId || wsLoading || !user ? "loading" : quote ? "ready" : "error");
 
   // The title names the saved PDF; a soft navigation (changing an option) resets it, so re-apply.
   useEffect(() => {
@@ -120,7 +117,7 @@ export function QuotePrint({ id }: { id: string }) {
           <input type="checkbox" checked={fit} onChange={(e) => setFit(e.target.checked)} />
           {tr().quotePrint.fitOne}
         </label>
-        <PdfDownloadButton path={pdfPath} filename={pdfName} extra={{ fit: fit ? undefined : "0" }} />
+        <PdfDownloadButton path={pdfPath} filename={pdfName} />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {tr().quotePrint.printBtn}
         </button>

@@ -1,65 +1,52 @@
 package docpdf
 
 import (
-	"context"
-	"errors"
-	"net/http"
 	"net/http/httptest"
-	"strings"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/alexcao194/kairso/pkg/jwt"
 )
 
-func TestPrintQueryKeepsOnlyPrintOptions(t *testing.T) {
-	r := httptest.NewRequest("GET", "/x?template=admin&sign=wet&place=+H%C3%A0+N%E1%BB%99i+&signer=GI%C3%81M+%C4%90%E1%BB%90C&merge=1&fit=0&ws=evil&token=x&format=admin", nil)
-	got := PrintQuery(r).Encode()
-	want := "fit=0&format=admin&merge=1&place=H%C3%A0+N%E1%BB%99i&sign=wet&signer=GI%C3%81M+%C4%90%E1%BB%90C"
-	if got != want {
-		t.Fatalf("got %s\nwant %s", got, want)
+func TestParseOptions(t *testing.T) {
+	o := ParseOptions(httptest.NewRequest("GET", "/x?template=admin&sign=wet&place=+H%C3%A0+N%E1%BB%99i+&signer=gi%C3%A1m+%C4%91%E1%BB%91c&merge=1", nil))
+	if !o.Admin || !o.Wet || o.Place != "Hà Nội" || o.Signer != "GIÁM ĐỐC" || o.Merge != "1" {
+		t.Fatalf("%+v", o)
 	}
-	if q := PrintQuery(httptest.NewRequest("GET", "/x?template=modern&sign=digital&merge=2&fit=yes", nil)); len(q) != 0 {
-		t.Fatalf("defaults and bad values must be dropped, got %v", q)
-	}
-	long := strings.Repeat("a", 121)
-	if q := PrintQuery(httptest.NewRequest("GET", "/x?place="+long, nil)); q.Has("place") {
-		t.Fatal("over-long place must be dropped")
+	if o := ParseOptions(httptest.NewRequest("GET", "/x?merge=2", nil)); o.Admin || o.Merge != "" {
+		t.Fatalf("%+v", o)
 	}
 }
 
-type fakeRenderer struct{ path, token string }
-
-func (f *fakeRenderer) Render(_ context.Context, path, token string) ([]byte, error) {
-	f.path, f.token = path, token
-	return []byte("%PDF-1.4"), nil
+func TestDateLine(t *testing.T) {
+	if got := DateLine(PlaceFromAddress("88 Láng Hạ, Đống Đa, Hà Nội"), time.Date(2026, 3, 5, 0, 0, 0, 0, time.UTC)); got != "Hà Nội, ngày 05 tháng 03 năm 2026" {
+		t.Fatal(got)
+	}
+	if got := DateLine("", time.Date(2026, 3, 5, 0, 0, 0, 0, time.UTC)); got != "……………, ngày 05 tháng 03 năm 2026" {
+		t.Fatal(got)
+	}
 }
 
-func TestExporterSignsInWithRenderToken(t *testing.T) {
-	tokens := jwt.NewJWTService("secret")
-	fr := &fakeRenderer{}
-	if _, err := New(fr, tokens).Render(context.Background(), "user-1", "/print/quotes/q1?ws=w1"); err != nil {
+// A font folder wins over the system fonts, and missing styles fall back to the regular face.
+func TestLoadFontsFromDir(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "Times.TTF"), []byte("regular"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	claims, err := tokens.ValidateToken(fr.token)
+	f, err := LoadFonts(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if claims.UserID != "user-1" || claims.TokenType != jwt.TokenTypeRender {
-		t.Fatalf("claims = %+v", claims)
-	}
-	if ttl := time.Until(claims.ExpiresAt.Time); ttl <= 0 || ttl > tokenTTL {
-		t.Fatalf("token lives %s", ttl)
-	}
-	if fr.path != "/print/quotes/q1?ws=w1" {
-		t.Fatalf("path = %s", fr.path)
+	if f.Family != "Times New Roman" || f.Source != dir || string(f.faces["B"]) != "regular" {
+		t.Fatalf("family %s from %s", f.Family, f.Source)
 	}
 }
 
-func TestNilExporterIsUnavailable(t *testing.T) {
-	var e *Exporter
-	_, err := e.Render(context.Background(), "u", "/print/x")
-	if !errors.Is(err, ErrUnavailable) || Status(err) != http.StatusServiceUnavailable {
-		t.Fatalf("err = %v", err)
+func TestParseHex(t *testing.T) {
+	if c := ParseHex("#4F46E5", DefaultBrand); c != (RGB{0x4F, 0x46, 0xE5}) {
+		t.Fatal(c)
+	}
+	if c := ParseHex("", DefaultBrand); c != DefaultBrand {
+		t.Fatal(c)
 	}
 }

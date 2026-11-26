@@ -39,14 +39,11 @@ type StorageConfig struct {
 	PublicURL       string
 }
 
-// PDFConfig drives server-side PDF export: a headless Chromium prints the web app's print pages.
+// PDFConfig drives server-side PDF export.
 type PDFConfig struct {
-	// WebURL is the web app's base URL as reachable from the server; empty disables PDF export.
-	WebURL string
-	// ChromeURL is the DevTools endpoint of a remote Chromium; empty starts a local one.
-	ChromeURL string
-	// ChromePath overrides the local Chromium binary.
-	ChromePath string
+	// FontDir holds the Times New Roman .ttf files; the system fonts are searched after it,
+	// then Liberation Serif.
+	FontDir string
 }
 
 type AppConfig struct {
@@ -90,9 +87,7 @@ func Load() Config {
 			WebhookAllowPrivateHosts: parseBool(envDefault("WEBHOOK_ALLOW_PRIVATE_HOSTS", "false")),
 		},
 		PDF: PDFConfig{
-			WebURL:     envDefault("PDF_WEB_URL", "http://localhost:3000"),
-			ChromeURL:  envDefault("PDF_CHROME_URL", ""),
-			ChromePath: envDefault("PDF_CHROME_PATH", ""),
+			FontDir: envDefault("PDF_FONT_DIR", ""),
 		},
 		Redis: RedisConfig{
 			Port:    mustEnv("REDIS_PORT"),

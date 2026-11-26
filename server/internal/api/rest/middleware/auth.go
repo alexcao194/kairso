@@ -64,11 +64,6 @@ func (m *AuthMiddleware) Authenticate(next http.Handler) http.Handler {
 			httpx.Error(w, http.StatusUnauthorized, jwt.ErrInvalidToken.Error())
 			return
 		}
-		// Render tokens only let the PDF renderer read the page it prints.
-		if claims.TokenType == jwt.TokenTypeRender && r.Method != http.MethodGet && r.Method != http.MethodHead {
-			httpx.Error(w, http.StatusForbidden, "Token chỉ được phép đọc dữ liệu")
-			return
-		}
 		ctx := context.WithValue(r.Context(), UserContextKey, claims.UserID)
 		if connID := r.Header.Get(ConnIDHeader); connID != "" {
 			ctx = context.WithValue(ctx, ConnContextKey, connID)
