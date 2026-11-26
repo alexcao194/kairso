@@ -22,6 +22,7 @@ import (
 	"github.com/alexcao194/kairso/internal/features/meeting"
 	"github.com/alexcao194/kairso/internal/features/module"
 	"github.com/alexcao194/kairso/internal/features/notification"
+	"github.com/alexcao194/kairso/internal/features/oauth"
 	"github.com/alexcao194/kairso/internal/features/performance"
 	"github.com/alexcao194/kairso/internal/features/project"
 	"github.com/alexcao194/kairso/internal/features/projectfeedback"
@@ -70,6 +71,7 @@ type Server struct {
 	publicFeedback   *projectfeedback.PublicHandler
 	apiKeySvc        apikey.Service
 	apiKey           *apikey.Handler
+	oauth            *oauth.Handler
 	authMid          *middleware.AuthMiddleware
 	appTokenMid      *middleware.AppTokenMiddleware
 	errorLogMid      *middleware.ErrorLogMiddleware
@@ -209,6 +211,7 @@ func NewServer(cfg config.Config, db *pgxpool.Pool) *Server {
 		publicFeedback:   projectfeedback.NewPublicHandler(projectFeedbackSvc, minIOClient),
 		apiKeySvc:        apiKeySvc,
 		apiKey:           apikey.NewHandler(apiKeySvc),
+		oauth:            oauth.NewHandler(oauth.NewService(oauth.NewRepository(db))),
 		authMid:          authMid,
 		appTokenMid:      appTokenMid,
 		errorLogMid:      middleware.NewErrorLogMiddleware(),
@@ -258,10 +261,13 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 	s.meeting.RegisterRoutes(apiMux, s.authMid)
 	s.uploadHandler.RegisterRoutes(apiMux, s.authMid)
 	s.apiKey.RegisterRoutes(apiMux, s.authMid)
+	s.oauth.RegisterRoutes(apiMux, s.authMid)
 
 	mux.Handle("/api/", s.appTokenMid.Handle(http.StripPrefix("/api", apiMux)))
 	// MCP for AI assistants: API key auth, tools run through apiMux as the key's owner.
 	mcp.NewHandler(apiMux, s.apiKeySvc).RegisterRoutes(mux)
+	// OAuth for MCP connectors: client registration and token endpoint are public.
+	s.oauth.RegisterPublicRoutes(mux)
 }
 
 func (s *Server) Run() error {

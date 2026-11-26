@@ -31,6 +31,13 @@ function IconGoogle() {
   );
 }
 
+/** Where to go after login: the "from" path the proxy added, when it stays on this site. */
+function nextPath(): string {
+  if (typeof window === "undefined") return "/";
+  const from = new URLSearchParams(window.location.search).get("from");
+  return from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/\\") ? from : "/";
+}
+
 export default function LoginPage() {
 const t = useT();
   const router = useRouter();
@@ -81,7 +88,7 @@ const t = useT();
       if (res.success) {
         setSuccessMsg(res.message);
         setTimeout(() => {
-          router.push("/");
+          router.push(nextPath());
         }, 1200);
       } else {
         setErrorMsg(res.message);
@@ -96,7 +103,7 @@ const t = useT();
     if (ok) {
       setSuccessMsg(t.login.loginOk);
       setTimeout(() => {
-        router.push("/");
+        router.push(nextPath());
       }, 600);
     } else {
       setErrorMsg(error || t.login.loginFailed);
@@ -112,7 +119,7 @@ const t = useT();
       if (ok) {
         setSuccessMsg(t.login.googleOk);
         setTimeout(() => {
-          router.push("/");
+          router.push(nextPath());
         }, 600);
       } else {
         setErrorMsg(error || t.login.googleFailed);
@@ -139,7 +146,7 @@ const t = useT();
     if (ok) {
       setSuccessMsg(t.login.tokenOk);
       setTimeout(() => {
-        router.push("/");
+        router.push(nextPath());
       }, 700);
     } else {
       setErrorMsg(t.login.tokenInvalid);
@@ -251,7 +258,7 @@ const t = useT();
               <div className="flex items-center gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => router.push("/")}
+                  onClick={() => router.push(nextPath())}
                   className="flex-1 h-8 rounded-md bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors cursor-pointer"
                 >
                   {t.login.enterWorkspace}

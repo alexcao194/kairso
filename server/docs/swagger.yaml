@@ -10,6 +10,11 @@ definitions:
         type: string
       id:
         type: string
+      kind:
+        enum:
+        - personal
+        - oauth
+        type: string
       lastUsedAt:
         format: date-time
         type: string
@@ -334,6 +339,26 @@ definitions:
         format: date-time
         type: string
     type: object
+  AuthorizeRequest:
+    properties:
+      clientId:
+        type: string
+      codeChallenge:
+        type: string
+      codeChallengeMethod:
+        type: string
+      redirectUri:
+        type: string
+      scope:
+        type: string
+      state:
+        type: string
+    type: object
+  AuthorizeResponse:
+    properties:
+      redirectUrl:
+        type: string
+    type: object
   BeneficiaryRequest:
     properties:
       userId:
@@ -443,6 +468,15 @@ definitions:
         $ref: '#/definitions/CalendarEventCheckInfo'
       checkOut:
         $ref: '#/definitions/CalendarEventCheckInfo'
+    type: object
+  ClientResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      redirectHost:
+        type: string
     type: object
   CreateAPIKeyRequest:
     properties:
@@ -769,6 +803,11 @@ definitions:
       id:
         type: string
       key:
+        type: string
+      kind:
+        enum:
+        - personal
+        - oauth
         type: string
       lastUsedAt:
         format: date-time
@@ -5307,6 +5346,74 @@ paths:
       summary: Update a module sprint
       tags:
       - Modules
+  /v1/oauth/authorize:
+    post:
+      consumes:
+      - application/json
+      description: Issues an authorization code for the signed-in user and returns
+        the client's redirect URL
+      parameters:
+      - description: Authorization request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/AuthorizeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/AuthorizeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Approve an OAuth authorization request
+      tags:
+      - OAuth
+  /v1/oauth/clients/{clientId}:
+    get:
+      description: 'For the OAuth consent screen: the client''s name, checked against
+        the redirect URI'
+      parameters:
+      - description: OAuth client ID
+        in: path
+        name: clientId
+        required: true
+        type: string
+      - description: Redirect URI from the authorization request
+        in: query
+        name: redirectUri
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Describe an app asking for access
+      tags:
+      - OAuth
   /v1/project-feedbacks/{feedbackId}:
     patch:
       consumes:

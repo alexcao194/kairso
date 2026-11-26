@@ -6,6 +6,7 @@ RETURNING *;
 -- name: ListApiKeysByUser :many
 SELECT * FROM api_keys
 WHERE user_id = $1 AND revoked_at IS NULL
+  AND (client_id IS NULL OR refresh_expires_at > now())
 ORDER BY created_at DESC;
 
 -- name: GetActiveApiKeyByHash :one

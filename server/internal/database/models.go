@@ -231,15 +231,18 @@ func (ns NullWorkspaceRole) Value() (driver.Value, error) {
 }
 
 type ApiKey struct {
-	ID         pgtype.UUID        `json:"id"`
-	UserID     pgtype.UUID        `json:"user_id"`
-	Name       string             `json:"name"`
-	Prefix     string             `json:"prefix"`
-	KeyHash    string             `json:"key_hash"`
-	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
-	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
-	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	ID               pgtype.UUID        `json:"id"`
+	UserID           pgtype.UUID        `json:"user_id"`
+	Name             string             `json:"name"`
+	Prefix           string             `json:"prefix"`
+	KeyHash          string             `json:"key_hash"`
+	LastUsedAt       pgtype.Timestamptz `json:"last_used_at"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt        pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ClientID         pgtype.UUID        `json:"client_id"`
+	RefreshHash      pgtype.Text        `json:"refresh_hash"`
+	RefreshExpiresAt pgtype.Timestamptz `json:"refresh_expires_at"`
 }
 
 type AttendanceCorrectionRequest struct {
@@ -544,6 +547,24 @@ type Notification struct {
 	Body        string             `json:"body"`
 	Data        []byte             `json:"data"`
 	ReadAt      pgtype.Timestamptz `json:"read_at"`
+}
+
+type OauthClient struct {
+	ID           pgtype.UUID        `json:"id"`
+	Name         string             `json:"name"`
+	RedirectUris []string           `json:"redirect_uris"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type OauthCode struct {
+	CodeHash      string             `json:"code_hash"`
+	ClientID      pgtype.UUID        `json:"client_id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	RedirectUri   string             `json:"redirect_uri"`
+	CodeChallenge string             `json:"code_challenge"`
+	Scope         string             `json:"scope"`
+	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
 type Project struct {

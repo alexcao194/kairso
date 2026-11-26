@@ -1789,6 +1789,110 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/oauth/authorize": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Issues an authorization code for the signed-in user and returns the client's redirect URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Approve an OAuth authorization request",
+                "parameters": [
+                    {
+                        "description": "Authorization request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AuthorizeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/AuthorizeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/oauth/clients/{clientId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "For the OAuth consent screen: the client's name, checked against the redirect URI",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "OAuth"
+                ],
+                "summary": "Describe an app asking for access",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Redirect URI from the authorization request",
+                        "name": "redirectUri",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ClientResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/project-feedbacks/{feedbackId}": {
             "patch": {
                 "security": [
@@ -11645,6 +11749,13 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "personal",
+                        "oauth"
+                    ]
+                },
                 "lastUsedAt": {
                     "type": "string",
                     "format": "date-time"
@@ -12128,6 +12239,37 @@ const docTemplate = `{
                 }
             }
         },
+        "AuthorizeRequest": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "codeChallenge": {
+                    "type": "string"
+                },
+                "codeChallengeMethod": {
+                    "type": "string"
+                },
+                "redirectUri": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "AuthorizeResponse": {
+            "type": "object",
+            "properties": {
+                "redirectUrl": {
+                    "type": "string"
+                }
+            }
+        },
         "BeneficiaryRequest": {
             "type": "object",
             "properties": {
@@ -12291,6 +12433,20 @@ const docTemplate = `{
                 },
                 "checkOut": {
                     "$ref": "#/definitions/CalendarEventCheckInfo"
+                }
+            }
+        },
+        "ClientResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "redirectHost": {
+                    "type": "string"
                 }
             }
         },
@@ -12789,6 +12945,13 @@ const docTemplate = `{
                 },
                 "key": {
                     "type": "string"
+                },
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "personal",
+                        "oauth"
+                    ]
                 },
                 "lastUsedAt": {
                     "type": "string",

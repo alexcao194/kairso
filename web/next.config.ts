@@ -30,6 +30,15 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: "bottom-right",
   },
+  // OAuth discovery for MCP connectors (Claude Desktop, claude.ai): RFC 9728 / RFC 8414
+  // documents live under /.well-known, served by route handlers in app/api/oauth.
+  async rewrites() {
+    return [
+      { source: "/.well-known/oauth-protected-resource/:path*", destination: "/api/oauth/metadata/resource" },
+      { source: "/.well-known/oauth-authorization-server/:path*", destination: "/api/oauth/metadata/server" },
+      { source: "/.well-known/openid-configuration", destination: "/api/oauth/metadata/server" },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

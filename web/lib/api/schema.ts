@@ -13,6 +13,7 @@ export interface APIKeyResponse {
   createdAt: string;
   expiresAt?: string;
   id: string;
+  kind: "personal" | "oauth";
   lastUsedAt?: string;
   name: string;
   prefix: string;
@@ -187,6 +188,19 @@ export interface AuthUserResponse {
   updatedAt: string;
 }
 
+export interface AuthorizeRequest {
+  clientId: string;
+  codeChallenge: string;
+  codeChallengeMethod: string;
+  redirectUri: string;
+  scope?: string;
+  state?: string;
+}
+
+export interface AuthorizeResponse {
+  redirectUrl: string;
+}
+
 export interface BeneficiaryRequest {
   userId: string;
   weight: number;
@@ -246,6 +260,12 @@ export interface CalendarScheduleSession {
 export interface CalendarSessionInfo {
   checkIn?: CalendarEventCheckInfo;
   checkOut?: CalendarEventCheckInfo;
+}
+
+export interface ClientResponse {
+  id: string;
+  name: string;
+  redirectHost: string;
 }
 
 export interface CreateAPIKeyRequest {
@@ -441,6 +461,7 @@ export interface CreatedAPIKeyResponse {
   expiresAt?: string;
   id?: string;
   key: string;
+  kind?: "personal" | "oauth";
   lastUsedAt?: string;
   name?: string;
   prefix?: string;

@@ -7,6 +7,11 @@ const PUBLIC_PREFIXES = [
   "/f", // Public feedback form: /f/[token]
 ];
 
+/** A same-site path to return to after login, or "/". */
+function safeNext(from: string | null): string {
+  return from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/\\") ? from : "/";
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -28,13 +33,14 @@ export function proxy(request: NextRequest) {
   if (!token && !isPublicRoute) {
     const loginUrl = new URL("/login", request.url);
     if (pathname !== "/") {
-      loginUrl.searchParams.set("from", pathname);
+      // Keep the query: the OAuth consent page needs its request parameters after login.
+      loginUrl.searchParams.set("from", pathname + request.nextUrl.search);
     }
     return NextResponse.redirect(loginUrl);
   }
 
   if (token && (pathname === "/login" || pathname === "/forgot-password")) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL(safeNext(request.nextUrl.searchParams.get("from")), request.url));
   }
 
   return NextResponse.next();

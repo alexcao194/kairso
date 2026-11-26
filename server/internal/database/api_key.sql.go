@@ -14,7 +14,7 @@ import (
 const createApiKey = `-- name: CreateApiKey :one
 INSERT INTO api_keys (user_id, name, prefix, key_hash, expires_at)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, name, prefix, key_hash, last_used_at, expires_at, revoked_at, created_at
+RETURNING id, user_id, name, prefix, key_hash, last_used_at, expires_at, revoked_at, created_at, client_id, refresh_hash, refresh_expires_at
 `
 
 type CreateApiKeyParams struct {
@@ -44,12 +44,15 @@ func (q *Queries) CreateApiKey(ctx context.Context, arg CreateApiKeyParams) (Api
 		&i.ExpiresAt,
 		&i.RevokedAt,
 		&i.CreatedAt,
+		&i.ClientID,
+		&i.RefreshHash,
+		&i.RefreshExpiresAt,
 	)
 	return i, err
 }
 
 const getActiveApiKeyByHash = `-- name: GetActiveApiKeyByHash :one
-SELECT id, user_id, name, prefix, key_hash, last_used_at, expires_at, revoked_at, created_at FROM api_keys
+SELECT id, user_id, name, prefix, key_hash, last_used_at, expires_at, revoked_at, created_at, client_id, refresh_hash, refresh_expires_at FROM api_keys
 WHERE key_hash = $1
   AND revoked_at IS NULL
   AND (expires_at IS NULL OR expires_at > now())
@@ -68,13 +71,17 @@ func (q *Queries) GetActiveApiKeyByHash(ctx context.Context, keyHash string) (Ap
 		&i.ExpiresAt,
 		&i.RevokedAt,
 		&i.CreatedAt,
+		&i.ClientID,
+		&i.RefreshHash,
+		&i.RefreshExpiresAt,
 	)
 	return i, err
 }
 
 const listApiKeysByUser = `-- name: ListApiKeysByUser :many
-SELECT id, user_id, name, prefix, key_hash, last_used_at, expires_at, revoked_at, created_at FROM api_keys
+SELECT id, user_id, name, prefix, key_hash, last_used_at, expires_at, revoked_at, created_at, client_id, refresh_hash, refresh_expires_at FROM api_keys
 WHERE user_id = $1 AND revoked_at IS NULL
+  AND (client_id IS NULL OR refresh_expires_at > now())
 ORDER BY created_at DESC
 `
 
@@ -97,6 +104,9 @@ func (q *Queries) ListApiKeysByUser(ctx context.Context, userID pgtype.UUID) ([]
 			&i.ExpiresAt,
 			&i.RevokedAt,
 			&i.CreatedAt,
+			&i.ClientID,
+			&i.RefreshHash,
+			&i.RefreshExpiresAt,
 		); err != nil {
 			return nil, err
 		}

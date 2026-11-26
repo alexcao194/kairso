@@ -15,9 +15,11 @@ type CreateAPIKeyRequest struct {
 	ExpiresInDays int `json:"expiresInDays,omitempty"`
 }
 
-// APIKeyResponse describes a key without its secret.
+// APIKeyResponse describes a key without its secret. Kind "oauth" is an app connected through
+// OAuth (Claude connectors); its token rotates by itself, so it has no fixed expiry.
 type APIKeyResponse struct {
 	ID         string     `json:"id"`
+	Kind       string     `json:"kind" enums:"personal,oauth"`
 	Name       string     `json:"name"`
 	Prefix     string     `json:"prefix"`
 	LastUsedAt *time.Time `json:"lastUsedAt,omitempty" swaggertype:"string" format:"date-time"`
@@ -46,15 +48,27 @@ func optTime(t pgtype.Timestamptz) *time.Time {
 	return &v
 }
 
+const (
+	KindPersonal = "personal"
+	KindOAuth    = "oauth"
+)
+
 func toResponse(k database.ApiKey) APIKeyResponse {
-	return APIKeyResponse{
+	r := APIKeyResponse{
 		ID:         pgutil.UUIDToString(k.ID),
+		Kind:       KindPersonal,
 		Name:       k.Name,
 		Prefix:     k.Prefix,
 		LastUsedAt: optTime(k.LastUsedAt),
 		ExpiresAt:  optTime(k.ExpiresAt),
 		CreatedAt:  k.CreatedAt.Time,
 	}
+	if k.ClientID.Valid {
+		r.Kind = KindOAuth
+		r.Prefix = ""
+		r.ExpiresAt = optTime(k.RefreshExpiresAt)
+	}
+	return r
 }
 
 func toAPIKey(k database.ApiKey) APIKey {

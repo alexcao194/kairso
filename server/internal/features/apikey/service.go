@@ -37,19 +37,27 @@ func NewService(repo Repository) Service {
 	return &service{repo: repo, now: time.Now}
 }
 
-func hashKey(key string) string {
+// HashKey is how keys and other bearer secrets are stored: hex SHA-256.
+func HashKey(key string) string {
 	sum := sha256.Sum256([]byte(key))
 	return hex.EncodeToString(sum[:])
 }
 
-// newKey returns "ksk_" followed by 32 random bytes in URL-safe base64.
-func newKey() (string, error) {
+// NewSecret returns prefix followed by 32 random bytes in URL-safe base64.
+func NewSecret(prefix string) (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return middleware.APIKeyPrefix + base64.RawURLEncoding.EncodeToString(b), nil
+	return prefix + base64.RawURLEncoding.EncodeToString(b), nil
 }
+
+// DisplayPrefix is the part of a key shown in lists.
+func DisplayPrefix(key string) string { return key[:12] }
+
+func hashKey(key string) string { return HashKey(key) }
+
+func newKey() (string, error) { return NewSecret(middleware.APIKeyPrefix) }
 
 func (s *service) Create(ctx context.Context, userID string, req CreateAPIKeyRequest) (*CreatedAPIKeyResponse, error) {
 	name := strings.TrimSpace(req.Name)
@@ -63,7 +71,13 @@ func (s *service) Create(ctx context.Context, userID string, req CreateAPIKeyReq
 	if err != nil {
 		return nil, err
 	}
-	if len(existing) >= maxKeysPerUser {
+	personal := 0
+	for _, k := range existing {
+		if k.Kind == KindPersonal {
+			personal++
+		}
+	}
+	if personal >= maxKeysPerUser {
 		return nil, errors.New("đã đạt số API key tối đa, hãy thu hồi bớt key cũ")
 	}
 	key, err := newKey()
@@ -75,7 +89,7 @@ func (s *service) Create(ctx context.Context, userID string, req CreateAPIKeyReq
 		t := s.now().Add(time.Duration(req.ExpiresInDays) * 24 * time.Hour)
 		expiresAt = &t
 	}
-	resp, err := s.repo.Create(ctx, userID, name, key[:12], hashKey(key), expiresAt)
+	resp, err := s.repo.Create(ctx, userID, name, DisplayPrefix(key), hashKey(key), expiresAt)
 	if err != nil {
 		return nil, err
 	}

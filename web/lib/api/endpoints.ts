@@ -233,6 +233,22 @@ export const deleteModuleSprint = (moduleId: string, sprintId: string, opts?: Re
 export const patchModuleSprint = (moduleId: string, sprintId: string, body: S.UpdateModuleSprintRequest, opts?: RequestOptions): Promise<S.ModuleResponse> =>
   request<S.ModuleResponse>("PATCH", `/v1/modules/${enc(moduleId)}/sprints/${enc(sprintId)}`, { body, ...opts });
 
+/** POST /v1/oauth/authorize
+ * Approve an OAuth authorization request
+ * Issues an authorization code for the signed-in user and returns the client's redirect URL */
+export const postOauthAuthorize = (body: S.AuthorizeRequest, opts?: RequestOptions): Promise<S.AuthorizeResponse> =>
+  request<S.AuthorizeResponse>("POST", `/v1/oauth/authorize`, { body, ...opts });
+
+export interface GetOauthClientQuery {
+  /** Redirect URI from the authorization request */
+  redirectUri: string;
+}
+/** GET /v1/oauth/clients/{clientId}
+ * Describe an app asking for access
+ * For the OAuth consent screen: the client's name, checked against the redirect URI */
+export const getOauthClient = (clientId: string, query: GetOauthClientQuery, opts?: RequestOptions): Promise<S.ClientResponse> =>
+  request<S.ClientResponse>("GET", `/v1/oauth/clients/${enc(clientId)}`, { query, ...opts });
+
 /** PATCH /v1/project-feedbacks/{feedbackId}
  * Edit A Feedback's Own Fields
  * Free-form edit (submitter/feature/content/priority) — any project member, not just admin/holder. */
