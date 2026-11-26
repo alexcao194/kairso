@@ -248,13 +248,6 @@ WHERE p.workspace_id = sqlc.arg(workspace_id)::uuid
   AND (t.end_date IS NULL OR t.end_date >= sqlc.arg(month_start)::timestamptz)
   AND (t.status IN ('review'::task_status, 'done'::task_status) OR (t.end_date IS NOT NULL AND t.end_date < NOW()));
 
--- name: ListScheduleNotificationRecipients :many
-SELECT wu.user_id
-FROM workspace_users wu
-WHERE wu.workspace_id = sqlc.arg(workspace_id)::uuid
-  AND wu.role IN ('holder', 'admin')
-  AND wu.user_id <> sqlc.arg(member_id);
-
 -- name: GetWorkWeekByAlias :many
 SELECT d.id, d.created_at, d.updated_at, d.workspace_id, d.day_of_week
 FROM workspace_work_days d
@@ -400,13 +393,6 @@ RETURNING id, created_at, updated_at, workspace_id, member_id, reason, status,
     original_check_in_at, original_check_out_at,
     result_check_in_record_id, result_check_out_record_id,
     decided_by, decided_at;
-
--- name: ListCheckRequestNotificationRecipients :many
-SELECT wu.user_id
-FROM workspace_users wu
-WHERE wu.workspace_id = sqlc.arg(workspace_id)::uuid
-  AND wu.role = 'holder'
-  AND wu.user_id <> sqlc.arg(member_id);
 
 -- name: GetMemberWorkWeek :many
 SELECT id, workspace_id, member_id, day_of_week

@@ -1286,6 +1286,18 @@ export interface RegisterDeviceRequest {
   token: string;
 }
 
+export interface RolePermissionsResponse {
+  /** Defaults are the permissions each role has when the workspace never changed them. */
+  defaults: Record<string, string[]>;
+  mine: string[];
+  /** Permissions lists every permission key in display order. */
+  permissions: string[];
+  /** Role is the caller's role; Mine the caller's permissions. */
+  role: string;
+  /** Roles maps "admin" and "member" to their permissions. The holder always has all of them. */
+  roles: Record<string, string[]>;
+}
+
 export interface SetAttitudeRequest {
   comment?: string;
   memberId: string;
@@ -1691,6 +1703,10 @@ export interface UpdateQuoteRequest {
   title: string;
   validUntil: string;
   vatRate: number;
+}
+
+export interface UpdateRolePermissionsRequest {
+  roles: Record<string, string[]>;
 }
 
 export interface UpdateTaskCommentRequest {

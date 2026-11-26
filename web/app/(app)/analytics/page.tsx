@@ -37,16 +37,17 @@ const months = () => Array.from({ length: 12 }, (_, i) => monthKey(new Date(new 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export default function AnalyticsPage() {
-  const { isManager } = useWorkspace();
-  const [tab, setTab] = useUrlState("tab", isManager ? "workspace" : "mine");
+  const { can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
+  const [tab, setTab] = useUrlState("tab", canViewTeam ? "workspace" : "mine");
   const [month, setMonth] = useUrlState("month", monthKey(new Date()));
-  const t = isManager ? (["workspace", "members", "projects"].includes(tab) ? tab : "workspace") : "mine";
+  const t = canViewTeam ? (["workspace", "members", "projects"].includes(tab) ? tab : "workspace") : "mine";
   return (
     <>
       <TopBar><Breadcrumb items={[{ label: tr().analytics.title }]} /><TopBarSpacer />
         <Select small aria-label={tr().analytics.month} className="w-40" value={month} onChange={(e) => setMonth(e.target.value)}>{months().map((m) => <option key={m} value={m}>{monthKeyTitle(m)}</option>)}</Select>
       </TopBar>
-      <Tabs label={tr().analytics.title} value={t} onChange={setTab} className="bg-surface px-3" tabs={isManager ? [{ value: "workspace", label: "Workspace" }, { value: "members", label: tr().analytics.members }, { value: "projects", label: tr().analytics.projects }] : [{ value: "mine", label: tr().analytics.mine }]} />
+      <Tabs label={tr().analytics.title} value={t} onChange={setTab} className="bg-surface px-3" tabs={canViewTeam ? [{ value: "workspace", label: "Workspace" }, { value: "members", label: tr().analytics.members }, { value: "projects", label: tr().analytics.projects }] : [{ value: "mine", label: tr().analytics.mine }]} />
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-5 p-5 max-sm:p-3">
           {t === "mine" && <Mine month={month} />}

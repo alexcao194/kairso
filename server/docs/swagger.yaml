@@ -2803,6 +2803,37 @@ definitions:
       page:
         type: integer
     type: object
+  RolePermissionsResponse:
+    properties:
+      defaults:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Defaults are the permissions each role has when the workspace
+          never changed them.
+        type: object
+      mine:
+        items:
+          type: string
+        type: array
+      permissions:
+        description: Permissions lists every permission key in display order.
+        items:
+          type: string
+        type: array
+      role:
+        description: Role is the caller's role; Mine the caller's permissions.
+        type: string
+      roles:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        description: Roles maps "admin" and "member" to their permissions. The holder
+          always has all of them.
+        type: object
+    type: object
   SetAttitudeRequest:
     properties:
       comment:
@@ -3588,6 +3619,15 @@ definitions:
         type: string
       vatRate:
         type: number
+    type: object
+  UpdateRolePermissionsRequest:
+    properties:
+      roles:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
     type: object
   UpdateTaskCommentRequest:
     properties:
@@ -9205,6 +9245,69 @@ paths:
       summary: Get Unread Notification Count
       tags:
       - Notifications
+  /v1/workspaces/{workspaceId}/permissions:
+    get:
+      description: The permission matrix for admins and members (the holder has every
+        permission) and the caller's own permissions.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RolePermissionsResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the workspace's role permissions
+      tags:
+      - Workspaces
+    put:
+      consumes:
+      - application/json
+      description: Holder only. Sets which permissions admins and/or members have;
+        a role left out keeps its permissions.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Permissions per role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateRolePermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/RolePermissionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update the workspace's role permissions
+      tags:
+      - Workspaces
   /v1/workspaces/{workspaceId}/projects:
     get:
       parameters:

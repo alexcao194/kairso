@@ -22,10 +22,11 @@ const DOT = { full: "var(--success)", late: "var(--st-doing-dot)", missed: "var(
 const WEEKDAY = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 export function TeamTimeline() {
-  const { isManager } = useWorkspace();
+  const { can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
   const [view, setView] = useUrlState("view", "day");
   const [day, setDay] = useUrlState("day", "");
-  if (!isManager) return <EmptyState title={tr().teamTl.managersOnly} className="py-12" />;
+  if (!canViewTeam) return <EmptyState title={tr().teamTl.managersOnly} className="py-12" />;
   const mode = view === "week" ? "week" : "day";
   const toggle = <SegmentedControl size="sm" label={tr().teamTl.view} value={mode} onChange={(v) => setView(v)} options={[{ value: "day", label: tr().teamTl.day }, { value: "week", label: tr().teamTl.week }]} />;
   return mode === "day" ? (
@@ -61,12 +62,13 @@ const shiftKey = (key: string, n: number) => {
 };
 
 function DayTimeline({ dayKey, setDay, toggle }: { dayKey: string; setDay: (k: string) => void; toggle: React.ReactNode }) {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
   const [stateFilter, setStateFilter] = useUrlState("st", "");
   const [search, setSearch] = useUrlState("q", "");
   const isToday = dayKey === localDateKey();
   const now = useNow(isToday);
-  const q = useMembersCalendar(workspaceId, dayKey, dayKey, isManager);
+  const q = useMembersCalendar(workspaceId, dayKey, dayKey, canViewTeam);
 
   const rows = useMemo(
     () =>
@@ -220,10 +222,11 @@ function Legend({ className, label }: { className: string; label: string }) {
 }
 
 function WeekTimeline({ toggle, openDay }: { toggle: React.ReactNode; openDay: (key: string) => void }) {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const days = Array.from({ length: 7 }, (_, i) => addDays(anchor, i));
-  const q = useMembersCalendar(workspaceId, dateOnly(anchor), dateOnly(days[6]), isManager);
+  const q = useMembersCalendar(workspaceId, dateOnly(anchor), dateOnly(days[6]), canViewTeam);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">

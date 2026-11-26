@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"sort"
 	"time"
 
@@ -54,6 +55,7 @@ type KPIService interface {
 
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceAlias, callerID string) (workspace.WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
 	ListWorkspaceAdminHolderIDs(ctx context.Context, workspaceAlias string) ([]string, error)
 	GetWorkspaceID(ctx context.Context, workspaceAlias string) (string, error)
 	GetWorkspaceAliasByID(ctx context.Context, workspaceID string) (string, error)
@@ -121,15 +123,15 @@ func (s *services) broadcast(ctx context.Context, workspaceID, eventType, entity
 	})
 }
 
-func (s *services) checkWorkspaceAccess(ctx context.Context, workspaceAlias, callerID string) (workspace.WorkspaceRole, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+func (s *services) checkWorkspaceAccess(ctx context.Context, workspaceAlias, callerID string) (access.Grant, error) {
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
-		return "", err
+		return access.Grant{}, err
 	}
-	if role == "" {
-		return "", ErrForbidden
+	if !g.IsMember() {
+		return access.Grant{}, ErrForbidden
 	}
-	return role, nil
+	return g, nil
 }
 
 func (s *services) notifyAdmins(ctx context.Context, workspaceID, entityID, notifType, callerID string) error {
@@ -194,8 +196,8 @@ func (s *services) UpdateInitiative(ctx context.Context, initiativeID, callerID 
 		return nil, err
 	}
 	if req.Status != nil && *req.Status == InitiativeStatusAccepted {
-		if !role.CanManageMembers() {
-			return nil, fmt.Errorf("%w: chỉ quản trị viên hoặc chủ workspace mới được chấp nhận sáng kiến", ErrForbidden)
+		if !role.Can(access.PerformanceManage) {
+			return nil, fmt.Errorf("%w: bạn không có quyền chấp nhận sáng kiến", ErrForbidden)
 		}
 	}
 	if req.Status != nil && !req.Status.Valid() {
@@ -354,7 +356,7 @@ func (s *services) GetKPI(ctx context.Context, workspaceAlias, callerID string, 
 		return nil, err
 	}
 	memberID := filter.MemberID
-	if !role.CanManageMembers() {
+	if !role.Can(access.PerformanceManage) {
 		memberID = callerID
 	}
 	return s.computeKPI(ctx, workspaceAlias, memberID, filter)
@@ -365,7 +367,7 @@ func (s *services) GetMemberTaskBreakdown(ctx context.Context, workspaceAlias, c
 	if err != nil {
 		return nil, err
 	}
-	if !role.CanManageMembers() || memberID == "" {
+	if !role.Can(access.PerformanceManage) || memberID == "" {
 		memberID = callerID
 	}
 	from, to, err := resolveKPIPeriod(month)
@@ -414,8 +416,8 @@ func (s *services) ExportKPIExcel(ctx context.Context, workspaceAlias, callerID 
 	if err != nil {
 		return nil, err
 	}
-	if !role.CanManageMembers() {
-		return nil, fmt.Errorf("%w: chỉ quản trị viên hoặc chủ workspace mới được xuất phiếu KPI", ErrForbidden)
+	if !role.Can(access.PerformanceManage) {
+		return nil, fmt.Errorf("%w: bạn không có quyền xuất phiếu KPI", ErrForbidden)
 	}
 
 	members, err := s.computeKPI(ctx, workspaceAlias, filter.MemberID, filter)
@@ -557,8 +559,8 @@ func (s *services) SetAttitude(ctx context.Context, workspaceAlias, callerID str
 	if err != nil {
 		return nil, err
 	}
-	if !role.CanManageMembers() {
-		return nil, fmt.Errorf("%w: chỉ quản trị viên hoặc chủ workspace mới được chấm điểm thái độ", ErrForbidden)
+	if !role.Can(access.PerformanceManage) {
+		return nil, fmt.Errorf("%w: bạn không có quyền chấm điểm thái độ", ErrForbidden)
 	}
 	if req.MemberID == "" {
 		return nil, fmt.Errorf("memberId là bắt buộc")
@@ -581,8 +583,8 @@ func (s *services) GetKPISettings(ctx context.Context, workspaceAlias, callerID 
 	if err != nil {
 		return nil, err
 	}
-	if role != workspace.WorkspaceRoleHolder {
-		return nil, fmt.Errorf("%w: chỉ chủ workspace mới được xem cấu hình KPI", ErrForbidden)
+	if !role.Can(access.KPISettings) {
+		return nil, fmt.Errorf("%w: bạn không có quyền xem cấu hình KPI", ErrForbidden)
 	}
 	return s.repo.GetKPISettings(ctx, workspaceAlias)
 }
@@ -592,8 +594,8 @@ func (s *services) UpsertKPISettings(ctx context.Context, workspaceAlias, caller
 	if err != nil {
 		return nil, err
 	}
-	if role != workspace.WorkspaceRoleHolder {
-		return nil, fmt.Errorf("%w: chỉ chủ workspace mới được sửa cấu hình KPI", ErrForbidden)
+	if !role.Can(access.KPISettings) {
+		return nil, fmt.Errorf("%w: bạn không có quyền sửa cấu hình KPI", ErrForbidden)
 	}
 	settings, err := s.repo.UpsertKPISettings(ctx, workspaceAlias, req)
 	if err != nil {

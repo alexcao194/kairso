@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/pkg/pagination"
@@ -16,6 +17,9 @@ var ErrCannotManageEqualOrHigherRole = errors.New("chỉ được sửa vai trò
 var ErrNotFound = errors.New("Không tìm thấy dữ liệu")
 
 type Service interface {
+	CallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
+	GetRolePermissions(ctx context.Context, workspaceID, callerID string) (*RolePermissionsResponse, error)
+	UpdateRolePermissions(ctx context.Context, workspaceID, callerID string, req UpdateRolePermissionsRequest) (*RolePermissionsResponse, error)
 	CreateWorkspace(ctx context.Context, userID string, req CreateWorkspaceRequest) (*WorkspaceResponse, error)
 	ListWorkspaces(ctx context.Context, userID string, params pagination.Params) (pagination.Response[WorkspaceResponse], error)
 	GetWorkspace(ctx context.Context, workspaceID string) (*WorkspaceResponse, error)
@@ -128,7 +132,7 @@ func (s *service) InviteMember(ctx context.Context, workspaceID, callerID string
 	if err != nil {
 		return nil, err
 	}
-	if !role.CanManageMembers() {
+	if !s.can(ctx, workspaceID, callerID, access.MembersManage) {
 		return nil, ErrForbidden
 	}
 	if !role.CanManageRole(req.Role) {
@@ -170,11 +174,7 @@ func (s *service) CancelInvitation(ctx context.Context, invitationID, callerID s
 	if err != nil {
 		return err
 	}
-	role, err := s.repo.GetCallerRole(ctx, workspaceID, callerID)
-	if err != nil {
-		return err
-	}
-	if !role.CanManageMembers() {
+	if !s.can(ctx, workspaceID, callerID, access.MembersManage) {
 		return ErrForbidden
 	}
 	return s.repo.CancelInvitation(ctx, invitationID)
@@ -185,7 +185,7 @@ func (s *service) RemoveMember(ctx context.Context, workspaceID, callerID, userI
 	if err != nil {
 		return err
 	}
-	if !role.CanManageMembers() {
+	if !s.can(ctx, workspaceID, callerID, access.MembersManage) {
 		return ErrForbidden
 	}
 	targetRole, err := s.repo.GetCallerRole(ctx, workspaceID, userID)
@@ -217,7 +217,7 @@ func (s *service) UpdateMemberRole(ctx context.Context, workspaceID, callerID, u
 	if err != nil {
 		return nil, err
 	}
-	if !callerRole.CanManageMembers() {
+	if !s.can(ctx, workspaceID, callerID, access.MembersManage) {
 		return nil, ErrForbidden
 	}
 	targetRole, err := s.repo.GetCallerRole(ctx, workspaceID, userID)
@@ -322,4 +322,10 @@ func (s *service) DeleteWorkspaceFile(ctx context.Context, fileID string) error 
 	}
 	s.broadcast(ctx, workspaceID, "workspace.file.deleted", fileID, "", nil)
 	return nil
+}
+
+// can reports whether callerID has permission p in the workspace.
+func (s *service) can(ctx context.Context, workspaceID, callerID string, p access.Permission) bool {
+	g, err := s.repo.GetCallerAccess(ctx, workspaceID, callerID)
+	return err == nil && g.Can(p)
 }

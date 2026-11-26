@@ -4,6 +4,8 @@ export const qk = {
   workspaces: () => ["workspaces"] as const,
   invitations: () => ["invitations"] as const,
   members: (ws: string) => ["members", ws] as const,
+  // Under the "members" root so role and permission changes (workspace.* events) refresh it.
+  permissions: (ws: string) => ["members", ws, "permissions"] as const,
   projects: (ws: string) => ["projects", ws] as const,
   overviews: (ws: string, ids: string[]) => ["overviews", ws, ids.join(",")] as const,
   project: (ws: string, p: string) => ["project", ws, p] as const,

@@ -49,10 +49,6 @@ RETURNING id, created_at, updated_at, workspace_id, proposer_id, ref_member_id, 
 -- name: DeleteInitiative :exec
 DELETE FROM initiatives WHERE id = $1;
 
--- name: ListWorkspaceAdminHolderIDs :many
-SELECT wu.user_id
-FROM workspace_users wu
-WHERE wu.workspace_id = sqlc.arg(workspace_id)::uuid AND wu.role IN ('admin', 'holder');
 
 -- name: SumInitiativeEstimateByRefMember :many
 SELECT i.ref_member_id AS user_id, COALESCE(SUM(i.estimate), 0)::float AS total

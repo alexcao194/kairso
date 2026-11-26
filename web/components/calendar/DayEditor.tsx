@@ -37,15 +37,16 @@ export function DayEditor({ date, day, memberId, isSelf, isManager }: { date: st
     <div className="flex flex-col gap-4">
       {(isManager || isSelf) && <ScheduleEditor date={date} day={day} memberId={memberId} isManager={isManager} />}
       {isManager && <SessionsEditor date={date} day={day} memberId={memberId} />}
-      {(isManager || isSelf) && <DailyReportView date={date} memberId={memberId} isSelf={isSelf} isManager={isManager} />}
+      <DailyReportView date={date} memberId={memberId} isSelf={isSelf} />
     </div>
   );
 }
 
-function DailyReportView({ date, memberId, isSelf, isManager }: { date: string; memberId: string; isSelf: boolean; isManager: boolean }) {
-  const { workspaceId } = useWorkspace();
+function DailyReportView({ date, memberId, isSelf }: { date: string; memberId: string; isSelf: boolean }) {
+  const { workspaceId, can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
   const mine = useMyDailyReports(workspaceId, isSelf ? date : "", isSelf ? date : "");
-  const other = useDailyReports(workspaceId, { memberId, from: date, to: date }, isManager && !isSelf);
+  const other = useDailyReports(workspaceId, { memberId, from: date, to: date }, canViewTeam && !isSelf);
   const report = (isSelf ? mine.data : other.data)?.[0];
   if (!report || (!report.done && !report.inProgress && !report.issues)) return null;
   const Row = ({ label, value }: { label: string; value: string }) =>

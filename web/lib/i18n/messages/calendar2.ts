@@ -29,7 +29,7 @@ export const calendar2 = defineMessages({
     },
     schedSum: {
       "counts": (days: number, reports: number) => `${days} ngày có ca · ${reports} báo cáo`,
-      "managersOnly": "Chỉ quản lý mới xem được tổng hợp",
+      "managersOnly": "Bạn cần quyền “Xem dữ liệu cả đội” để xem tổng hợp",
       "prevWeek": "Tuần trước",
       "nextWeek": "Tuần sau",
       "thisWeek": "Tuần này",
@@ -63,7 +63,7 @@ export const calendar2 = defineMessages({
       "title": (n: number) => `Nhật ký đi muộn (${n})`,
     },
     pendSched: {
-      "managersOnly": "Chỉ quản lý mới duyệt được lịch",
+      "managersOnly": "Bạn cần quyền “Quản lý chấm công” để duyệt lịch",
       "none": "Không có lịch nào chờ duyệt",
       "approvedAll": "Đã duyệt toàn bộ",
       "approveAll": "Duyệt tất cả",
@@ -115,7 +115,7 @@ export const calendar2 = defineMessages({
     },
     schedSum: {
       "counts": (days: number, reports: number) => `${days} ${days === 1 ? "day" : "days"} with shifts · ${reports} ${reports === 1 ? "report" : "reports"}`,
-      "managersOnly": "Only managers can view the summary",
+      "managersOnly": "You need the “See the whole team” permission to view the summary",
       "prevWeek": "Previous week",
       "nextWeek": "Next week",
       "thisWeek": "This week",
@@ -149,7 +149,7 @@ export const calendar2 = defineMessages({
       "title": (n: number) => `Late arrivals (${n})`,
     },
     pendSched: {
-      "managersOnly": "Only managers can approve schedules",
+      "managersOnly": "You need the “Manage attendance” permission to approve schedules",
       "none": "No schedules awaiting approval",
       "approvedAll": "Approved all",
       "approveAll": "Approve all",

@@ -19,13 +19,14 @@ const STATUS_TONE = { pending: "warning", approved: "success", rejected: "danger
 const STATUS_LABEL = liveLabels(() => tr().scheduleStatus);
 
 export function ScheduleReportSummary() {
-  const { workspaceId, isManager, members } = useWorkspace();
+  const { workspaceId, members, can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const [memberId, setMemberId] = useState("");
   const from = dateOnly(anchor);
   const to = dateOnly(addDays(anchor, 6));
-  const cal = useMembersCalendar(workspaceId, from, to, isManager);
-  const reports = useDailyReports(workspaceId, { from, to, memberId: memberId || undefined }, isManager);
+  const cal = useMembersCalendar(workspaceId, from, to, canViewTeam);
+  const reports = useDailyReports(workspaceId, { from, to, memberId: memberId || undefined }, canViewTeam);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(anchor, i)), [anchor]);
   const reportBy = useMemo(() => {
@@ -39,7 +40,7 @@ export function ScheduleReportSummary() {
     return memberId ? list.filter((mm) => mm.memberId === memberId) : list;
   }, [cal.data, memberId]);
 
-  if (!isManager) return <EmptyState title={tr().schedSum.managersOnly} className="py-12" />;
+  if (!canViewTeam) return <EmptyState title={tr().schedSum.managersOnly} className="py-12" />;
 
   return (
     <div className="flex flex-col gap-3">

@@ -3,6 +3,7 @@ package quote
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -16,6 +17,7 @@ type Repository interface {
 	ExecTx(ctx context.Context, fn func(Repository) error) error
 	Signatures() *docsign.Store
 	GetCallerRole(ctx context.Context, workspaceID, userID pgtype.UUID) (workspace.WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, userID pgtype.UUID) (access.Grant, error)
 
 	ListCustomers(ctx context.Context, workspaceID pgtype.UUID) ([]database.Customer, error)
 	GetCustomer(ctx context.Context, id, workspaceID pgtype.UUID) (database.Customer, bool, error)
@@ -183,4 +185,9 @@ func (r *repository) SetQuoteVersion(ctx context.Context, arg database.SetQuoteV
 
 func (r *repository) ListQuoteVersions(ctx context.Context, workspaceID, rootID pgtype.UUID) ([]database.ListQuoteVersionsRow, error) {
 	return r.queries.ListQuoteVersions(ctx, database.ListQuoteVersionsParams{WorkspaceID: workspaceID, ID: rootID})
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, userID pgtype.UUID) (access.Grant, error) {
+	return access.LoadUUID(ctx, r.queries, workspaceID, userID)
 }

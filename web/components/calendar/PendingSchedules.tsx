@@ -12,9 +12,10 @@ import { IconCircleCheck } from "@/components/icons";
 import { dateLocale, tr } from "@/lib/i18n";
 
 export function PendingSchedules() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
   const toast = useToast();
-  const q = usePendingSchedules(workspaceId, isManager);
+  const q = usePendingSchedules(workspaceId, canManageAttendance);
   const m = useAttendanceMutations(workspaceId);
   const groups = useMemo(() => {
     const map = new Map<string, { name?: string; avatar?: string; days: NonNullable<typeof q.data> }>();
@@ -27,7 +28,7 @@ export function PendingSchedules() {
   }, [q.data]);
   const done = (msg: string) => ({ onSuccess: () => toast.success(msg), onError: (e: unknown) => toast.error(e) });
 
-  if (!isManager) return <EmptyState title={tr().pendSched.managersOnly} className="py-12" />;
+  if (!canManageAttendance) return <EmptyState title={tr().pendSched.managersOnly} className="py-12" />;
   if (q.isLoading) return <Skeleton className="h-40" />;
   if (groups.length === 0) return <EmptyState icon={<IconCircleCheck size={26} />} title={tr().pendSched.none} className="rounded-lg border border-line bg-surface py-12" />;
   return (

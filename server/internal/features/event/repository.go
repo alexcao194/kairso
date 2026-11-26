@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/workspace"
@@ -197,4 +198,9 @@ func (r *repository) ListMembersEvents(ctx context.Context, workspaceAlias strin
 	}
 
 	return memberEventsFromSources(members, schedules, records), nil
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

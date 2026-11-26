@@ -35,7 +35,8 @@ const Card = ({ title, children, hint }: { title: string; hint?: string; childre
 );
 
 export function WorkspaceSection() {
-  const { workspace, workspaceId, isHolder, isManager, workspaces, setWorkspaceId } = useWorkspace();
+  const { workspace, workspaceId, isHolder, workspaces, setWorkspaceId, can } = useWorkspace();
+  const canEditWorkspace = can("workspace.settings");
   const toast = useToast();
   const qc = useQueryClient();
   const router = useRouter();
@@ -59,11 +60,11 @@ export function WorkspaceSection() {
             <span className="text-[12px] font-medium text-ink-2">{tr().ops.avatar}</span>
             <div className="flex items-center gap-3">
               <Avatar person={{ id: workspace.id, name: workspace.name, avatar: workspace.avatar }} size="xl" />
-              {isManager && (<><input ref={fileRef} type="file" accept="image/*" className="sr-only" aria-label={tr().ops.pickAvatar} onChange={async (e) => { const f = e.target.files?.[0]; if (f) { try { save.mutate({ avatar: (await uploadFile(f, "workspace_file", workspaceId)).fileUrl }); } catch (er) { toast.error(er); } } }} /><Button size="sm" onClick={() => fileRef.current?.click()}>{tr().ops.changeAvatar}</Button></>)}
+              {canEditWorkspace && (<><input ref={fileRef} type="file" accept="image/*" className="sr-only" aria-label={tr().ops.pickAvatar} onChange={async (e) => { const f = e.target.files?.[0]; if (f) { try { save.mutate({ avatar: (await uploadFile(f, "workspace_file", workspaceId)).fileUrl }); } catch (er) { toast.error(er); } } }} /><Button size="sm" onClick={() => fileRef.current?.click()}>{tr().ops.changeAvatar}</Button></>)}
             </div>
           </div>
-          <Field label={tr().ops.wsName} className="min-w-[240px] flex-1">{(p) => <Input {...p} disabled={!isManager} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
-          {isManager && <Button variant="primary" loading={save.isPending} disabled={!name.trim() || name.trim() === workspace.name} onClick={() => save.mutate({ name: name.trim() })}>{tr().ops.save}</Button>}
+          <Field label={tr().ops.wsName} className="min-w-[240px] flex-1">{(p) => <Input {...p} disabled={!canEditWorkspace} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+          {canEditWorkspace && <Button variant="primary" loading={save.isPending} disabled={!name.trim() || name.trim() === workspace.name} onClick={() => save.mutate({ name: name.trim() })}>{tr().ops.save}</Button>}
         </div>
         <p className="mt-3 text-[12px] text-ink-faint">{tr().ops.createdOn(fmtDate(workspace.createdAt))}</p>
       </Card>
@@ -130,7 +131,8 @@ export function LabelsSection() {
 }
 
 export function AttendanceSection() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
   const toast = useToast();
   const q = useAttendanceSettings(workspaceId);
   const m = useAttendanceMutations(workspaceId);
@@ -143,22 +145,22 @@ export function AttendanceSection() {
   const valid = Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 && Number(f.allowedRadiusMeters) > 0 && (!f.validationEnabled || f.companyWifiBSSID.trim());
   return (
     <div className="flex flex-col gap-4">
-      {!isManager && <Alert>{tr().ops.attAdminOnly}</Alert>}
+      {!canManageAttendance && <Alert>{tr().ops.attAdminOnly}</Alert>}
       <Card title={tr().ops.attValidation} hint={tr().ops.attValidationHint}>
         <div className="flex flex-col gap-3">
-          <Checkbox label={tr().ops.attEnable} disabled={!isManager} checked={f.validationEnabled} onChange={(e) => setF({ ...f, validationEnabled: e.target.checked })} />
+          <Checkbox label={tr().ops.attEnable} disabled={!canManageAttendance} checked={f.validationEnabled} onChange={(e) => setF({ ...f, validationEnabled: e.target.checked })} />
           {f.validationEnabled && <Alert tone="warning">{tr().ops.attWebNote}</Alert>}
           <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
-            <Field label={tr().ops.lat}>{(p) => <Input {...p} className="font-mono" disabled={!isManager} value={f.companyLatitude} onChange={(e) => setF({ ...f, companyLatitude: e.target.value })} />}</Field>
-            <Field label={tr().ops.lng}>{(p) => <Input {...p} className="font-mono" disabled={!isManager} value={f.companyLongitude} onChange={(e) => setF({ ...f, companyLongitude: e.target.value })} />}</Field>
+            <Field label={tr().ops.lat}>{(p) => <Input {...p} className="font-mono" disabled={!canManageAttendance} value={f.companyLatitude} onChange={(e) => setF({ ...f, companyLatitude: e.target.value })} />}</Field>
+            <Field label={tr().ops.lng}>{(p) => <Input {...p} className="font-mono" disabled={!canManageAttendance} value={f.companyLongitude} onChange={(e) => setF({ ...f, companyLongitude: e.target.value })} />}</Field>
           </div>
-          {isManager && <div><Button size="sm" onClick={locate}><IconMapPin size={13} /> {tr().ops.useLocation}</Button></div>}
+          {canManageAttendance && <div><Button size="sm" onClick={locate}><IconMapPin size={13} /> {tr().ops.useLocation}</Button></div>}
           <div className="grid grid-cols-3 gap-3 max-sm:grid-cols-1">
-            <Field label={tr().ops.radius}>{(p) => <Input {...p} type="number" min={1} className="font-mono" disabled={!isManager} value={f.allowedRadiusMeters} onChange={(e) => setF({ ...f, allowedRadiusMeters: e.target.value })} />}</Field>
-            <Field label="Wi-Fi BSSID" required={f.validationEnabled}>{(p) => <Input {...p} className="font-mono" placeholder="aa:bb:cc:dd:ee:ff" disabled={!isManager} value={f.companyWifiBSSID} onChange={(e) => setF({ ...f, companyWifiBSSID: e.target.value })} />}</Field>
-            <Field label="Wi-Fi SSID">{(p) => <Input {...p} disabled={!isManager} value={f.companyWifiSSID} onChange={(e) => setF({ ...f, companyWifiSSID: e.target.value })} />}</Field>
+            <Field label={tr().ops.radius}>{(p) => <Input {...p} type="number" min={1} className="font-mono" disabled={!canManageAttendance} value={f.allowedRadiusMeters} onChange={(e) => setF({ ...f, allowedRadiusMeters: e.target.value })} />}</Field>
+            <Field label="Wi-Fi BSSID" required={f.validationEnabled}>{(p) => <Input {...p} className="font-mono" placeholder="aa:bb:cc:dd:ee:ff" disabled={!canManageAttendance} value={f.companyWifiBSSID} onChange={(e) => setF({ ...f, companyWifiBSSID: e.target.value })} />}</Field>
+            <Field label="Wi-Fi SSID">{(p) => <Input {...p} disabled={!canManageAttendance} value={f.companyWifiSSID} onChange={(e) => setF({ ...f, companyWifiSSID: e.target.value })} />}</Field>
           </div>
-          {isManager && <div><Button variant="primary" loading={m.saveSettings.isPending} disabled={!valid} onClick={() => m.saveSettings.mutate({ validationEnabled: f.validationEnabled, companyLatitude: lat, companyLongitude: lng, allowedRadiusMeters: Number(f.allowedRadiusMeters), companyWifiBSSID: f.companyWifiBSSID.trim(), companyWifiSSID: f.companyWifiSSID.trim() || undefined }, { onSuccess: () => toast.success(tr().ops.attSaved), onError: (e) => toast.error(e) })}>{tr().ops.save}</Button></div>}
+          {canManageAttendance && <div><Button variant="primary" loading={m.saveSettings.isPending} disabled={!valid} onClick={() => m.saveSettings.mutate({ validationEnabled: f.validationEnabled, companyLatitude: lat, companyLongitude: lng, allowedRadiusMeters: Number(f.allowedRadiusMeters), companyWifiBSSID: f.companyWifiBSSID.trim(), companyWifiSSID: f.companyWifiSSID.trim() || undefined }, { onSuccess: () => toast.success(tr().ops.attSaved), onError: (e) => toast.error(e) })}>{tr().ops.save}</Button></div>}
         </div>
       </Card>
     </div>
@@ -169,7 +171,8 @@ const dowName = (d: number) => weekdayName(new Date(2024, 0, 7 + d));
 type WS = Record<number, Array<{ startTime: string; endTime: string }>>;
 
 export function ShiftsSection() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
   const toast = useToast();
   const q = useWorkWeek(workspaceId);
   const m = useAttendanceMutations(workspaceId);
@@ -179,7 +182,7 @@ export function ShiftsSection() {
   const bad = Object.values(w).some((l) => l.some((s) => !s.startTime || !s.endTime || s.endTime <= s.startTime));
   return (
     <Card title={tr().ops.defaultWeek} hint={tr().ops.defaultWeekHint}>
-      {!isManager && <Alert className="mb-3">{tr().ops.defaultAdminOnly}</Alert>}
+      {!canManageAttendance && <Alert className="mb-3">{tr().ops.defaultAdminOnly}</Alert>}
       <ul className="flex flex-col divide-y divide-line-row">
         {[1, 2, 3, 4, 5, 6, 0].map((d) => {
           const list = w[d] ?? [];
@@ -189,20 +192,20 @@ export function ShiftsSection() {
               <div className="flex flex-1 flex-col gap-1.5">
                 {list.map((s, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <input type="time" aria-label={tr().ops.shiftStart(dowName(d), i + 1)} disabled={!isManager} value={s.startTime} onChange={(e) => setW({ ...w, [d]: list.map((x, j) => (j === i ? { ...x, startTime: e.target.value } : x)) })} className="h-ctl-sm rounded-md border border-line-strong bg-surface px-2 font-mono text-[12.5px]" />
+                    <input type="time" aria-label={tr().ops.shiftStart(dowName(d), i + 1)} disabled={!canManageAttendance} value={s.startTime} onChange={(e) => setW({ ...w, [d]: list.map((x, j) => (j === i ? { ...x, startTime: e.target.value } : x)) })} className="h-ctl-sm rounded-md border border-line-strong bg-surface px-2 font-mono text-[12.5px]" />
                     <span className="text-ink-faint">→</span>
-                    <input type="time" aria-label={tr().ops.shiftEnd(dowName(d), i + 1)} disabled={!isManager} value={s.endTime} onChange={(e) => setW({ ...w, [d]: list.map((x, j) => (j === i ? { ...x, endTime: e.target.value } : x)) })} className={`h-ctl-sm rounded-md border bg-surface px-2 font-mono text-[12.5px] ${s.endTime <= s.startTime ? "border-danger" : "border-line-strong"}`} />
-                    {isManager && <button type="button" aria-label={tr().ops.removeShift} onClick={() => setW({ ...w, [d]: list.filter((_, j) => j !== i) })} className="text-ink-faint hover:text-danger"><IconClose size={12} /></button>}
+                    <input type="time" aria-label={tr().ops.shiftEnd(dowName(d), i + 1)} disabled={!canManageAttendance} value={s.endTime} onChange={(e) => setW({ ...w, [d]: list.map((x, j) => (j === i ? { ...x, endTime: e.target.value } : x)) })} className={`h-ctl-sm rounded-md border bg-surface px-2 font-mono text-[12.5px] ${s.endTime <= s.startTime ? "border-danger" : "border-line-strong"}`} />
+                    {canManageAttendance && <button type="button" aria-label={tr().ops.removeShift} onClick={() => setW({ ...w, [d]: list.filter((_, j) => j !== i) })} className="text-ink-faint hover:text-danger"><IconClose size={12} /></button>}
                   </div>
                 ))}
                 {list.length === 0 && <span className="pt-1 text-[12.5px] text-ink-muted">{tr().ops.off}</span>}
-                {isManager && list.length < 3 && <div><Button size="sm" variant="ghost" onClick={() => setW({ ...w, [d]: [...list, { startTime: "08:00", endTime: "17:00" }] })}><IconPlus size={12} /> {tr().ops.addShift}</Button></div>}
+                {canManageAttendance && list.length < 3 && <div><Button size="sm" variant="ghost" onClick={() => setW({ ...w, [d]: [...list, { startTime: "08:00", endTime: "17:00" }] })}><IconPlus size={12} /> {tr().ops.addShift}</Button></div>}
               </div>
             </li>
           );
         })}
       </ul>
-      {isManager && <div className="mt-3"><Button variant="primary" loading={m.saveWorkWeek.isPending} disabled={bad} onClick={() => m.saveWorkWeek.mutate({ days: Object.entries(w).filter(([, l]) => l.length).map(([d, l]) => ({ dayOfWeek: Number(d), sessions: l })) }, { onSuccess: () => toast.success(tr().ops.defaultSaved), onError: (e) => toast.error(e) })}>{tr().ops.save}</Button></div>}
+      {canManageAttendance && <div className="mt-3"><Button variant="primary" loading={m.saveWorkWeek.isPending} disabled={bad} onClick={() => m.saveWorkWeek.mutate({ days: Object.entries(w).filter(([, l]) => l.length).map(([d, l]) => ({ dayOfWeek: Number(d), sessions: l })) }, { onSuccess: () => toast.success(tr().ops.defaultSaved), onError: (e) => toast.error(e) })}>{tr().ops.save}</Button></div>}
     </Card>
   );
 }
@@ -210,13 +213,14 @@ export function ShiftsSection() {
 const KPI_FIELDS = ["progressWeight", "qualityWeight", "punctualityWeight", "attitudeWeight", "initiativeWeight", "customerWeight"] as const;
 
 export function KpiSection() {
-  const { workspaceId, isHolder } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canKpiSettings = can("kpi.settings");
   const toast = useToast();
-  const q = useKpiSettings(workspaceId, isHolder);
+  const q = useKpiSettings(workspaceId, canKpiSettings);
   const { saveKpiSettings } = usePerformanceMutations(workspaceId);
   const [w, setW] = useState<Record<string, string>>({});
   useEffect(() => { if (q.data) setW(Object.fromEntries(KPI_FIELDS.map((k) => [k, String(q.data![k])]))); }, [q.data]);
-  if (!isHolder) return <Alert tone="warning">{tr().ops.kpiOwnerOnly}</Alert>;
+  if (!canKpiSettings) return <Alert tone="warning">{tr().ops.kpiOwnerOnly}</Alert>;
   if (q.isLoading) return <Skeleton className="h-48" />;
   const sum = KPI_FIELDS.reduce((n, [k]) => n + (Number(w[k]) || 0), 0);
   return (

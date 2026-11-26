@@ -38,7 +38,8 @@ const matchesKind = (f: FileResponse, filter: string) => {
 };
 
 export function FileManager() {
-  const { workspaceId: ws, isManager } = useWorkspace();
+  const { workspaceId: ws, can } = useWorkspace();
+  const isManager = can("files.manage");
   const all = useT();
   const t = all.fx;
   const fm = all.fm;

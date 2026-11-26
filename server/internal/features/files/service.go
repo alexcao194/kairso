@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -65,11 +66,11 @@ func (s *Service) requireMember(ctx context.Context, workspaceID, callerID strin
 }
 
 func (s *Service) requireManager(ctx context.Context, workspaceID, callerID string) error {
-	role, err := s.repo.GetCallerRole(ctx, workspaceID, callerID)
+	g, err := s.repo.GetCallerAccess(ctx, workspaceID, callerID)
 	if err != nil {
 		return err
 	}
-	if !role.CanManageMembers() {
+	if !g.Can(access.FilesManage) {
 		return ErrForbidden
 	}
 	return nil

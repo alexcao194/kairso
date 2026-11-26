@@ -105,7 +105,8 @@ export function QuoteEditor({ id }: { id: string }) {
   const [exporting, setExporting] = useState<"pdf" | "xlsx" | null>(null);
   const confirm = useConfirm();
   const router = useRouter();
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageQuotes = can("quotes.manage");
   const { user } = useAuth();
   const q = useQuote(workspaceId, id);
   const customers = useCustomers(workspaceId);
@@ -131,7 +132,7 @@ export function QuoteEditor({ id }: { id: string }) {
   if (q.isLoading || (!form && !q.isError)) return <SkeletonRows rows={10} height={40} />;
   if (q.isError || !quote || !form) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
 
-  const editable = quote.editable && isManager;
+  const editable = quote.editable && canManageQuotes;
   const dirty = strip(form) !== base;
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
   const setLine = (key: string, patch: Partial<Line>) => set("items", form.items.map((l) => (l.key === key ? { ...l, ...patch } : l)));
@@ -227,7 +228,7 @@ export function QuoteEditor({ id }: { id: string }) {
             <Button size="sm" variant="primary" loading={m.send.isPending} onClick={send}><IconSend size={13} /> {t.quoteEditor.send}</Button>
           </>
         )}
-        {isManager && (
+        {canManageQuotes && (
           <Menu
             align="end"
             trigger={({ ref, open: _o, ...p }) => (
@@ -241,7 +242,7 @@ export function QuoteEditor({ id }: { id: string }) {
       <div className="min-h-0 flex-1 overflow-auto bg-surface-sunken">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 p-4 md:p-6">
           {!quote.editable && <Alert>{t.quoteEditor.locked}</Alert>}
-          {quote.editable && !isManager && <Alert>{t.quoteEditor.readOnly}</Alert>}
+          {quote.editable && !canManageQuotes && <Alert>{t.quoteEditor.readOnly}</Alert>}
           {editable && !quote.issuer.name && <Alert tone="warning">{t.quoteEditor.issuerMissing}</Alert>}
 
           <section className="rounded-lg border border-line bg-surface p-4">
@@ -375,7 +376,7 @@ export function QuoteEditor({ id }: { id: string }) {
             busy={m.sign.isPending || m.unsign.isPending}
             slots={(() => {
               const sig = quote.signatures.find((x) => x.role === "preparer");
-              return [{ role: "preparer" as const, label: t.docSign.preparer, sig, blocked: isManager ? undefined : t.docSign.onlyManager, canRemove: !!sig && (sig.userId === user?.id || isManager) }];
+              return [{ role: "preparer" as const, label: t.docSign.preparer, sig, blocked: canManageQuotes ? undefined : t.docSign.onlyManager, canRemove: !!sig && (sig.userId === user?.id || canManageQuotes) }];
             })()}
             onSign={sign}
             onUnsign={unsign}

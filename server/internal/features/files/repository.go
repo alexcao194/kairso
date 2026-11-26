@@ -3,6 +3,7 @@ package files
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/workspace"
@@ -44,6 +45,7 @@ type CreateVersionParams struct {
 
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceID, callerID string) (workspace.WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
 
 	GetSettings(ctx context.Context, workspaceID string) (database.WorkspaceFileSetting, bool, error)
 	UpsertSettings(ctx context.Context, workspaceID string, maxMB int, allowedTypes string) (database.WorkspaceFileSetting, error)
@@ -370,4 +372,9 @@ func (r *repository) ResolveFeedbackToken(ctx context.Context, token string) (st
 		return "", "", "", false, err
 	}
 	return pgutil.UUIDToString(row.ProjectID), pgutil.UUIDToString(row.WorkspaceID), row.ProjectName, row.Enabled, nil
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

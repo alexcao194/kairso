@@ -36,7 +36,8 @@ export default function InitiativesPage() {
 }
 
 function Initiatives() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManagePerformance = can("performance.manage");
   const { user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
@@ -69,12 +70,12 @@ function Initiatives() {
                 {i.changesAfter && <p className="mt-1 rounded-md bg-hover px-2 py-1 text-[12.5px]"><span className="font-medium">{tr().initiatives.after}</span> {i.changesAfter}</p>}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                {isManager && (
+                {canManagePerformance && (
                   <Select small aria-label={tr().initiatives.changeStatus} className="w-36" value={i.status} onChange={(e) => updateInitiative.mutate({ id: i.id, body: { status: e.target.value as InitiativeResponse["status"] } }, { onError: (er) => toast.error(er) })}>
                     {INITIATIVE_STATUSES.map((s) => <option key={s} value={s}>{INITIATIVE_LABEL[s]}</option>)}
                   </Select>
                 )}
-                {(isManager || i.proposer.id === user?.id) && (
+                {(canManagePerformance || i.proposer.id === user?.id) && (
                   <>
                     <IconButton label={tr().initiatives.edit} variant="ghost" size="sm" onClick={() => setEdit(i)}><IconEdit size={13} /></IconButton>
                     <IconButton label={tr().initiatives.delete} variant="ghost" size="sm" onClick={async () => { if (await confirm({ title: tr().initiatives.confirmDelete, danger: true })) deleteInitiative.mutate(i.id, { onError: (e) => toast.error(e) }); }}><IconTrash size={13} /></IconButton>
@@ -122,7 +123,8 @@ function InitiativeForm({ item, onClose }: { item: InitiativeResponse | null; on
 }
 
 function Feedbacks() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManagePerformance = can("performance.manage");
   const { user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
@@ -146,7 +148,7 @@ function Feedbacks() {
                 {f.feedbackText && <p className="mt-1 rounded-md bg-hover px-2 py-1 text-[12.5px] italic text-ink-2">“{f.feedbackText}”</p>}
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-ink-muted">{tr().initiatives.beneficiariesLabel} {(f.beneficiaries ?? []).map((b) => `${b.name} ×${b.weight}`).join(", ") || "—"} · <span className="font-mono">{f.estimate}h</span></p>
               </div>
-              {(isManager || f.creator.id === user?.id) && (
+              {(canManagePerformance || f.creator.id === user?.id) && (
                 <span className="flex">
                   <IconButton label={tr().initiatives.edit} variant="ghost" size="sm" onClick={() => setEdit(f)}><IconEdit size={13} /></IconButton>
                   <IconButton label={tr().initiatives.delete} variant="ghost" size="sm" onClick={async () => { if (await confirm({ title: tr().initiatives.confirmDeleteFb, danger: true })) deleteFeedback.mutate(f.id, { onError: (e) => toast.error(e) }); }}><IconTrash size={13} /></IconButton>

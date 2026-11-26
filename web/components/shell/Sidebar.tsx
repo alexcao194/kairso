@@ -59,7 +59,8 @@ export function Sidebar({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const { workspaceId, projects, unreadCount, myTasksCount, threadsCount, isManager } = useWorkspace();
+  const { workspaceId, projects, unreadCount, myTasksCount, threadsCount, can } = useWorkspace();
+  const canViewTeam = can("attendance.view_all");
   const { openCreateProject, openCommandPalette } = useDialogs();
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [showAll, setShowAll] = useState(false);
@@ -213,7 +214,7 @@ export function Sidebar({
           <SidebarNavItem {...nav("/initiatives")} hue={NAV_HUE.initiatives} icon={<IconBulb />} label={tr.sidebar.initiatives} />
           <SidebarNavItem {...nav("/files")} hue={NAV_HUE.files} icon={<IconFolder />} label={tr.sidebar.files} />
           <SidebarNavItem {...nav("/quotes")} hue={NAV_HUE.quotes} icon={<IconFile />} label={tr.quotes.title} />
-          {isManager && <SidebarNavItem {...nav("/analytics")} hue={NAV_HUE.analytics} icon={<IconChart />} label={tr.sidebar.analytics} />}
+          {canViewTeam && <SidebarNavItem {...nav("/analytics")} hue={NAV_HUE.analytics} icon={<IconChart />} label={tr.sidebar.analytics} />}
           <SidebarNavItem {...nav("/settings")} hue={NAV_HUE.settings} icon={<IconUsers />} label={tr.sidebar.settings} />
         </nav>
       </div>

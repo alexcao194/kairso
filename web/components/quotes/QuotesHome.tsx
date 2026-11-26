@@ -26,7 +26,8 @@ type Tab = "quotes" | "customers" | "settings";
 
 export function QuotesHome() {
   const t = useT();
-  const { isManager } = useWorkspace();
+  const { can } = useWorkspace();
+  const canManageQuotes = can("quotes.manage");
   const [tab, setTab] = useUrlState("tab", "quotes");
   const [creating, setCreating] = useState(false);
   const [project] = useUrlState("project", "");
@@ -37,7 +38,7 @@ export function QuotesHome() {
       <TopBar>
         <Breadcrumb items={[{ label: t.quotes.title }]} />
         <TopBarSpacer />
-        {isManager && (
+        {canManageQuotes && (
           <Button size="sm" variant="primary" onClick={() => setCreating(true)}>
             <IconPlus size={13} /> {t.quotes.newQuote}
           </Button>
@@ -140,14 +141,15 @@ function CustomersTab() {
   const t = useT();
   const toast = useToast();
   const confirm = useConfirm();
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageQuotes = can("quotes.manage");
   const q = useCustomers(workspaceId);
   const { remove } = useCustomerMutations(workspaceId);
   const [editing, setEditing] = useState<CustomerResponse | "new" | null>(null);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-surface">
-      {isManager && (
+      {canManageQuotes && (
         <div className="flex h-toolbar shrink-0 items-center border-b border-line px-4">
           <Button size="sm" onClick={() => setEditing("new")}><IconPlus size={13} /> {t.customersTab.add}</Button>
         </div>
@@ -180,7 +182,7 @@ function CustomersTab() {
                   <td className="px-2">{c.email || "—"}</td>
                   <td className="px-2">{c.phone || "—"}</td>
                   <td className="px-2">
-                    {isManager && (
+                    {canManageQuotes && (
                       <Menu
                         align="end"
                         trigger={({ ref, open: _o, ...p }) => (
@@ -258,7 +260,8 @@ export function CustomerModal({ customer, onClose, onSaved }: { customer: Custom
 function SettingsTab() {
   const t = useT();
   const toast = useToast();
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageQuotes = can("quotes.manage");
   const q = useQuoteSettings(workspaceId);
   const save = useQuoteSettingsMutation(workspaceId);
   const [form, setForm] = useState<QuoteSettingsRequest | null>(null);
@@ -271,7 +274,7 @@ function SettingsTab() {
 
   const set = <K extends keyof QuoteSettingsRequest>(k: K, v: QuoteSettingsRequest[K]) => setForm((f) => (f ? { ...f, [k]: v } : f));
   const text = (k: keyof QuoteSettingsRequest) => (e: { target: { value: string } }) => set(k, e.target.value as never);
-  const ro = !isManager;
+  const ro = !canManageQuotes;
 
   return (
     <div className="min-h-0 flex-1 overflow-auto bg-surface">
@@ -299,7 +302,7 @@ function SettingsTab() {
             <Field label={t.quoteSettings.defaultTerms} className="col-span-2">{(p) => <Textarea {...p} disabled={ro} rows={4} value={form.defaultTerms} onChange={text("defaultTerms")} />}</Field>
           </div>
         </section>
-        {isManager && (
+        {canManageQuotes && (
           <div>
             <Button variant="primary" loading={save.isPending} onClick={() => save.mutate(form, { onSuccess: () => toast.success(t.quoteSettings.saved), onError: (e) => toast.error(e) })}>
               {t.common.save}

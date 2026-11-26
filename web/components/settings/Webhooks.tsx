@@ -48,11 +48,12 @@ export function WebhooksSection() {
   const toast = useToast();
   const confirm = useConfirm();
   const qc = useQueryClient();
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageWebhooks = can("webhooks.manage");
   const [editing, setEditing] = useState<WebhookResponse | "new" | null>(null);
   const [logFor, setLogFor] = useState<WebhookResponse | null>(null);
 
-  const q = useQuery({ queryKey: qk.webhooks(workspaceId), queryFn: () => getWorkspaceWebhooks(workspaceId), enabled: !!workspaceId && isManager });
+  const q = useQuery({ queryKey: qk.webhooks(workspaceId), queryFn: () => getWorkspaceWebhooks(workspaceId), enabled: !!workspaceId && canManageWebhooks });
   const refresh = () => qc.invalidateQueries({ queryKey: qk.webhooks(workspaceId) });
   const toggle = useMutation({
     mutationFn: (w: WebhookResponse) => putWorkspaceWebhook(workspaceId, w.id, { name: w.name, url: w.url, token: "", enabled: !w.enabled }),
@@ -74,7 +75,7 @@ export function WebhooksSection() {
     onError: (e) => toast.error(e),
   });
 
-  if (!isManager) return <Alert>{t.managerOnly}</Alert>;
+  if (!canManageWebhooks) return <Alert>{t.managerOnly}</Alert>;
 
   return (
     <div className="flex flex-col gap-4">

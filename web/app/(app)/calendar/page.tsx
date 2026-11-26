@@ -33,11 +33,13 @@ import { monthTitle } from "@/lib/domain/format";
 type Tab = "attendance" | "schedule" | "requests" | "pending" | "team" | "summary" | "late";
 
 export default function CalendarPage() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
+  const canViewTeam = can("attendance.view_all");
   const { openCheckIn } = useDialogs();
   const [tab, setTab] = useUrlState("tab", "attendance");
   const [date] = useUrlState("date", "");
-  const pendingS = usePendingSchedules(workspaceId, isManager);
+  const pendingS = usePendingSchedules(workspaceId, canManageAttendance);
   const pendingR = useCheckRequests(workspaceId, "all", "pending");
   const t = (["attendance", "schedule", "requests", "pending", "team", "summary", "late"].includes(tab) ? tab : "attendance") as Tab;
 
@@ -64,8 +66,9 @@ export default function CalendarPage() {
         tabs={[
           { value: "attendance", label: tr().calPage.attendance },
           { value: "schedule", label: tr().calPage.schedule },
-          { value: "requests", label: tr().calPage.requests, count: isManager ? pendingR.data?.length : undefined },
-          ...(isManager ? ([{ value: "pending", label: tr().calPage.pending, count: pendingS.data?.length }, { value: "team", label: tr().calPage.team }, { value: "summary", label: tr().calPage.summary }] as const) : []),
+          { value: "requests", label: tr().calPage.requests, count: canManageAttendance ? pendingR.data?.length : undefined },
+          ...(canManageAttendance ? ([{ value: "pending", label: tr().calPage.pending, count: pendingS.data?.length }] as const) : []),
+          ...(canViewTeam ? ([{ value: "team", label: tr().calPage.team }, { value: "summary", label: tr().calPage.summary }] as const) : []),
           { value: "late", label: tr().calPage.late },
         ]}
       />
@@ -85,7 +88,9 @@ export default function CalendarPage() {
 }
 
 function Attendance() {
-  const { workspaceId, isManager, members } = useWorkspace();
+  const { workspaceId, can, members } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
+  const canViewTeam = can("attendance.view_all");
   const [monthParam, setMonthParam] = useUrlState("month", "");
   const [memberId, setMemberId] = useUrlState("member", "");
   const [selected, setSelected] = useState<string | null>(null);
@@ -120,7 +125,7 @@ function Attendance() {
           <IconButton label={tr().calPage.nextMonth} variant="ghost" onClick={() => go(1)}><IconChevronRight size={14} /></IconButton>
           <Button size="sm" variant="ghost" onClick={() => setMonthParam(null)}>{tr().calPage.today}</Button>
           <span className="flex-1" />
-          {isManager && (
+          {canViewTeam && (
             <Select small aria-label={tr().calPage.viewOf} className="w-44" value={memberId} onChange={(e) => setMemberId(e.target.value || null)}>
               <option value="">{tr().calPage.mine}</option>
               {members.map((m) => <option key={m.userId} value={m.userId}>{m.userName}</option>)}
@@ -161,10 +166,10 @@ function Attendance() {
               {(sel?.sessions ?? []).map((s, i) => <p key={i} className="font-mono text-[12px] text-ink-2">{tr().calPage.in} {s.checkIn ? fmtTime(s.checkIn.recordedAt) : "—"} · {tr().calPage.out} {s.checkOut ? fmtTime(s.checkOut.recordedAt) : "—"}</p>)}
               {(sel?.events ?? []).map((e) => <p key={e.id} className="text-[12.5px] text-ink-2">• {e.title}</p>)}
               {!sel && <EmptyState title={tr().calPage.noData} className="py-3" />}
-              {user && (isManager || !memberId) && (
-                <DayEditor key={`${memberId || user.id}-${selected}-${JSON.stringify([sel?.schedule ?? null, sel?.sessions ?? []])}`} date={selected} day={sel} memberId={memberId || user.id} isSelf={!memberId} isManager={isManager} />
+              {user && (canManageAttendance || canViewTeam || !memberId) && (
+                <DayEditor key={`${memberId || user.id}-${selected}-${JSON.stringify([sel?.schedule ?? null, sel?.sessions ?? []])}`} date={selected} day={sel} memberId={memberId || user.id} isSelf={!memberId} isManager={canManageAttendance} />
               )}
-              {!memberId && !isManager && selected < new Date().toISOString().slice(0, 10) && <Link href={`/calendar?tab=requests&date=${selected}`} className="mt-1 text-[12.5px] font-medium text-accent-ink">{tr().calPage.requestForDay}</Link>}
+              {!memberId && !canManageAttendance && selected < new Date().toISOString().slice(0, 10) && <Link href={`/calendar?tab=requests&date=${selected}`} className="mt-1 text-[12.5px] font-medium text-accent-ink">{tr().calPage.requestForDay}</Link>}
             </div>
           )}
         </section>

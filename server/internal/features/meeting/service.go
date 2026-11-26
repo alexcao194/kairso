@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"strings"
 	"time"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/features/docsign"
-	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
 	"github.com/alexcao194/kairso/pkg/realtime"
@@ -66,15 +66,15 @@ func (s *service) broadcast(ctx context.Context, workspaceID, eventType, entityI
 	})
 }
 
-func (s *service) callerRole(ctx context.Context, workspaceID, callerID string) (string, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceID, callerID)
+func (s *service) callerRole(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	g, err := s.repo.GetCallerAccess(ctx, workspaceID, callerID)
 	if err != nil {
-		return "", err
+		return access.Grant{}, err
 	}
-	if role == "" {
-		return "", ErrForbidden
+	if !g.IsMember() {
+		return access.Grant{}, ErrForbidden
 	}
-	return role, nil
+	return g, nil
 }
 
 func invalid(format string, args ...any) error {
@@ -296,8 +296,8 @@ func (s *service) Delete(ctx context.Context, id, callerID string) error {
 	if err != nil {
 		return err
 	}
-	if m.CreatedBy.ID != callerID && role != string(workspace.WorkspaceRoleAdmin) && role != string(workspace.WorkspaceRoleHolder) {
-		return fmt.Errorf("%w: chỉ người tạo hoặc quản trị workspace mới được xoá biên bản", ErrForbidden)
+	if m.CreatedBy.ID != callerID && !role.Can(access.MeetingsManage) {
+		return fmt.Errorf("%w: chỉ người tạo hoặc người có quyền quản lý biên bản mới được xoá", ErrForbidden)
 	}
 	if err := s.repo.Delete(ctx, id); err != nil {
 		return err

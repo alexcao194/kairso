@@ -38,7 +38,8 @@ import { tr } from "@/lib/i18n";
 
 export default function ProjectModulesPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params);
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageQuotes = can("quotes.manage");
   const router = useRouter();
   const toast = useToast();
   const confirm = useConfirm();
@@ -148,7 +149,7 @@ export default function ProjectModulesPage({ params }: { params: Promise<{ proje
                           { label: "Sprint", icon: <IconTimeline size={14} />, onSelect: () => setDetailId(m.id) },
                           { label: tr().modulesPage.docs, icon: <IconPaperclip size={14} />, onSelect: () => setDetailId(m.id, "files") },
                           { label: tr().modulesPage.history, icon: <IconClock size={14} />, onSelect: () => setDetailId(m.id, "history") },
-                          ...(isManager ? [{ label: tr().quotes.forModule, icon: <IconFile size={14} />, onSelect: () => setQuoteFor(m.id) }] : []),
+                          ...(canManageQuotes ? [{ label: tr().quotes.forModule, icon: <IconFile size={14} />, onSelect: () => setQuoteFor(m.id) }] : []),
                           { label: tr().quotes.moduleQuotes, icon: <IconFile size={14} />, onSelect: () => router.push(`/quotes?project=${projectId}&module=${m.id}`) },
                           { label: tr().modulesPage.edit, icon: <IconEdit size={14} />, onSelect: () => setForm({ module: m }) },
                           {

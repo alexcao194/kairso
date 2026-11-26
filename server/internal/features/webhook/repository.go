@@ -3,6 +3,7 @@ package webhook
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/workspace"
@@ -13,6 +14,7 @@ import (
 
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceID, userID pgtype.UUID) (workspace.WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, userID pgtype.UUID) (access.Grant, error)
 	List(ctx context.Context, workspaceID pgtype.UUID) ([]database.Webhook, error)
 	ListEnabled(ctx context.Context, workspaceID pgtype.UUID) ([]database.ListEnabledWebhooksRow, error)
 	Count(ctx context.Context, workspaceID pgtype.UUID) (int64, error)
@@ -101,4 +103,9 @@ func (r *repository) InsertDelivery(ctx context.Context, arg database.InsertWebh
 
 func (r *repository) ListDeliveries(ctx context.Context, webhookID pgtype.UUID) ([]database.ListWebhookDeliveriesRow, error) {
 	return r.queries.ListWebhookDeliveries(ctx, webhookID)
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, userID pgtype.UUID) (access.Grant, error) {
+	return access.LoadUUID(ctx, r.queries, workspaceID, userID)
 }

@@ -4,7 +4,7 @@ export const webhooks = defineMessages({
   vi: {
     webhooks: {
       intro: "Gửi mọi sự kiện của workspace (task, dự án, module, chấm công, báo giá…) tới URL của bạn ngay khi chúng xảy ra — dùng cho n8n, Zapier, Make hoặc hệ thống riêng.",
-      managerOnly: "Chỉ chủ workspace và quản trị viên được xem và quản lý webhook.",
+      managerOnly: "Bạn cần quyền “Quản lý webhook” để xem và cấu hình webhook.",
       add: "Thêm webhook",
       edit: "Sửa webhook",
       empty: "Chưa có webhook nào",
@@ -51,7 +51,7 @@ export const webhooks = defineMessages({
   en: {
     webhooks: {
       intro: "Send every workspace event (tasks, projects, modules, attendance, quotes…) to your URL as it happens — for n8n, Zapier, Make or your own systems.",
-      managerOnly: "Only workspace owners and admins can view and manage webhooks.",
+      managerOnly: "You need the “Manage webhooks” permission to view and configure webhooks.",
       add: "Add webhook",
       edit: "Edit webhook",
       empty: "No webhooks yet",

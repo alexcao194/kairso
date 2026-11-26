@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/pkg/pagination"
@@ -134,7 +135,7 @@ func (s *service) AddProjectMember(ctx context.Context, projectID, callerID, use
 	if err != nil {
 		return nil, err
 	}
-	if !callerRole.CanManageMembers() {
+	if !s.canManageMembers(ctx, pctx.WorkspaceID, callerID) {
 		return nil, ErrForbidden
 	}
 	if !callerRole.CanManageRole(role) {
@@ -165,7 +166,7 @@ func (s *service) UpdateProjectMemberRole(ctx context.Context, projectID, caller
 	if err != nil {
 		return nil, err
 	}
-	if !callerRole.CanManageMembers() {
+	if !s.canManageMembers(ctx, pctx.WorkspaceID, callerID) {
 		return nil, ErrForbidden
 	}
 	targetRole, err := s.repo.GetProjectMemberRole(ctx, projectID, userID)
@@ -200,7 +201,7 @@ func (s *service) RemoveProjectMember(ctx context.Context, projectID, callerID, 
 	if err != nil {
 		return err
 	}
-	if !callerRole.CanManageMembers() {
+	if !s.canManageMembers(ctx, pctx.WorkspaceID, callerID) {
 		return ErrForbidden
 	}
 	targetRole, err := s.repo.GetProjectMemberRole(ctx, projectID, userID)
@@ -322,4 +323,10 @@ func (s *service) DeleteProjectFile(ctx context.Context, fileID string) error {
 		s.broadcast(ctx, pctx.WorkspaceID, "project.file.deleted", fileID, "", nil)
 	}
 	return nil
+}
+
+// canManageMembers reports whether callerID may manage members in the workspace.
+func (s *service) canManageMembers(ctx context.Context, workspaceID, callerID string) bool {
+	g, err := s.repo.GetCallerAccess(ctx, workspaceID, callerID)
+	return err == nil && g.Can(access.MembersManage)
 }

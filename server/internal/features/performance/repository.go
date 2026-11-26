@@ -3,6 +3,7 @@ package performance
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"time"
 
 	"github.com/alexcao194/kairso/internal/database"
@@ -45,19 +46,7 @@ func (r *repository) GetCallerRole(ctx context.Context, workspaceAlias, callerID
 }
 
 func (r *repository) ListWorkspaceAdminHolderIDs(ctx context.Context, workspaceAlias string) ([]string, error) {
-	wid, err := pgutil.ParseUUID(workspaceAlias)
-	if err != nil {
-		return nil, err
-	}
-	uuids, err := r.queries.ListWorkspaceAdminHolderIDs(ctx, wid)
-	if err != nil {
-		return nil, err
-	}
-	ids := make([]string, 0, len(uuids))
-	for _, u := range uuids {
-		ids = append(ids, pgutil.UUIDToString(u))
-	}
-	return ids, nil
+	return access.UsersWith(ctx, r.queries, workspaceAlias, access.PerformanceManage, "")
 }
 
 func (r *repository) GetWorkspaceID(ctx context.Context, workspaceAlias string) (string, error) {
@@ -917,4 +906,9 @@ func (r *repository) ListMemberTaskBreakdown(ctx context.Context, workspaceAlias
 		})
 	}
 	return out, nil
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

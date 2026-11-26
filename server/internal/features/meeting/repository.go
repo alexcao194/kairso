@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -16,6 +17,7 @@ import (
 
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceID, callerID string) (string, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
 	Signatures() *docsign.Store
 	ProjectBelongsToWorkspace(ctx context.Context, projectID, workspaceID string) (bool, error)
 	Create(ctx context.Context, workspaceID, callerID string, req CreateMeetingMinutesRequest) (*MeetingMinutesResponse, error)
@@ -225,4 +227,9 @@ func (r *repository) Delete(ctx context.Context, id string) error {
 		return ErrNotFound
 	}
 	return r.queries.DeleteMeetingMinutes(ctx, mid)
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

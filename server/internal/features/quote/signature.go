@@ -2,6 +2,7 @@ package quote
 
 import (
 	"context"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -70,11 +71,11 @@ func (s *Service) UnsignQuote(ctx context.Context, workspaceID, callerID, quoteI
 	if !ok {
 		return nil, docsign.ErrNoSignature
 	}
-	r, err := s.repo.GetCallerRole(ctx, ws, caller)
+	g, err := s.repo.GetCallerAccess(ctx, ws, caller)
 	if err != nil {
 		return nil, err
 	}
-	if sig.UserID != callerID && !r.CanManageMembers() {
+	if sig.UserID != callerID && !g.Can(access.QuotesManage) {
 		return nil, ErrForbidden
 	}
 	if err := s.repo.Signatures().Unsign(ctx, docsign.TypeQuote, id, role); err != nil {

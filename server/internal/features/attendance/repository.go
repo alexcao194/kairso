@@ -3,6 +3,7 @@ package attendance
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"sort"
 	"time"
 
@@ -372,23 +373,7 @@ func (r *repository) DecideCheckRequest(ctx context.Context, requestID string, s
 }
 
 func (r *repository) ListCheckRequestNotificationRecipients(ctx context.Context, workspaceAlias, memberID string) ([]string, error) {
-	wid, err := pgutil.ParseUUID(workspaceAlias)
-	if err != nil {
-		return nil, err
-	}
-	uid, err := pgutil.ParseUUID(memberID)
-	if err != nil {
-		return nil, err
-	}
-	rows, err := r.queries.ListCheckRequestNotificationRecipients(ctx, database.ListCheckRequestNotificationRecipientsParams{WorkspaceID: wid, MemberID: uid})
-	if err != nil {
-		return nil, err
-	}
-	ids := make([]string, 0, len(rows))
-	for _, row := range rows {
-		ids = append(ids, pgutil.UUIDToString(row))
-	}
-	return ids, nil
+	return access.UsersWith(ctx, r.queries, workspaceAlias, access.AttendanceManage, memberID)
 }
 
 func (r *repository) ReplaceWorkSchedule(ctx context.Context, workspaceAlias, memberID, registeredBy string, req UpsertWorkScheduleRequest, status WorkScheduleStatus, weekNote string) (*WorkScheduleDayResponse, error) {
@@ -636,23 +621,7 @@ func (r *repository) GetMemberName(ctx context.Context, memberID string) (string
 }
 
 func (r *repository) ListScheduleNotificationRecipients(ctx context.Context, workspaceAlias, memberID string) ([]string, error) {
-	wid, err := pgutil.ParseUUID(workspaceAlias)
-	if err != nil {
-		return nil, err
-	}
-	uid, err := pgutil.ParseUUID(memberID)
-	if err != nil {
-		return nil, err
-	}
-	rows, err := r.queries.ListScheduleNotificationRecipients(ctx, database.ListScheduleNotificationRecipientsParams{WorkspaceID: wid, MemberID: uid})
-	if err != nil {
-		return nil, err
-	}
-	ids := make([]string, 0, len(rows))
-	for _, row := range rows {
-		ids = append(ids, pgutil.UUIDToString(row))
-	}
-	return ids, nil
+	return access.UsersWith(ctx, r.queries, workspaceAlias, access.AttendanceManage, memberID)
 }
 
 type scheduleDBFilter struct {
@@ -1125,4 +1094,9 @@ func (r *repository) hydrateScheduleRows(ctx context.Context, rows []database.Li
 		items = append(items, item)
 	}
 	return items, nil
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

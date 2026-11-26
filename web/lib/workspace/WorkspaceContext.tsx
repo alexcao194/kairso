@@ -7,6 +7,7 @@ import {
   getWorkspaceMembers,
   getWorkspaceMyTasksCount,
   getWorkspaceNotificationsUnreadCount,
+  getWorkspacePermissions,
   getWorkspaceProjects,
   getWorkspaceThreadsCount,
   getWorkspaces,
@@ -15,6 +16,7 @@ import type { ProjectResponse, WorkspaceMemberResponse, WorkspaceResponse, Works
 import { fetchAll } from "../query/paged";
 import { qk } from "../query/keys";
 import { useAuth } from "../auth/AuthContext";
+import { defaultPermissions, type Permission } from "../domain/permissions";
 
 const STORAGE_KEY = "kairso-workspace";
 
@@ -26,6 +28,8 @@ interface WorkspaceContextType {
   role: WorkspaceRole | null;
   isHolder: boolean;
   isManager: boolean;
+  /** Whether the current user has a workspace permission (the matrix the holder set). */
+  can: (p: Permission) => boolean;
   members: WorkspaceMemberResponse[];
   memberById: (userId?: string | null) => WorkspaceMemberResponse | undefined;
   projects: ProjectResponse[];
@@ -94,6 +98,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
   const projects = useMemo(() => projectsQuery.data ?? [], [projectsQuery.data]);
   const role = members.find((m) => m.userId === user?.id)?.role ?? null;
+  const permsQuery = useQuery({
+    queryKey: qk.permissions(workspaceId),
+    queryFn: () => getWorkspacePermissions(workspaceId),
+    enabled: on,
+  });
+  const mine = useMemo(
+    () => new Set<string>(permsQuery.data?.mine ?? defaultPermissions(role)),
+    [permsQuery.data, role],
+  );
 
   const setWorkspaceId = useCallback((id: string) => {
     setPreferredId(id);
@@ -130,6 +143,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       role,
       isHolder: role === "holder",
       isManager: role === "holder" || role === "admin",
+      can: (p) => mine.has(p),
       members,
       memberById: (id) => (id ? members.find((m) => m.userId === id) : undefined),
       projects,
@@ -139,7 +153,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       threadsCount: threadsCount.data?.count ?? 0,
       isLoading: enabled && wsQuery.isLoading,
     }),
-    [workspaces, workspace, workspaceId, setWorkspaceId, role, members, projects, unread.data, myCount.data, threadsCount.data, enabled, wsQuery.isLoading],
+    [workspaces, workspace, workspaceId, setWorkspaceId, role, members, projects, unread.data, myCount.data, threadsCount.data, enabled, wsQuery.isLoading, mine],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

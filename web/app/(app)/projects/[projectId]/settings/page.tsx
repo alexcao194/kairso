@@ -33,7 +33,8 @@ const ROLES: ProjectRole[] = ["holder", "admin", "member"];
 
 export default function ProjectSettingsPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = use(params);
-  const { workspaceId, projectById, isManager, role: wsRole } = useWorkspace();
+  const { workspaceId, projectById, role: wsRole, can } = useWorkspace();
+  const canManageMembers = can("members.manage");
   const { user } = useAuth();
   const project = projectById(projectId);
   const toast = useToast();
@@ -46,7 +47,7 @@ export default function ProjectSettingsPage({ params }: { params: Promise<{ proj
     enabled: !!workspaceId,
   });
   const myRole = members.data?.items?.find((m) => m.userId === user?.id)?.role;
-  const canManage = isManager || myRole === "holder" || myRole === "admin";
+  const canManage = canManageMembers || myRole === "holder" || myRole === "admin";
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["project-members"] });
     qc.invalidateQueries({ queryKey: ["projects"] });

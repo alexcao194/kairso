@@ -160,7 +160,7 @@ export const quotes = defineMessages({
       defaultValidDays: "Số ngày hiệu lực",
       defaultTerms: "Điều khoản mặc định",
       saved: "Đã lưu cấu hình báo giá",
-      managerOnly: "Chỉ chủ workspace và quản trị viên được sửa cấu hình.",
+      managerOnly: "Bạn cần quyền “Quản lý báo giá” để sửa cấu hình.",
     },
     quotePrint: {
       docTitle: "BÁO GIÁ",
@@ -360,7 +360,7 @@ export const quotes = defineMessages({
       defaultValidDays: "Validity (days)",
       defaultTerms: "Default terms",
       saved: "Quote settings saved",
-      managerOnly: "Only workspace owners and admins can change these settings.",
+      managerOnly: "You need the “Manage quotes” permission to change these settings.",
     },
     quotePrint: {
       docTitle: "QUOTATION",

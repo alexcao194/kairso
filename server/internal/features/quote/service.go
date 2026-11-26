@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"strings"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
@@ -90,11 +91,11 @@ func (s *Service) access(ctx context.Context, workspaceID, callerID string, mana
 	if err != nil {
 		return ws, caller, err
 	}
-	role, err := s.repo.GetCallerRole(ctx, ws, caller)
+	g, err := s.repo.GetCallerAccess(ctx, ws, caller)
 	if err != nil {
 		return ws, caller, err
 	}
-	if role == "" || (manage && !role.CanManageMembers()) {
+	if !g.IsMember() || (manage && !g.Can(access.QuotesManage)) {
 		return ws, caller, ErrForbidden
 	}
 	return ws, caller, nil

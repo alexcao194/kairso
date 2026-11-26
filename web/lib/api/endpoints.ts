@@ -1081,6 +1081,18 @@ export const patchWorkspaceNotificationsRead = (workspaceId: string, body: S.Rea
 export const getWorkspaceNotificationsUnreadCount = (workspaceId: string, opts?: RequestOptions): Promise<S.UnreadCountResponse> =>
   request<S.UnreadCountResponse>("GET", `/v1/workspaces/${enc(workspaceId)}/notifications/unread-count`, { ...opts });
 
+/** GET /v1/workspaces/{workspaceId}/permissions
+ * Get the workspace's role permissions
+ * The permission matrix for admins and members (the holder has every permission) and the caller's own permissions. */
+export const getWorkspacePermissions = (workspaceId: string, opts?: RequestOptions): Promise<S.RolePermissionsResponse> =>
+  request<S.RolePermissionsResponse>("GET", `/v1/workspaces/${enc(workspaceId)}/permissions`, { ...opts });
+
+/** PUT /v1/workspaces/{workspaceId}/permissions
+ * Update the workspace's role permissions
+ * Holder only. Sets which permissions admins and/or members have; a role left out keeps its permissions. */
+export const putWorkspacePermissions = (workspaceId: string, body: S.UpdateRolePermissionsRequest, opts?: RequestOptions): Promise<S.RolePermissionsResponse> =>
+  request<S.RolePermissionsResponse>("PUT", `/v1/workspaces/${enc(workspaceId)}/permissions`, { body, ...opts });
+
 export interface GetWorkspaceProjectsQuery {
   limit?: number;
   month?: string;

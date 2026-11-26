@@ -29,7 +29,8 @@ const hhmm = (isoStr: string) => fmtTime(isoStr);
 const serverSessions = (s?: WorkScheduleDayResponse): Session[] => (s?.sessions ?? []).map((v) => ({ start: hhmm(v.startAt), end: hhmm(v.endAt) }));
 
 export function ScheduleWeek({ memberId: fixedMember }: { memberId?: string }) {
-  const { workspaceId, isManager, members } = useWorkspace();
+  const { workspaceId, members, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
   const toast = useToast();
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const [memberId, setMemberId] = useState(fixedMember ?? "");
@@ -101,7 +102,7 @@ export function ScheduleWeek({ memberId: fixedMember }: { memberId?: string }) {
         <IconButton label={tr().schedWeek.nextWeek} onClick={() => setAnchor((a) => addDays(a, 7))}><IconChevronRight size={14} /></IconButton>
         <Button size="sm" variant="ghost" onClick={() => setAnchor(startOfWeek(new Date()))}>{tr().schedWeek.thisWeek}</Button>
         <span className="flex-1" />
-        {isManager && !fixedMember && (
+        {canManageAttendance && !fixedMember && (
           <Select small aria-label={tr().schedWeek.member} className="w-48" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
             <option value="">{tr().schedWeek.mine}</option>
             {members.map((mm) => <option key={mm.userId} value={mm.userId}>{mm.userName}</option>)}

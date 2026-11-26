@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -76,11 +77,11 @@ func (s *Service) manager(ctx context.Context, workspaceID, callerID string) (pg
 	if err != nil {
 		return ws, caller, err
 	}
-	role, err := s.repo.GetCallerRole(ctx, ws, caller)
+	g, err := s.repo.GetCallerAccess(ctx, ws, caller)
 	if err != nil {
 		return ws, caller, err
 	}
-	if !role.CanManageMembers() {
+	if !g.Can(access.WebhooksManage) {
 		return ws, caller, ErrForbidden
 	}
 	return ws, caller, nil

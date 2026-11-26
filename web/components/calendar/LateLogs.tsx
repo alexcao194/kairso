@@ -23,7 +23,8 @@ const toLocalInput = (iso?: string) => {
 };
 
 export function LateLogs() {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManagePerformance = can("performance.manage");
   const { user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
@@ -46,7 +47,7 @@ export function LateLogs() {
                 <p className="mt-0.5 text-[11.5px] text-ink-faint">{tr().lateLogs.by(l.creator.name)}</p>
               </div>
               <span className="font-mono text-[12.5px] font-medium">{l.estimate}h</span>
-              {(isManager || l.creator.id === user?.id) && (
+              {(canManagePerformance || l.creator.id === user?.id) && (
                 <span className="flex">
                   <IconButton label={tr().lateLogs.edit} variant="ghost" size="sm" onClick={() => setEdit(l)}><IconEdit size={13} /></IconButton>
                   <IconButton label={tr().lateLogs.delete} variant="ghost" size="sm" onClick={async () => { if (await confirm({ title: tr().lateLogs.confirmDelete, danger: true })) deleteLateLog.mutate(l.id, { onError: (e) => toast.error(e) }); }}><IconTrash size={13} /></IconButton>

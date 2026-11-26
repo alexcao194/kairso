@@ -24,10 +24,11 @@ const at = (date: string, time: string) => {
 };
 
 export function CheckRequests({ prefillDate }: { prefillDate?: string }) {
-  const { workspaceId, isManager } = useWorkspace();
+  const { workspaceId, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
   const toast = useToast();
   const mine = useCheckRequests(workspaceId, "me");
-  const all = useCheckRequests(workspaceId, "all", isManager ? "" : undefined);
+  const all = useCheckRequests(workspaceId, "all", canManageAttendance ? "" : undefined);
   const m = useAttendanceMutations(workspaceId);
   const [open, setOpen] = useState(!!prefillDate);
 
@@ -36,7 +37,7 @@ export function CheckRequests({ prefillDate }: { prefillDate?: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {isManager && (
+      {canManageAttendance && (
         <section aria-labelledby="cr-all">
           <h2 id="cr-all" className="mb-2 text-[13px] font-semibold">{tr().checkReq.members}</h2>
           {all.isLoading ? <Skeleton className="h-20" /> : (all.data ?? []).length === 0 ? <EmptyState title={tr().checkReq.none} className="rounded-lg border border-line bg-surface py-8" /> : (

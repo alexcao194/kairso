@@ -38,7 +38,8 @@ interface Item {
 }
 
 export default function HomePage() {
-  const { workspace, workspaceId, projects, isManager, memberById } = useWorkspace();
+  const { workspace, workspaceId, projects, memberById, can } = useWorkspace();
+  const canManageAttendance = can("attendance.manage");
   const { user } = useAuth();
   const { openCreateTask, openCheckIn } = useDialogs();
   const today = localDateKey();
@@ -51,10 +52,10 @@ export default function HomePage() {
   const overviews = useProjectOverviews(workspaceId, projects.map((p) => p.id));
   const history = useWorkspaceHistory(workspaceId);
   const calendar = useMyCalendar(workspaceId, today, today);
-  const pendingSchedules = usePendingSchedules(workspaceId, isManager);
+  const pendingSchedules = usePendingSchedules(workspaceId, canManageAttendance);
   const checkReqs = useCheckRequests(workspaceId, "all", "pending");
   const feedbackSummaries = useQueries({
-    queries: (isManager ? projects : []).map((p) => ({
+    queries: (canManageAttendance ? projects : []).map((p) => ({
       queryKey: qk.feedbackSummary(workspaceId, p.id),
       queryFn: () => getWorkspaceProjectFeedbackSummary(workspaceId, p.id),
     })),

@@ -14,7 +14,8 @@ const DEFAULT_PICK = "#4F46E5";
 
 /** Workspace brand colour: any colour, previewed live, applied to the UI and to exported PDFs. */
 export function BrandColorCard() {
-  const { workspace, workspaceId, isManager } = useWorkspace();
+  const { workspace, workspaceId, can } = useWorkspace();
+  const canEditWorkspace = can("workspace.settings");
   const toast = useToast();
   const qc = useQueryClient();
   const saved = normalizeBrand(workspace?.brandColor);
@@ -44,14 +45,14 @@ export function BrandColorCard() {
               <span className="text-[12px] font-medium text-ink-2">{tr().ops.brandPick}</span>
               <input
                 type="color"
-                disabled={!isManager}
+                disabled={!canEditWorkspace}
                 value={draft ?? saved ?? DEFAULT_PICK}
                 onChange={(e) => setText(e.target.value.toUpperCase())}
                 className="h-ctl w-14 cursor-pointer rounded-md border border-line-strong bg-surface p-0.5 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </label>
             <Field label={tr().ops.brandHex} error={valid ? undefined : tr().ops.brandInvalid} className="w-[160px]">
-              {(p) => <Input {...p} disabled={!isManager} value={text} maxLength={7} placeholder="#4F46E5" onChange={(e) => setText(e.target.value.startsWith("#") || !e.target.value ? e.target.value : `#${e.target.value}`)} />}
+              {(p) => <Input {...p} disabled={!canEditWorkspace} value={text} maxLength={7} placeholder="#4F46E5" onChange={(e) => setText(e.target.value.startsWith("#") || !e.target.value ? e.target.value : `#${e.target.value}`)} />}
             </Field>
           </div>
           <div role="group" aria-label={tr().ops.brandPresets} className="flex flex-wrap gap-1.5">
@@ -59,7 +60,7 @@ export function BrandColorCard() {
               <button
                 key={c}
                 type="button"
-                disabled={!isManager}
+                disabled={!canEditWorkspace}
                 aria-label={c}
                 aria-pressed={draft === c}
                 onClick={() => setText(c)}
@@ -68,7 +69,7 @@ export function BrandColorCard() {
               />
             ))}
           </div>
-          {isManager && (
+          {canEditWorkspace && (
             <div className="flex gap-2">
               <Button variant="primary" loading={save.isPending} disabled={!valid || !changed} onClick={() => save.mutate(draft ?? "")}>{tr().ops.save}</Button>
               <Button variant="ghost" disabled={!saved && !text} onClick={() => (setText(""), saved && save.mutate(""))}>{tr().ops.brandReset}</Button>

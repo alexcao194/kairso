@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
@@ -24,11 +25,13 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("POST /v1/workspaces", authMid.Handle(h.CreateWorkspace))
 	mux.HandleFunc("GET /v1/workspaces", authMid.Handle(h.ListWorkspaces))
 	mux.HandleFunc("GET /v1/invitations", authMid.Handle(h.ListMyInvitations))
-	mux.HandleFunc("PATCH /v1/workspaces/{workspaceId}", authMid.Handle(h.UpdateWorkspace))
-	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/history", authMid.Handle(h.ListWorkspaceHistory))
-	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}", authMid.Handle(h.DeleteWorkspace))
+	mux.HandleFunc("PATCH /v1/workspaces/{workspaceId}", authMid.Handle(h.permitted(access.WorkspaceSettings, h.UpdateWorkspace)))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/history", authMid.Handle(h.memberOnly(h.ListWorkspaceHistory)))
+	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}", authMid.Handle(h.holderOnly(h.DeleteWorkspace)))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/permissions", authMid.Handle(h.GetRolePermissions))
+	mux.HandleFunc("PUT /v1/workspaces/{workspaceId}/permissions", authMid.Handle(h.UpdateRolePermissions))
 
-	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/members", authMid.Handle(h.ListWorkspaceMembers))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/members", authMid.Handle(h.memberOnly(h.ListWorkspaceMembers)))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/invitations", authMid.Handle(h.InviteMember))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/invitations/{invitationId}/accept", authMid.Handle(h.AcceptInvitation))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/invitations/{invitationId}/reject", authMid.Handle(h.RejectInvitation))
@@ -39,18 +42,18 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/members/{userId}", authMid.Handle(h.RemoveMember))
 	mux.HandleFunc("PATCH /v1/workspaces/{workspaceId}/members/{userId}", authMid.Handle(h.UpdateMemberRole))
 
-	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/links", authMid.Handle(h.CreateWorkspaceLink))
-	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/links", authMid.Handle(h.ListWorkspaceLinks))
-	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/links/{linkId}", authMid.Handle(h.DeleteWorkspaceLink))
+	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/links", authMid.Handle(h.memberOnly(h.CreateWorkspaceLink)))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/links", authMid.Handle(h.memberOnly(h.ListWorkspaceLinks)))
+	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/links/{linkId}", authMid.Handle(h.memberOnly(h.DeleteWorkspaceLink)))
 
-	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/notes", authMid.Handle(h.CreateWorkspaceNote))
-	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/notes", authMid.Handle(h.ListWorkspaceNotes))
-	mux.HandleFunc("PATCH /v1/workspaces/{workspaceId}/notes/{noteId}", authMid.Handle(h.UpdateWorkspaceNote))
-	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/notes/{noteId}", authMid.Handle(h.DeleteWorkspaceNote))
+	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/notes", authMid.Handle(h.memberOnly(h.CreateWorkspaceNote)))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/notes", authMid.Handle(h.memberOnly(h.ListWorkspaceNotes)))
+	mux.HandleFunc("PATCH /v1/workspaces/{workspaceId}/notes/{noteId}", authMid.Handle(h.memberOnly(h.UpdateWorkspaceNote)))
+	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/notes/{noteId}", authMid.Handle(h.memberOnly(h.DeleteWorkspaceNote)))
 
-	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/files", authMid.Handle(h.CreateWorkspaceFile))
-	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/files", authMid.Handle(h.ListWorkspaceFiles))
-	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/files/{fileId}", authMid.Handle(h.DeleteWorkspaceFile))
+	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/files", authMid.Handle(h.memberOnly(h.CreateWorkspaceFile)))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/files", authMid.Handle(h.memberOnly(h.ListWorkspaceFiles)))
+	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/files/{fileId}", authMid.Handle(h.memberOnly(h.DeleteWorkspaceFile)))
 }
 
 // @Summary Create Workspace

@@ -925,14 +925,15 @@ type WorkScheduleSession struct {
 }
 
 type Workspace struct {
-	ID          pgtype.UUID        `json:"id"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	CreatedByID pgtype.UUID        `json:"created_by_id"`
-	Name        string             `json:"name"`
-	Avatar      pgtype.Text        `json:"avatar"`
-	BrandColor  pgtype.Text        `json:"brand_color"`
+	ID              pgtype.UUID        `json:"id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
+	CreatedByID     pgtype.UUID        `json:"created_by_id"`
+	Name            string             `json:"name"`
+	Avatar          pgtype.Text        `json:"avatar"`
+	BrandColor      pgtype.Text        `json:"brand_color"`
+	RolePermissions []byte             `json:"role_permissions"`
 }
 
 type WorkspaceAttendanceSetting struct {

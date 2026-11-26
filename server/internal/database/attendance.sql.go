@@ -996,39 +996,6 @@ func (q *Queries) ListAttendanceRecordsByAlias(ctx context.Context, arg ListAtte
 	return items, nil
 }
 
-const listCheckRequestNotificationRecipients = `-- name: ListCheckRequestNotificationRecipients :many
-SELECT wu.user_id
-FROM workspace_users wu
-WHERE wu.workspace_id = $1::uuid
-  AND wu.role = 'holder'
-  AND wu.user_id <> $2
-`
-
-type ListCheckRequestNotificationRecipientsParams struct {
-	WorkspaceID pgtype.UUID `json:"workspace_id"`
-	MemberID    pgtype.UUID `json:"member_id"`
-}
-
-func (q *Queries) ListCheckRequestNotificationRecipients(ctx context.Context, arg ListCheckRequestNotificationRecipientsParams) ([]pgtype.UUID, error) {
-	rows, err := q.db.Query(ctx, listCheckRequestNotificationRecipients, arg.WorkspaceID, arg.MemberID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []pgtype.UUID{}
-	for rows.Next() {
-		var user_id pgtype.UUID
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listDailyReportsByAlias = `-- name: ListDailyReportsByAlias :many
 SELECT
     dr.id,
@@ -1110,39 +1077,6 @@ func (q *Queries) ListDailyReportsByAlias(ctx context.Context, arg ListDailyRepo
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listScheduleNotificationRecipients = `-- name: ListScheduleNotificationRecipients :many
-SELECT wu.user_id
-FROM workspace_users wu
-WHERE wu.workspace_id = $1::uuid
-  AND wu.role IN ('holder', 'admin')
-  AND wu.user_id <> $2
-`
-
-type ListScheduleNotificationRecipientsParams struct {
-	WorkspaceID pgtype.UUID `json:"workspace_id"`
-	MemberID    pgtype.UUID `json:"member_id"`
-}
-
-func (q *Queries) ListScheduleNotificationRecipients(ctx context.Context, arg ListScheduleNotificationRecipientsParams) ([]pgtype.UUID, error) {
-	rows, err := q.db.Query(ctx, listScheduleNotificationRecipients, arg.WorkspaceID, arg.MemberID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []pgtype.UUID{}
-	for rows.Next() {
-		var user_id pgtype.UUID
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

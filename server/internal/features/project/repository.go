@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"time"
 
 	"github.com/alexcao194/kairso/internal/database"
@@ -42,6 +43,7 @@ type Repository interface {
 	DeleteProject(ctx context.Context, projectID string) error
 
 	GetCallerWorkspaceRole(ctx context.Context, workspaceID, callerID string) (ProjectRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
 	GetProjectMemberRole(ctx context.Context, projectID, userID string) (ProjectRole, error)
 	GetProjectContext(ctx context.Context, projectID string) (ProjectContext, error)
 	ListProjectMembers(ctx context.Context, projectID string, params pagination.Params, includeAvailable bool) (*ListProjectMembersResponse, error)
@@ -667,4 +669,9 @@ func equalStringPtr(left, right *string) bool {
 		return left == right
 	}
 	return *left == *right
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

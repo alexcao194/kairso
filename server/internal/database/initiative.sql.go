@@ -218,32 +218,6 @@ func (q *Queries) ListInitiatives(ctx context.Context, arg ListInitiativesParams
 	return items, nil
 }
 
-const listWorkspaceAdminHolderIDs = `-- name: ListWorkspaceAdminHolderIDs :many
-SELECT wu.user_id
-FROM workspace_users wu
-WHERE wu.workspace_id = $1::uuid AND wu.role IN ('admin', 'holder')
-`
-
-func (q *Queries) ListWorkspaceAdminHolderIDs(ctx context.Context, workspaceID pgtype.UUID) ([]pgtype.UUID, error) {
-	rows, err := q.db.Query(ctx, listWorkspaceAdminHolderIDs, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []pgtype.UUID{}
-	for rows.Next() {
-		var user_id pgtype.UUID
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const sumInitiativeEstimateByRefMember = `-- name: SumInitiativeEstimateByRefMember :many
 SELECT i.ref_member_id AS user_id, COALESCE(SUM(i.estimate), 0)::float AS total
 FROM initiatives i

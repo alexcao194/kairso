@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"errors"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/pagination"
@@ -17,6 +18,7 @@ type Service interface {
 
 type Repository interface {
 	GetCallerRole(ctx context.Context, workspaceAlias, callerID string) (workspace.WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
 	ListEvents(ctx context.Context, workspaceAlias string, filter CalendarEventFilter) ([]CalendarDayResponse, error)
 	ListMembersEvents(ctx context.Context, workspaceAlias string, filter CalendarEventFilter) ([]MemberCalendarResponse, error)
 }
@@ -30,18 +32,18 @@ func NewService(repo Repository) Service {
 }
 
 func (s *service) ListEvents(ctx context.Context, workspaceAlias, callerID string, filter CalendarEventFilter) ([]CalendarDayResponse, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	role, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return nil, err
 	}
-	if role == "" {
+	if !role.IsMember() {
 		return nil, ErrForbidden
 	}
 	if filter.MemberID == "" {
 		filter.MemberID = callerID
 	}
 	if filter.MemberID != callerID {
-		if !roleCanViewAll(role) {
+		if !role.Can(access.AttendanceViewAll) {
 			return nil, ErrForbidden
 		}
 	}
@@ -50,11 +52,11 @@ func (s *service) ListEvents(ctx context.Context, workspaceAlias, callerID strin
 
 func (s *service) ListMembersEvents(ctx context.Context, workspaceAlias, callerID string, filter CalendarEventFilter, params pagination.Params) (pagination.Response[MemberCalendarResponse], error) {
 	var empty pagination.Response[MemberCalendarResponse]
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	role, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return empty, err
 	}
-	if !roleCanViewAll(role) {
+	if !role.Can(access.AttendanceViewAll) {
 		return empty, ErrForbidden
 	}
 	all, err := s.repo.ListMembersEvents(ctx, workspaceAlias, filter)
@@ -68,8 +70,4 @@ func (s *service) ListMembersEvents(ctx context.Context, workspaceAlias, callerI
 	all = all[offset:]
 	hasMore := pagination.Process(&all, params.Limit)
 	return pagination.NewResponse(all, hasMore, params.Page, params.Limit), nil
-}
-
-func roleCanViewAll(role workspace.WorkspaceRole) bool {
-	return role == workspace.WorkspaceRoleHolder || role == workspace.WorkspaceRoleAdmin
 }

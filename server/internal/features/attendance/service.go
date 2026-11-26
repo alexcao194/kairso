@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"math"
 	"sort"
 	"strings"
@@ -92,6 +93,7 @@ type ScheduleNotificationPublisher interface {
 type Repository interface {
 	ExecTx(ctx context.Context, fn func(Repository) error) error
 	GetCallerRole(ctx context.Context, workspaceAlias, callerID string) (workspace.WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
 	CheckProjectManageAuth(ctx context.Context, projectID, callerID string) (bool, error)
 	GetAttendanceSettings(ctx context.Context, workspaceAlias string) (*AttendanceSettingResponse, error)
 	UpsertAttendanceSettings(ctx context.Context, workspaceAlias string, req UpsertAttendanceSettingRequest) (*AttendanceSettingResponse, error)
@@ -246,7 +248,7 @@ func (s *services) UpsertSettings(ctx context.Context, workspaceAlias, callerID 
 	if err := normalizeAttendanceSettingRequest(&req); err != nil {
 		return nil, err
 	}
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return nil, err
 	}
 	settings, err := s.repo.UpsertAttendanceSettings(ctx, workspaceAlias, req)
@@ -391,19 +393,19 @@ func (s *services) ListRecords(ctx context.Context, workspaceAlias, callerID str
 	return s.repo.ListAttendanceRecords(ctx, workspaceAlias, callerID, filter, params)
 }
 
-func (s *services) requireHolderOrAdmin(ctx context.Context, workspaceAlias, callerID string) error {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+func (s *services) require(ctx context.Context, workspaceAlias, callerID string, perm access.Permission) error {
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return err
 	}
-	if !role.CanManageMembers() {
+	if !g.Can(perm) {
 		return ErrForbidden
 	}
 	return nil
 }
 
 func (s *services) DeleteRecord(ctx context.Context, workspaceAlias, callerID, recordID string) error {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return err
 	}
 	existing, err := s.repo.GetAttendanceRecord(ctx, recordID)
@@ -428,7 +430,7 @@ func requireSameWorkspace(workspaceAlias, recordWorkspaceID string) error {
 }
 
 func (s *services) UpsertSession(ctx context.Context, workspaceAlias, callerID string, req UpsertAttendanceSessionRequest) (*AttendanceSessionResponse, error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return nil, err
 	}
 	if err := normalizeUpsertAttendanceSessionRequest(&req); err != nil {
@@ -565,7 +567,7 @@ func (s *services) Submit(ctx context.Context, workspaceAlias, callerID string, 
 }
 
 func (s *services) List(ctx context.Context, workspaceAlias, callerID string, filter AttendanceCorrectionRequestFilter, params pagination.Params) (pagination.Response[AttendanceCorrectionRequestResponse], error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return pagination.Response[AttendanceCorrectionRequestResponse]{}, err
 	}
 	return s.repo.ListCheckRequests(ctx, workspaceAlias, filter, params)
@@ -592,7 +594,7 @@ func (s *services) Reject(ctx context.Context, workspaceAlias, callerID, request
 }
 
 func (s *services) decideCheckRequest(ctx context.Context, workspaceAlias, callerID, requestID string, status AttendanceCorrectionStatus) (*AttendanceCorrectionRequestResponse, error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return nil, err
 	}
 	existing, err := s.repo.GetCheckRequest(ctx, requestID)
@@ -708,7 +710,7 @@ func (s *services) UpsertWorkSchedules(ctx context.Context, workspaceAlias, call
 }
 
 func (s *services) UpsertMemberWorkSchedules(ctx context.Context, workspaceAlias, callerID, memberID string, req UpsertMemberWorkSchedulesRequest) ([]WorkScheduleDayResponse, error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return nil, err
 	}
 	if err := normalizeWorkSchedulesRequest((*UpsertWorkSchedulesRequest)(&req)); err != nil {
@@ -764,7 +766,7 @@ func (s *services) ListMySchedules(ctx context.Context, workspaceAlias, callerID
 }
 
 func (s *services) ListMemberSchedules(ctx context.Context, workspaceAlias, callerID, memberID string, filter WorkScheduleFilter, params pagination.Params) (pagination.Response[WorkScheduleDayResponse], error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceViewAll); err != nil {
 		return pagination.Response[WorkScheduleDayResponse]{}, err
 	}
 	filter.MemberID = memberID
@@ -772,7 +774,7 @@ func (s *services) ListMemberSchedules(ctx context.Context, workspaceAlias, call
 }
 
 func (s *services) ListPendingSchedules(ctx context.Context, workspaceAlias, callerID string, filter WorkScheduleFilter, params pagination.Params) (pagination.Response[WorkScheduleDayResponse], error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return pagination.Response[WorkScheduleDayResponse]{}, err
 	}
 	if filter.Status == "" {
@@ -790,7 +792,7 @@ func (s *services) RejectSchedules(ctx context.Context, workspaceAlias, callerID
 }
 
 func (s *services) updateScheduleStatus(ctx context.Context, workspaceAlias, callerID, memberID string, req UpdateWorkScheduleStatusRequest, status WorkScheduleStatus) ([]WorkScheduleDayResponse, error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return nil, err
 	}
 	if err := normalizeUpdateWorkScheduleStatusRequest(&req); err != nil {
@@ -823,7 +825,7 @@ func (s *services) updateScheduleStatus(ctx context.Context, workspaceAlias, cal
 }
 
 func (s *services) ApproveAllPendingSchedules(ctx context.Context, workspaceAlias, callerID, memberID string) ([]WorkScheduleDayResponse, error) {
-	if err := s.requireHolderOrAdmin(ctx, workspaceAlias, callerID); err != nil {
+	if err := s.require(ctx, workspaceAlias, callerID, access.AttendanceManage); err != nil {
 		return nil, err
 	}
 	responses, err := s.repo.ApproveAllPendingSchedules(ctx, workspaceAlias, memberID)
@@ -849,11 +851,11 @@ func (s *services) ApproveAllPendingSchedules(ctx context.Context, workspaceAlia
 }
 
 func (s *services) GetMonthlySummary(ctx context.Context, workspaceAlias, callerID string, filter AttendanceStatisticsFilter) (*AttendanceStatisticsSummaryResponse, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return nil, err
 	}
-	if !roleCanViewAll(role) {
+	if !g.Can(access.AttendanceViewAll) {
 		filter.MemberID = callerID
 	}
 
@@ -997,29 +999,25 @@ func parseWeekRange(value string) (from, to time.Time, err error) {
 }
 
 func (s *services) attendanceFilterForRole(ctx context.Context, workspaceAlias, callerID string, filter AttendanceRecordFilter) (AttendanceRecordFilter, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return filter, err
 	}
-	if role == "" {
+	if !g.IsMember() {
 		return filter, ErrForbidden
 	}
-	if !roleCanViewAll(role) {
+	if !g.Can(access.AttendanceViewAll) {
 		filter.MemberID = callerID
 	}
 	return filter, nil
 }
 
-func roleCanViewAll(role workspace.WorkspaceRole) bool {
-	return role == workspace.WorkspaceRoleHolder || role == workspace.WorkspaceRoleAdmin
-}
-
 func (s *services) GetTaskStatistics(ctx context.Context, workspaceAlias, callerID string, filter TaskStatisticsFilter) (*TaskStatisticsSummaryResponse, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return nil, err
 	}
-	if role == "" {
+	if !g.IsMember() {
 		return nil, ErrForbidden
 	}
 	if filter.ProjectID != "" {
@@ -1030,7 +1028,7 @@ func (s *services) GetTaskStatistics(ctx context.Context, workspaceAlias, caller
 		if !canManage {
 			return nil, ErrForbidden
 		}
-	} else if !roleCanViewAll(role) {
+	} else if !g.Can(access.AttendanceViewAll) {
 		return nil, ErrForbidden
 	}
 
@@ -1371,11 +1369,11 @@ func (s *services) ListMyDailyReports(ctx context.Context, workspaceAlias, calle
 
 func (s *services) ListDailyReports(ctx context.Context, workspaceAlias, callerID string, filter DailyReportFilter, params pagination.Params) (pagination.Response[DailyReportResponse], error) {
 	var empty pagination.Response[DailyReportResponse]
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return empty, ErrForbidden
 	}
-	if !role.CanManageMembers() {
+	if !g.Can(access.AttendanceViewAll) {
 		return empty, ErrForbidden
 	}
 	return s.repo.ListDailyReports(ctx, workspaceAlias, filter, params)
@@ -1399,11 +1397,11 @@ func (s *services) UpsertMyWorkWeek(ctx context.Context, workspaceAlias, callerI
 }
 
 func (s *services) UpsertWorkWeek(ctx context.Context, workspaceAlias, callerID string, req UpsertWorkWeekRequest) (*WorkWeekResponse, error) {
-	role, err := s.repo.GetCallerRole(ctx, workspaceAlias, callerID)
+	g, err := s.repo.GetCallerAccess(ctx, workspaceAlias, callerID)
 	if err != nil {
 		return nil, ErrForbidden
 	}
-	if !role.CanManageMembers() {
+	if !g.Can(access.AttendanceManage) {
 		return nil, ErrForbidden
 	}
 	if err := normalizeWorkWeekRequest(&req); err != nil {

@@ -18,7 +18,7 @@ export const signatures = defineMessages({
       quoteHint: "Dấu tên và ngày của người lập sẽ in ở cuối bản PDF.",
       onlyRecorder: "Chỉ người ghi chép (người tạo hoặc người trong mục ghi chép) mới ký được.",
       onlyHolder: "Chỉ chủ workspace mới ký được.",
-      onlyManager: "Chỉ quản lý workspace mới ký được.",
+      onlyManager: "Bạn chưa có quyền ký ở vai trò này.",
     },
   },
   en: {
@@ -38,7 +38,7 @@ export const signatures = defineMessages({
       quoteHint: "The preparer's name and date stamp print at the end of the PDF.",
       onlyRecorder: "Only the note-taker (the creator or a listed recorder) can sign.",
       onlyHolder: "Only the workspace holder can sign.",
-      onlyManager: "Only workspace managers can sign.",
+      onlyManager: "You are not allowed to sign in this role.",
     },
   },
 });

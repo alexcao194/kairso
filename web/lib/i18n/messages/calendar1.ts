@@ -6,7 +6,7 @@ export const calendar1 = defineMessages({
     teamTlState: { working: "Đang làm", absent: "Chưa vào / thiếu công", waiting: "Chưa tới ca", done: "Đã chấm công", off: "Không có ca" },
     teamTl: {
       "lateMin": (n: number) => `muộn ${n}′`,
-      "managersOnly": "Chỉ quản lý xem được timeline đội nhóm",
+      "managersOnly": "Bạn cần quyền “Xem dữ liệu cả đội” để xem timeline đội nhóm",
       "view": "Kiểu xem",
       "day": "Ngày",
       "week": "Tuần",
@@ -133,7 +133,7 @@ export const calendar1 = defineMessages({
     teamTlState: { working: "Working", absent: "Not in / missed", waiting: "Shift not started", done: "Attended", off: "No shift" },
     teamTl: {
       "lateMin": (n: number) => `${n}′ late`,
-      "managersOnly": "Only managers can view the team timeline",
+      "managersOnly": "You need the “See the whole team” permission to view the team timeline",
       "view": "View",
       "day": "Day",
       "week": "Week",

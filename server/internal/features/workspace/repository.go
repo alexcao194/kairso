@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"context"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/pagination"
@@ -20,6 +21,9 @@ type Repository interface {
 	DeleteWorkspace(ctx context.Context, workspaceID string) error
 
 	GetCallerRole(ctx context.Context, workspaceID, callerID string) (WorkspaceRole, error)
+	GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error)
+	GetRolePermissions(ctx context.Context, workspaceID string) ([]byte, error)
+	UpdateRolePermissions(ctx context.Context, workspaceID string, matrix []byte) ([]byte, error)
 	ListWorkspaceMembers(ctx context.Context, workspaceID string, params pagination.Params) (pagination.Response[WorkspaceMemberResponse], error)
 	ListMyInvitations(ctx context.Context, userID string, params pagination.Params) (pagination.Response[WorkspaceInvitationSummaryResponse], error)
 	GetUserIDByAlias(ctx context.Context, userAlias string) (string, error)
@@ -653,4 +657,9 @@ func equalStringPtr(left, right *string) bool {
 		return left == right
 	}
 	return *left == *right
+}
+
+// GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
+func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
+	return access.Load(ctx, r.queries, workspaceID, callerID)
 }

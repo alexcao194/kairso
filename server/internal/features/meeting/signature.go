@@ -3,11 +3,11 @@ package meeting
 import (
 	"context"
 	"fmt"
+	"github.com/alexcao194/kairso/internal/features/access"
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/features/docsign"
-	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/alexcao194/kairso/pkg/pgutil"
 )
@@ -22,8 +22,8 @@ func (s *service) attachSignatures(ctx context.Context, m *MeetingMinutesRespons
 }
 
 // canSign: the preparer is whoever took the minutes (the creator or a listed recorder);
-// the controller is any workspace manager (holder or admin).
-func canSign(m *MeetingMinutesResponse, callerID, wsRole, role string) bool {
+// the controller is anyone allowed to manage minutes.
+func canSign(m *MeetingMinutesResponse, callerID string, g access.Grant, role string) bool {
 	switch role {
 	case docsign.RolePreparer:
 		if m.CreatedBy.ID == callerID {
@@ -36,7 +36,7 @@ func canSign(m *MeetingMinutesResponse, callerID, wsRole, role string) bool {
 		}
 		return false
 	case docsign.RoleController:
-		return workspace.WorkspaceRole(wsRole).CanManageMembers()
+		return g.Can(access.MeetingsManage)
 	}
 	return false
 }
@@ -96,8 +96,8 @@ func (s *service) Unsign(ctx context.Context, id, callerID, role string) (*Meeti
 	if !ok {
 		return nil, docsign.ErrNoSignature
 	}
-	if sig.UserID != callerID && !workspace.WorkspaceRole(wsRole).CanManageMembers() {
-		return nil, fmt.Errorf("%w: chỉ người đã ký hoặc quản lý workspace mới gỡ được chữ ký", ErrForbidden)
+	if sig.UserID != callerID && !wsRole.Can(access.MeetingsManage) {
+		return nil, fmt.Errorf("%w: chỉ người đã ký hoặc người có quyền quản lý biên bản mới gỡ được chữ ký", ErrForbidden)
 	}
 	if err := s.repo.Signatures().Unsign(ctx, docsign.TypeMeeting, mid, role); err != nil {
 		return nil, err
