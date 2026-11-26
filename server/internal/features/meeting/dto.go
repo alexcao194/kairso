@@ -186,3 +186,9 @@ func textPtr(v *string) pgtype.Text {
 	}
 	return pgtype.Text{String: *v, Valid: true}
 }
+
+// ExportFile is a generated document download.
+type ExportFile struct {
+	Filename string
+	Data     []byte
+}

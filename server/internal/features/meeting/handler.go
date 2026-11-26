@@ -25,6 +25,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("GET /v1/meetings/{meetingId}", authMid.Handle(h.GetMeeting))
 	mux.HandleFunc("PATCH /v1/meetings/{meetingId}", authMid.Handle(h.UpdateMeeting))
 	mux.HandleFunc("DELETE /v1/meetings/{meetingId}", authMid.Handle(h.DeleteMeeting))
+	mux.HandleFunc("GET /v1/meetings/{meetingId}/export", authMid.Handle(h.ExportMeeting))
 	mux.HandleFunc("POST /v1/meetings/{meetingId}/signatures/{role}", authMid.Handle(h.SignMeeting))
 	mux.HandleFunc("DELETE /v1/meetings/{meetingId}/signatures/{role}", authMid.Handle(h.UnsignMeeting))
 }

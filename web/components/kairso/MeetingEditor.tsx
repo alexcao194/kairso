@@ -23,6 +23,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { useConfirm } from "@/components/ui/Confirm";
 import { SignaturesPanel, type SignRole } from "@/components/kairso/DocSignatures";
+import { downloadFile } from "@/lib/download";
 
 interface Draft {
   title: string;
@@ -53,6 +54,17 @@ const cellInput =
 
 export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: ResourceScope; meeting: MeetingMinutesResponse | null; onClose: () => void; onCreated: (id: string) => void }) {
   const toast = useToast();
+  const [exporting, setExporting] = useState(false);
+  const exportExcel = async (id: string, date: string) => {
+    setExporting(true);
+    try {
+      await downloadFile(`/v1/meetings/${id}/export`, `Bien-ban-hop-${toDateInput(date).split("-").reverse().join("-")}.xlsx`);
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setExporting(false);
+    }
+  };
   const { openCreateTask } = useDialogs();
   const { create, update, sign, unsign } = useMeetingMutations(scope);
   const { user } = useAuth();
@@ -233,6 +245,18 @@ export function MeetingEditor({ scope, meeting, onClose, onCreated }: { scope: R
           >
             <IconDownload size={13} /> {tr().meetingEd.exportPdf}
           </a>
+        )}
+        {meeting && (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={!!savedBlock}
+            title={savedBlock ? tr().meetingEd.blockedPdf(savedBlock === "new") : undefined}
+            loading={exporting}
+            onClick={() => exportExcel(meeting.id, meeting.meetingDate)}
+          >
+            <IconDownload size={13} /> {tr().meetingEd.exportExcel}
+          </Button>
         )}
         <Button onClick={onClose}>{dirty ? tr().meetingEd.cancel : tr().meetingEd.close}</Button>
         <Button type="submit" variant="primary" loading={busy} disabled={!canSave || (!!meeting && !dirty)}>

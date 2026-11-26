@@ -227,6 +227,12 @@ type QuoteSummaryResponse struct {
 	CreatedAt    time.Time  `json:"createdAt" swaggertype:"string" format:"date-time"`
 }
 
+// ExportFile is a generated document download.
+type ExportFile struct {
+	Filename string
+	Data     []byte
+}
+
 // ---- conversions ----
 
 func bpToPercent(bp int32) float64 { return float64(bp) / 100 }

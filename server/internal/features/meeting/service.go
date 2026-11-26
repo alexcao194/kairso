@@ -36,6 +36,7 @@ type Service interface {
 	Delete(ctx context.Context, id, callerID string) error
 	Sign(ctx context.Context, id, callerID, role string) (*MeetingMinutesResponse, error)
 	Unsign(ctx context.Context, id, callerID, role string) (*MeetingMinutesResponse, error)
+	Export(ctx context.Context, id, callerID string) (*ExportFile, error)
 }
 
 type service struct {

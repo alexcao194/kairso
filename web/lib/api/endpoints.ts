@@ -165,6 +165,11 @@ export const deleteMeeting = (meetingId: string, opts?: RequestOptions): Promise
 export const patchMeeting = (meetingId: string, body: S.UpdateMeetingMinutesRequest, opts?: RequestOptions): Promise<S.MeetingMinutesResponse> =>
   request<S.MeetingMinutesResponse>("PATCH", `/v1/meetings/${enc(meetingId)}`, { body, ...opts });
 
+/** GET /v1/meetings/{meetingId}/export
+ * Export meeting minutes as an Excel workbook */
+export const getMeetingExport = (meetingId: string, opts?: RequestOptions): Promise<unknown> =>
+  request<unknown>("GET", `/v1/meetings/${enc(meetingId)}/export`, { ...opts });
+
 /** POST /v1/meetings/{meetingId}/signatures/{role}
  * Sign meeting minutes
  * Stamps the caller's name and the current time. role=preparer: the note-taker (creator or a listed recorder); role=controller: a workspace holder or admin. */
@@ -1344,6 +1349,11 @@ export const deleteWorkspaceQuote = (workspaceId: string, quoteId: string, opts?
  * Duplicate a quote as a new draft */
 export const postWorkspaceQuoteDuplicate = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/duplicate`, { ...opts });
+
+/** GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/export
+ * Export a quote as an Excel workbook */
+export const getWorkspaceQuoteExport = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<unknown> =>
+  request<unknown>("GET", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/export`, { ...opts });
 
 /** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version
  * Create the next version of a quote

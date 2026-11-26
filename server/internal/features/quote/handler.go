@@ -35,6 +35,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/quotes/{quoteId}", authMid.Handle(h.GetQuote))
 	mux.HandleFunc("PUT /v1/workspaces/{workspaceId}/quotes/{quoteId}", authMid.Handle(h.UpdateQuote))
 	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}", authMid.Handle(h.DeleteQuote))
+	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/export", authMid.Handle(h.ExportQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/send", authMid.Handle(h.SendQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/duplicate", authMid.Handle(h.DuplicateQuote))
 	mux.HandleFunc("POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version", authMid.Handle(h.NewVersion))
@@ -437,4 +438,27 @@ func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, resp)
+}
+
+// @Summary Export a quote as an Excel workbook
+// @Tags Quotes
+// @Security BearerAuth
+// @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// @Param workspaceId path string true "Workspace ID"
+// @Param quoteId path string true "Quote ID"
+// @Success 200 {file} binary "Quote workbook (.xlsx)"
+// @Failure 403 {object} httpx.ErrorResponse
+// @Failure 404 {object} httpx.ErrorResponse
+// @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/export [get]
+func (h *Handler) ExportQuote(w http.ResponseWriter, r *http.Request) {
+	callerID, ok := h.caller(w, r)
+	if !ok {
+		return
+	}
+	file, err := h.svc.ExportQuoteExcel(r.Context(), r.PathValue("workspaceId"), callerID, r.PathValue("quoteId"))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeFile(w, file)
 }

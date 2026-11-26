@@ -4896,6 +4896,38 @@ paths:
       summary: Update meeting minutes
       tags:
       - Meetings
+  /v1/meetings/{meetingId}/export:
+    get:
+      parameters:
+      - description: Meeting minutes ID
+        in: path
+        name: meetingId
+        required: true
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: Minutes workbook (.xlsx)
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export meeting minutes as an Excel workbook
+      tags:
+      - Meetings
   /v1/meetings/{meetingId}/signatures/{role}:
     delete:
       description: Only the signer or a workspace manager can remove it.
@@ -10385,6 +10417,39 @@ paths:
       security:
       - BearerAuth: []
       summary: Duplicate a quote as a new draft
+      tags:
+      - Quotes
+  /v1/workspaces/{workspaceId}/quotes/{quoteId}/export:
+    get:
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspaceId
+        required: true
+        type: string
+      - description: Quote ID
+        in: path
+        name: quoteId
+        required: true
+        type: string
+      produces:
+      - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      responses:
+        "200":
+          description: Quote workbook (.xlsx)
+          schema:
+            type: file
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Export a quote as an Excel workbook
       tags:
       - Quotes
   /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version:

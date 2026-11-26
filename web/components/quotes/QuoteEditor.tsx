@@ -22,6 +22,7 @@ import { CurrencySelect, QuoteStatusBadge } from "./shared";
 import { SignaturesPanel, type SignRole } from "@/components/kairso/DocSignatures";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { CustomerModal } from "./QuotesHome";
+import { downloadFile, safeFilename } from "@/lib/download";
 
 type Line = { key: string; name: string; description: string; unit: string; quantity: string; unitPrice: string; discount: string };
 type Form = {
@@ -101,6 +102,7 @@ export function QuoteEditor({ id }: { id: string }) {
   const t = useT();
   const { lang } = useLocale();
   const toast = useToast();
+  const [exporting, setExporting] = useState(false);
   const confirm = useConfirm();
   const router = useRouter();
   const { workspaceId, isManager } = useWorkspace();
@@ -175,6 +177,17 @@ export function QuoteEditor({ id }: { id: string }) {
     }
   };
 
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      await downloadFile(`/v1/workspaces/${workspaceId}/quotes/${id}/export`, `${safeFilename(quote.number)}.xlsx`);
+    } catch (e) {
+      toast.error(e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const moreItems = [
     ...(quote.status !== "draft" ? [{ label: t.quoteEditor.newVersion, icon: <IconCopy size={14} />, onSelect: newVersion }] : []),
     { label: t.quoteEditor.duplicate, icon: <IconCopy size={14} />, onSelect: duplicate },
@@ -200,6 +213,9 @@ export function QuoteEditor({ id }: { id: string }) {
         <TopBarSpacer />
         <Button size="sm" variant="ghost" onClick={() => window.open(`/print/quotes/${id}`, "_blank")}>
           <IconDownload size={13} /> {t.quoteEditor.print}
+        </Button>
+        <Button size="sm" variant="ghost" loading={exporting} onClick={exportExcel}>
+          <IconDownload size={13} /> {t.quoteEditor.excel}
         </Button>
         {editable && (
           <>
