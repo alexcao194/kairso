@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import type { DailyReportResponse, MemberCalendarResponse } from "@/lib/api/schema";
 import { addDays, fmtTime, startOfWeek } from "@/lib/domain/format";
 import { localDateKey } from "@/lib/domain/task";
-import { dateOnly, useDailyReports, useMembersCalendar } from "@/lib/hooks/attendance";
+import { useDailyReports, useMembersCalendar } from "@/lib/hooks/attendance";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, EmptyState, Skeleton } from "@/components/ui/feedback";
@@ -23,8 +23,8 @@ export function ScheduleReportSummary() {
   const canViewTeam = can("attendance.view_all");
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const [memberId, setMemberId] = useState("");
-  const from = dateOnly(anchor);
-  const to = dateOnly(addDays(anchor, 6));
+  const from = localDateKey(anchor);
+  const to = localDateKey(addDays(anchor, 6));
   const cal = useMembersCalendar(workspaceId, from, to, canViewTeam);
   const reports = useDailyReports(workspaceId, { from, to, memberId: memberId || undefined }, canViewTeam);
 

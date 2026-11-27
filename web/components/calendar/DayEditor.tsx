@@ -1,5 +1,6 @@
 "use client";
 
+import { hhmm } from "@/lib/domain/format";
 import { useState } from "react";
 import type { CalendarDayResponse } from "@/lib/api/schema";
 import { useAttendanceMutations, useDailyReports, useMyDailyReports } from "@/lib/hooks/attendance";
@@ -12,11 +13,6 @@ import { tr } from "@/lib/i18n";
 
 const MAX_SESSIONS = 3;
 
-const hhmm = (iso?: string) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return `${`${d.getHours()}`.padStart(2, "0")}:${`${d.getMinutes()}`.padStart(2, "0")}`;
-};
 const toISO = (dateKey: string, time: string) => {
   const [y, m, d] = dateKey.split("-").map(Number);
   const [h, mi] = time.split(":").map(Number);

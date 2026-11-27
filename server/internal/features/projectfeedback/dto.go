@@ -168,14 +168,6 @@ type PublicSprintResponse struct {
 	Status    string `json:"status" enums:"planned,active,completed"`
 }
 
-func timePtr(v pgtype.Timestamptz) *time.Time {
-	if !v.Valid {
-		return nil
-	}
-	t := v.Time
-	return &t
-}
-
 func publicModulesFromDatabase(modules []database.ListPublicModulesByProjectIDRow, sprints []database.ListPublicSprintsByModuleIDsRow) []PublicModuleResponse {
 	byModule := make(map[[16]byte][]PublicSprintResponse, len(modules))
 	for _, sp := range sprints {
@@ -195,9 +187,9 @@ func publicModulesFromDatabase(modules []database.ListPublicModulesByProjectIDRo
 		out = append(out, PublicModuleResponse{
 			Name:       m.Name,
 			Status:     string(m.ScrumStatus),
-			StartDate:  timePtr(m.StartDate),
-			EndDate:    timePtr(m.EndDate),
-			ReleasedAt: timePtr(m.ReleasedAt),
+			StartDate:  pgutil.TimePtr(m.StartDate),
+			EndDate:    pgutil.TimePtr(m.EndDate),
+			ReleasedAt: pgutil.TimePtr(m.ReleasedAt),
 			Sprints:    list,
 		})
 	}
@@ -287,9 +279,9 @@ func feedbackResponseFromRow(row feedbackRow) ProjectFeedbackResponse {
 		Priority:         int(row.Priority),
 		Status:           FeedbackStatus(row.Status),
 		FeedbackType:     FeedbackType(row.FeedbackType),
-		Response:         textString(row.Response),
-		ExpectedFixDate:  timestamptzPtr(row.ExpectedFixDate),
-		RespondedAt:      timestamptzPtr(row.RespondedAt),
+		Response:         pgutil.Text(row.Response),
+		ExpectedFixDate:  pgutil.TimePtr(row.ExpectedFixDate),
+		RespondedAt:      pgutil.TimePtr(row.RespondedAt),
 		Images:           []string{},
 		Tasks:            []LinkedTaskSummary{},
 		SequenceNo:       int(row.SequenceNo),
@@ -378,19 +370,4 @@ func feedbackRowFromUpdateStatus(row database.UpdateProjectFeedbackStatusRow) fe
 		Response:     row.Response, ExpectedFixDate: row.ExpectedFixDate, RespondedAt: row.RespondedAt, RespondedByID: row.RespondedByID,
 		SequenceNo: row.SequenceNo,
 	}
-}
-
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
-}
-
-func timestamptzPtr(value pgtype.Timestamptz) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	t := value.Time
-	return &t
 }

@@ -29,9 +29,8 @@ func (h *Handler) authorizeProject(w http.ResponseWriter, r *http.Request, proje
 }
 
 func (h *Handler) authorize(w http.ResponseWriter, r *http.Request, check func(userID string) error) (string, bool) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return "", false
 	}
 	if err := check(userID); err != nil {

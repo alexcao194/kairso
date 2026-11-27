@@ -304,15 +304,12 @@ func (s *service) ListTaskLabels(ctx context.Context, projectAlias string, param
 }
 
 func (s *service) ListTaskLabelsByProjectIDs(ctx context.Context, projectIDs []string, callerID string) ([]TaskLabelResponse, error) {
-	allowed := make([]string, 0, len(projectIDs))
-	for _, pid := range projectIDs {
-		ok, err := s.repo.CheckProjectMembership(ctx, pid, callerID)
-		if err != nil {
-			return nil, err
-		}
-		if ok {
-			allowed = append(allowed, pid)
-		}
+	if len(projectIDs) == 0 {
+		return []TaskLabelResponse{}, nil
+	}
+	allowed, err := s.repo.FilterMemberProjects(ctx, projectIDs, callerID)
+	if err != nil {
+		return nil, err
 	}
 	if len(allowed) == 0 {
 		return []TaskLabelResponse{}, nil

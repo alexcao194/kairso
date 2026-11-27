@@ -20,20 +20,9 @@ func NewHandler(svc Service) *Handler {
 }
 
 func (h *Handler) authorizeTask(w http.ResponseWriter, r *http.Request, taskID string) (string, bool) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
-	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
-		return "", false
-	}
-	if err := h.svc.AuthorizeTaskAccess(r.Context(), taskID, userID); err != nil {
-		if errors.Is(err, ErrForbidden) {
-			httpx.Error(w, http.StatusForbidden, err.Error())
-		} else {
-			httpx.Error(w, http.StatusInternalServerError, fmt.Sprintf("Không kiểm tra được quyền: %s", err.Error()))
-		}
-		return "", false
-	}
-	return userID, true
+	return h.authorizeWith(w, r, func(userID string) error {
+		return h.svc.AuthorizeTaskAccess(r.Context(), taskID, userID)
+	})
 }
 
 func (h *Handler) authorizeProject(w http.ResponseWriter, r *http.Request, projectID string) (string, bool) {
@@ -49,9 +38,8 @@ func (h *Handler) authorizeLabel(w http.ResponseWriter, r *http.Request, labelID
 }
 
 func (h *Handler) authorizeWith(w http.ResponseWriter, r *http.Request, check func(userID string) error) (string, bool) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return "", false
 	}
 	if err := check(userID); err != nil {
@@ -160,9 +148,8 @@ func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/my-tasks [get]
 func (h *Handler) ListMyTasks(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var filter ListMyTasksParams
@@ -194,9 +181,8 @@ func (h *Handler) ListMyTasks(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/my-tasks/count [get]
 func (h *Handler) CountMyActiveTasks(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	count, err := h.svc.CountMyActiveTasks(
@@ -223,9 +209,8 @@ func (h *Handler) CountMyActiveTasks(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/threads [get]
 func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	params := pagination.Parse(r, 20, 100)
@@ -248,9 +233,8 @@ func (h *Handler) ListThreads(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/threads/count [get]
 func (h *Handler) CountThreads(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	count, err := h.svc.CountThreads(r.Context(), r.PathValue("workspaceId"), userID)
@@ -657,9 +641,8 @@ func (h *Handler) ListTaskLabels(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} TaskLabelsByProjectIDsResponse
 // @Router /v1/workspaces/{workspaceId}/labels [get]
 func (h *Handler) ListTaskLabelsByProjectIDs(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	projectIDs := httpx.ParseCSVParam(r, "projectIds")

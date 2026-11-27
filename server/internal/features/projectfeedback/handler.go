@@ -119,9 +119,8 @@ func handleServiceError(w http.ResponseWriter, err error, action string) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/feedback-settings [get]
 func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.GetFeedbackSettings(r.Context(), r.PathValue("projectId"), callerID)
@@ -143,9 +142,8 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/feedback-summary [get]
 func (h *Handler) GetSummary(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.GetFeedbackSummary(r.Context(), r.PathValue("projectId"), callerID)
@@ -166,9 +164,8 @@ func (h *Handler) GetSummary(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/feedback-settings/enable [post]
 func (h *Handler) EnableSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.EnableFeedbackSettings(r.Context(), r.PathValue("projectId"), callerID)
@@ -189,9 +186,8 @@ func (h *Handler) EnableSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/feedback-settings/disable [post]
 func (h *Handler) DisableSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.DisableFeedbackSettings(r.Context(), r.PathValue("projectId"), callerID)
@@ -212,9 +208,8 @@ func (h *Handler) DisableSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/feedback-settings/regenerate [post]
 func (h *Handler) RegenerateToken(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.RegenerateFeedbackToken(r.Context(), r.PathValue("projectId"), callerID)
@@ -238,9 +233,8 @@ func (h *Handler) RegenerateToken(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/feedback-settings/show-timeline [patch]
 func (h *Handler) UpdateShowTimeline(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateFeedbackSettingsRequest
@@ -278,9 +272,8 @@ func (h *Handler) UpdateShowTimeline(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/project-feedbacks [get]
 func (h *Handler) ListFeedbacks(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	params := pagination.Parse(r, 20, 100)
@@ -311,9 +304,8 @@ func (h *Handler) ListFeedbacks(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/project-feedbacks [post]
 func (h *Handler) CreateFeedback(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectFeedbackRequest
@@ -343,9 +335,8 @@ func (h *Handler) CreateFeedback(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/tasks/{taskId}/feedbacks [get]
 func (h *Handler) ListFeedbacksForTask(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.ListFeedbacksForTask(r.Context(), r.PathValue("taskId"), callerID)
@@ -368,9 +359,8 @@ func (h *Handler) ListFeedbacksForTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/project-feedbacks/{feedbackId} [patch]
 func (h *Handler) UpdateFeedback(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateProjectFeedbackRequest
@@ -401,9 +391,8 @@ func (h *Handler) UpdateFeedback(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/project-feedbacks/{feedbackId}/status [patch]
 func (h *Handler) UpdateFeedbackStatus(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateFeedbackStatusRequest
@@ -434,9 +423,8 @@ func (h *Handler) UpdateFeedbackStatus(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/project-feedbacks/{feedbackId}/response [patch]
 func (h *Handler) RespondToFeedback(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateFeedbackResponseRequest
@@ -461,9 +449,8 @@ func (h *Handler) RespondToFeedback(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/project-feedbacks/{feedbackId}/tasks/{taskId} [put]
 func (h *Handler) LinkTask(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.LinkTask(r.Context(), r.PathValue("feedbackId"), r.PathValue("taskId"), callerID); err != nil {
@@ -482,9 +469,8 @@ func (h *Handler) LinkTask(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/project-feedbacks/{feedbackId}/tasks/{taskId} [delete]
 func (h *Handler) UnlinkTask(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.UnlinkTask(r.Context(), r.PathValue("feedbackId"), r.PathValue("taskId"), callerID); err != nil {

@@ -8,7 +8,7 @@ import { useQuote } from "@/lib/hooks/quotes";
 import { formatMoney, formatNumber } from "@/lib/domain/money";
 import { dict } from "@/lib/i18n/dict";
 import { docTokens } from "@/lib/domain/brand";
-import { PdfDownloadButton, pageRule } from "@/components/kairso/PrintPaged";
+import { PdfDownloadButton, PrintStatus, pageRule } from "@/components/kairso/PrintPaged";
 import { safeFilename } from "@/lib/download";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminQuotePrint } from "./AdminQuotePrint";
@@ -88,8 +88,8 @@ export function QuotePrint({ id }: { id: string }) {
     return () => window.removeEventListener("beforeprint", measure);
   }, [quote, measure]);
 
-  if (q.isLoading || !workspaceId) return <Center>{tr().quotePrint.loading}</Center>;
-  if (!quote) return <Center>{tr().quotePrint.failed}</Center>;
+  if (q.isLoading || !workspaceId) return <PrintStatus>{tr().quotePrint.loading}</PrintStatus>;
+  if (!quote) return <PrintStatus>{tr().quotePrint.failed}</PrintStatus>;
   const pdfPath = `/v1/workspaces/${workspaceId}/quotes/${quote.id}/pdf`;
   const pdfName = `${safeFilename(quote.number)}.pdf`;
   const excel = { path: `/v1/workspaces/${workspaceId}/quotes/${quote.id}/export`, filename: `${safeFilename(quote.number)}.xlsx` };
@@ -272,6 +272,3 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function Center({ children }: { children: ReactNode }) {
-  return <div className="grid min-h-screen place-items-center text-[13px] text-ink-muted">{children}</div>;
-}

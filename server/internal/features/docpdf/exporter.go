@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -27,6 +28,9 @@ type Exporter struct {
 	fonts  *Fonts
 	q      *database.Queries
 	client *http.Client
+
+	measureOnce sync.Once
+	measure     *Measurer
 }
 
 // New finds the document font (PDF_FONT_DIR, then the system) and logs which one it uses.

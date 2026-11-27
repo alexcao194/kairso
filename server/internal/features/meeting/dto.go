@@ -115,13 +115,6 @@ type MeetingMinutesResponse struct {
 	UpdatedAt    time.Time            `json:"updatedAt" swaggertype:"string" format:"date-time"`
 }
 
-func dateString(d pgtype.Date) string {
-	if !d.Valid {
-		return ""
-	}
-	return d.Time.Format(time.DateOnly)
-}
-
 func meetingResponseFromRow(row database.GetMeetingMinutesRow) MeetingMinutesResponse {
 	items := []MeetingItem{}
 	_ = json.Unmarshal(row.Items, &items)
@@ -141,7 +134,7 @@ func meetingResponseFromRow(row database.GetMeetingMinutesRow) MeetingMinutesRes
 		WorkspaceID:  pgutil.UUIDToString(row.WorkspaceID),
 		ProjectID:    pgutil.UUIDToString(row.ProjectID),
 		Title:        row.Title,
-		MeetingDate:  dateString(row.MeetingDate),
+		MeetingDate:  pgutil.DateString(row.MeetingDate),
 		Location:     row.Location,
 		Attendees:    attendees,
 		Recorders:    recorders,

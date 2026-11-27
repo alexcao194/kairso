@@ -143,6 +143,15 @@ SELECT EXISTS (
     WHERE p.id = sqlc.arg(project_id) AND (pu.user_id IS NOT NULL OR wu.user_id IS NOT NULL)
 )::boolean;
 
+-- name: FilterMemberProjectIDs :many
+SELECT p.id
+FROM projects p
+WHERE p.id = ANY(sqlc.arg(project_ids)::uuid[])
+  AND (
+    EXISTS (SELECT 1 FROM project_users pu WHERE pu.project_id = p.id AND pu.user_id = sqlc.arg(user_id))
+    OR EXISTS (SELECT 1 FROM workspace_users wu WHERE wu.workspace_id = p.workspace_id AND wu.user_id = sqlc.arg(user_id))
+  );
+
 -- name: CheckProjectManageAuth :one
 SELECT EXISTS (
     SELECT 1

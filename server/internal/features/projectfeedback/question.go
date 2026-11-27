@@ -347,9 +347,8 @@ func writeQuestionError(w http.ResponseWriter, err error, action string) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/questions [get]
 func (h *Handler) ListQuestions(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.ListQuestions(r.Context(), r.PathValue("projectId"), callerID)
@@ -374,9 +373,8 @@ func (h *Handler) ListQuestions(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/questions [post]
 func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectQuestionRequest
@@ -405,9 +403,8 @@ func (h *Handler) CreateQuestion(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/project-questions/{questionId} [patch]
 func (h *Handler) UpdateQuestion(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectQuestionRequest
@@ -434,9 +431,8 @@ func (h *Handler) UpdateQuestion(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/project-questions/{questionId}/answer [delete]
 func (h *Handler) ClearQuestionAnswer(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.ClearQuestionAnswer(r.Context(), r.PathValue("questionId"), callerID)
@@ -456,9 +452,8 @@ func (h *Handler) ClearQuestionAnswer(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/project-questions/{questionId} [delete]
 func (h *Handler) DeleteQuestion(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.DeleteQuestion(r.Context(), r.PathValue("questionId"), callerID); err != nil {

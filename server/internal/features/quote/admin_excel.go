@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"time"
 
 	"github.com/alexcao194/kairso/internal/features/docexport"
 	"github.com/alexcao194/kairso/internal/features/docpdf"
@@ -41,29 +40,8 @@ func (h *Handler) adminQuoteExcel(ctx context.Context, wsID string, q *QuoteResp
 	money := func(v int64) float64 { return float64(v) / math.Pow10(q.MinorUnits) }
 	brand := fmt.Sprintf("%02X%02X%02X", ws.Brand.R, ws.Brand.G, ws.Brand.B)
 
-	org := q.Issuer.Name
-	if org == "" {
-		org = ws.Name
-	}
-	place := o.Place
-	if place == "" {
-		place = docpdf.PlaceFromAddress(q.Issuer.Address)
-	}
-	issued, err := time.Parse("2006-01-02", q.IssueDate)
-	if err != nil {
-		issued = time.Now()
-	}
-
-	// Who signs: same rule as the PDF.
-	sig := preparerSig(q)
-	title := o.Signer
-	if title == "" {
-		title = "GIÁM ĐỐC"
-	}
-	single := o.Merge == "1"
-	if o.Merge == "" && sig != nil {
-		single = h.isHolder(ctx, wsID, sig.UserID)
-	}
+	a := h.adminSetup(ctx, wsID, ws.Name, q, o)
+	org, place, issued, sig, title, single := a.org, a.place, a.issued, a.sig, a.title, a.single
 
 	m := docpdf.AdminMargins()
 	const W = 210.0 - 30 - 15 // text width
@@ -209,7 +187,7 @@ func (h *Handler) adminQuoteExcel(ctx context.Context, wsID string, q *QuoteResp
 	if q.Customer.Address != "" {
 		text(q.Customer.Address)
 	}
-	if line := joinNonEmpty(" · ", prefixed(l.taxCode, q.Customer.TaxCode), prefixed(l.tel, q.Customer.Phone), q.Customer.Email); line != "" {
+	if line := docexport.Join(" · ", prefixed(l.taxCode, q.Customer.TaxCode), prefixed(l.tel, q.Customer.Phone), q.Customer.Email); line != "" {
 		text(line)
 	}
 	sh.Gap(2)
@@ -217,10 +195,10 @@ func (h *Handler) adminQuoteExcel(ctx context.Context, wsID string, q *QuoteResp
 	if q.Issuer.Address != "" {
 		text(q.Issuer.Address)
 	}
-	if line := joinNonEmpty(" · ", prefixed(l.taxCode, q.Issuer.TaxCode), prefixed(l.tel, q.Issuer.Phone), q.Issuer.Email); line != "" {
+	if line := docexport.Join(" · ", prefixed(l.taxCode, q.Issuer.TaxCode), prefixed(l.tel, q.Issuer.Phone), q.Issuer.Email); line != "" {
 		text(line)
 	}
-	if line := joinNonEmpty(" · ", prefixed(l.contact, q.Issuer.ContactName), q.Issuer.Website); line != "" {
+	if line := docexport.Join(" · ", prefixed(l.contact, q.Issuer.ContactName), q.Issuer.Website); line != "" {
 		text(line)
 	}
 	sh.Gap(3)
@@ -304,7 +282,7 @@ func (h *Handler) adminQuoteExcel(ctx context.Context, wsID string, q *QuoteResp
 	}
 	sh.Gap(3)
 	if q.ValidUntil != "" {
-		para([]docexport.Run{{Text: fmt.Sprintf("Báo giá có hiệu lực đến hết ngày %s.", fmtPDFDate(q.ValidUntil))}}, true, "justify")
+		para([]docexport.Run{{Text: fmt.Sprintf("Báo giá có hiệu lực đến hết ngày %s.", docexport.FormatDate(q.ValidUntil))}}, true, "justify")
 	}
 	for _, b := range []struct{ title, body string }{{l.notes, q.Notes}, {l.terms, q.Terms}, {l.bank, q.Issuer.BankInfo}} {
 		if strings.TrimSpace(b.body) == "" {

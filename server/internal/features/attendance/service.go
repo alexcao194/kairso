@@ -4,16 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/alexcao194/kairso/internal/features/access"
 	"math"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/alexcao194/kairso/internal/features/access"
+
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/realtime"
+	"github.com/alexcao194/kairso/pkg/vntime"
 )
 
 var (
@@ -114,7 +116,7 @@ type Repository interface {
 	ListWorkspaceMembersForStatistics(ctx context.Context, workspaceAlias string, memberID string) ([]WorkspaceMemberBriefResponse, error)
 	ListWorkspaceScheduleStats(ctx context.Context, workspaceAlias string, from, to time.Time, memberID string) ([]WorkScheduleDayResponse, error)
 	ListWorkspaceAttendanceStats(ctx context.Context, workspaceAlias string, from, to time.Time, memberID string) ([]AttendanceRecordResponse, error)
-	SumAssignedTaskHours(ctx context.Context, workspaceAlias, memberID string, from, to time.Time) (float64, error)
+	SumAssignedTaskHours(ctx context.Context, workspaceAlias string, memberIDs []string, from, to time.Time) (map[string]float64, error)
 	ListScheduleNotificationRecipients(ctx context.Context, workspaceAlias, memberID string) ([]string, error)
 	GetMemberName(ctx context.Context, memberID string) (string, error)
 	GetTaskStatsByWorkspace(ctx context.Context, workspaceAlias string, filter TaskStatisticsFilter, from, to time.Time) ([]TaskStatsMemberResponse, error)
@@ -270,7 +272,7 @@ func (s *services) CheckOut(ctx context.Context, workspaceAlias, callerID string
 }
 
 func (s *services) getNextAction(ctx context.Context, workspaceAlias, callerID string, now time.Time) (AttendanceType, error) {
-	nowVN := now.UTC().In(vietnamLocation())
+	nowVN := now.UTC().In(vntime.Location)
 	startOfDayVN := vietnamTime(nowVN.Year(), nowVN.Month(), nowVN.Day(), 0, 0)
 	filter := AttendanceRecordFilter{
 		MemberID: callerID,
@@ -895,6 +897,14 @@ func (s *services) GetMonthlySummary(ctx context.Context, workspaceAlias, caller
 		Month:   filter.Month,
 		Members: make([]AttendanceStatisticsMemberResponse, 0, len(members)),
 	}
+	memberIDs := make([]string, 0, len(members))
+	for _, member := range members {
+		memberIDs = append(memberIDs, member.MemberID)
+	}
+	taskHours, err := s.repo.SumAssignedTaskHours(ctx, workspaceAlias, memberIDs, from, to)
+	if err != nil {
+		return nil, err
+	}
 	for _, member := range members {
 		memberSummary := AttendanceStatisticsMemberResponse{
 			MemberID: member.MemberID, MemberAlias: member.MemberAlias, MemberName: member.MemberName, MemberAvatar: member.MemberAvatar,
@@ -904,10 +914,7 @@ func (s *services) GetMonthlySummary(ctx context.Context, workspaceAlias, caller
 		memberSummary.RegisteredHours = registeredHours(memberSchedules)
 		memberSummary.AttendanceHours = attendanceHours(memberRecords, memberSchedules)
 		memberSummary.LateDays, memberSummary.EarlyLeaveDays = lateEarlyDays(memberSchedules, memberRecords)
-		memberSummary.EstimatedTaskHours, err = s.repo.SumAssignedTaskHours(ctx, workspaceAlias, member.MemberID, from, to)
-		if err != nil {
-			return nil, err
-		}
+		memberSummary.EstimatedTaskHours = taskHours[member.MemberID]
 		memberSummary.InitiativeEstimate = initiativeEstimates[member.MemberID]
 		memberSummary.LateLogEstimate = lateLogEstimates[member.MemberID]
 		memberSummary.FeedbackEstimate = feedbackEstimates[member.MemberID]
@@ -925,7 +932,7 @@ func (s *services) GetMonthlySummary(ctx context.Context, workspaceAlias, caller
 }
 
 func resolvePeriod(filter AttendanceStatisticsFilter) (from, to time.Time, period, label string, err error) {
-	now := time.Now().In(vietnamLocation())
+	now := time.Now().In(vntime.Location)
 	week := strings.TrimSpace(filter.Week)
 	year := strings.TrimSpace(filter.Year)
 	month := strings.TrimSpace(filter.Month)
@@ -941,13 +948,13 @@ func resolvePeriod(filter AttendanceStatisticsFilter) (from, to time.Time, perio
 		label = fmt.Sprintf("%d-W%02d", from.Year(), isoWeek)
 	case year != "":
 		var y time.Time
-		y, err = time.ParseInLocation("2006", year, vietnamLocation())
+		y, err = time.ParseInLocation("2006", year, vntime.Location)
 		if err != nil {
 			err = fmt.Errorf("year phải theo định dạng YYYY")
 			return
 		}
-		from = time.Date(y.Year(), 1, 1, 0, 0, 0, 0, vietnamLocation())
-		to = time.Date(y.Year(), 12, 31, 23, 59, 59, 0, vietnamLocation())
+		from = time.Date(y.Year(), 1, 1, 0, 0, 0, 0, vntime.Location)
+		to = time.Date(y.Year(), 12, 31, 23, 59, 59, 0, vntime.Location)
 		period = "year"
 		label = year
 	default:
@@ -969,7 +976,7 @@ func resolvePeriod(filter AttendanceStatisticsFilter) (from, to time.Time, perio
 }
 
 func parseWeekRange(value string) (from, to time.Time, err error) {
-	loc := vietnamLocation()
+	loc := vntime.Location
 	var isoYear, isoWeek int
 	if n, _ := fmt.Sscanf(value, "%d-W%d", &isoYear, &isoWeek); n == 2 {
 		jan4 := time.Date(isoYear, 1, 4, 0, 0, 0, 0, loc)
@@ -1182,7 +1189,7 @@ func attendanceHours(records []AttendanceRecordResponse, schedules []WorkSchedul
 func lateEarlyDays(schedules []WorkScheduleDayResponse, records []AttendanceRecordResponse) (int, int) {
 	recordsByDate := map[string][]AttendanceRecordResponse{}
 	for _, record := range records {
-		date := record.RecordedAt.In(vietnamLocation()).Format(time.DateOnly)
+		date := record.RecordedAt.In(vntime.Location).Format(time.DateOnly)
 		recordsByDate[date] = append(recordsByDate[date], record)
 	}
 	var lateDays, earlyDays int
@@ -1349,7 +1356,7 @@ func (s *services) UpsertMyDailyReport(ctx context.Context, workspaceAlias, call
 	req.Done = strings.TrimSpace(req.Done)
 	req.InProgress = strings.TrimSpace(req.InProgress)
 	req.Issues = strings.TrimSpace(req.Issues)
-	if _, err := parseDate(req.Date); err != nil {
+	if _, err := vntime.ParseDate(req.Date); err != nil {
 		return nil, fmt.Errorf("%w: ngày không hợp lệ", ErrInvalidDailyReport)
 	}
 	if req.Done == "" && req.InProgress == "" && req.Issues == "" {

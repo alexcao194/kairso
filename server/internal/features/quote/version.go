@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/httpx"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -120,7 +121,7 @@ func (s *Service) NewVersion(ctx context.Context, workspaceID, callerID, quoteID
 // @Failure 400 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version [post]
 func (h *Handler) NewVersion(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}

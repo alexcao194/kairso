@@ -1,4 +1,5 @@
 import type { CalendarDayResponse, MemberCalendarDay } from "../api/schema";
+import { hhmm } from "./format";
 import { localDateKey } from "./task";
 import { tr } from "../i18n/dict";
 import { liveLabels } from "../i18n/live";
@@ -83,8 +84,6 @@ interface MemberDayTimeline {
   hours: number;
   lateMinutes: number;
 }
-
-const hhmm = (d: Date) => `${`${d.getHours()}`.padStart(2, "0")}:${`${d.getMinutes()}`.padStart(2, "0")}`;
 
 export function memberDayTimeline(day: MemberCalendarDay | undefined, key: string, now: Date = new Date()): MemberDayTimeline {
   const [y, m, d] = key.split("-").map(Number);

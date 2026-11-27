@@ -103,14 +103,6 @@ func notificationResponseFromRow(row notificationRow) (NotificationResponse, err
 		Title:       row.Title,
 		Body:        row.Body,
 		Data:        data,
-		ReadAt:      timestamptzPtr(row.ReadAt),
+		ReadAt:      pgutil.TimePtr(row.ReadAt),
 	}, nil
-}
-
-func timestamptzPtr(value pgtype.Timestamptz) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	t := value.Time
-	return &t
 }

@@ -5,7 +5,6 @@ import type { CalendarDayResponse } from "@/lib/api/schema";
 import { DAY_STATE_LABEL, dayInfo, type DayState } from "@/lib/domain/attendance";
 import { addDays, startOfWeek } from "@/lib/domain/format";
 import { localDateKey } from "@/lib/domain/task";
-import { dateOnly } from "@/lib/hooks/attendance";
 import { tr } from "@/lib/i18n";
 import { monthTitle, weekHeaders } from "@/lib/domain/format";
 
@@ -34,7 +33,7 @@ export const gridRange = (month: Date) => {
   const start = startOfWeek(first);
   const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
   const end = addDays(startOfWeek(last), 6);
-  return { start, end, from: dateOnly(start), to: dateOnly(end) };
+  return { start, end, from: localDateKey(start), to: localDateKey(end) };
 };
 
 export function MonthGrid({ month, days, selected, onSelect }: { month: Date; days: CalendarDayResponse[]; selected: string | null; onSelect: (key: string) => void }) {

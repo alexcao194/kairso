@@ -25,15 +25,6 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("GET /v1/workspaces/{workspaceId}/webhooks/{webhookId}/deliveries", authMid.Handle(h.ListDeliveries))
 }
 
-func (h *Handler) caller(w http.ResponseWriter, r *http.Request) (string, bool) {
-	id, ok := middleware.GetUserIDFromContext(r.Context())
-	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
-		return "", false
-	}
-	return id, true
-}
-
 func writeErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, ErrForbidden):
@@ -60,7 +51,7 @@ func writeErr(w http.ResponseWriter, err error) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/webhooks [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -85,7 +76,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/webhooks [post]
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -116,7 +107,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/webhooks/{webhookId} [put]
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -142,7 +133,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/webhooks/{webhookId} [delete]
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -164,7 +155,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/webhooks/{webhookId}/test [post]
 func (h *Handler) Test(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -187,7 +178,7 @@ func (h *Handler) Test(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/webhooks/{webhookId}/deliveries [get]
 func (h *Handler) ListDeliveries(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}

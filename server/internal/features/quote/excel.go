@@ -2,10 +2,8 @@ package quote
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/alexcao194/kairso/internal/features/docexport"
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -32,13 +30,6 @@ var quoteExcelLabels = map[string]excelLabels{
 		amount: "Amount", subtotal: "Subtotal", discountTotal: "Discount", vat: "VAT", grand: "GRAND TOTAL",
 		words: "In words", notes: "Notes", terms: "Terms & conditions", bank: "Bank details", preparer: "Prepared by",
 	},
-}
-
-func fmtQuoteDate(d string) string {
-	if t, err := time.Parse("2006-01-02", d); err == nil {
-		return t.Format("02/01/2006")
-	}
-	return d
 }
 
 func pct(v float64) string { return strconv.FormatFloat(v, 'f', -1, 64) }
@@ -100,9 +91,9 @@ func quoteWorkbook(q *QuoteResponse) (*ExportFile, error) {
 	partyLines(b, q.Issuer, l)
 	b.Blank()
 	b.Title(l.title)
-	sub := fmt.Sprintf("%s: %s · %s: %s", l.number, q.Number, l.date, fmtQuoteDate(q.IssueDate))
+	sub := fmt.Sprintf("%s: %s · %s: %s", l.number, q.Number, l.date, docexport.FormatDate(q.IssueDate))
 	if q.ValidUntil != "" {
-		sub += fmt.Sprintf(" · %s: %s", l.validUntil, fmtQuoteDate(q.ValidUntil))
+		sub += fmt.Sprintf(" · %s: %s", l.validUntil, docexport.FormatDate(q.ValidUntil))
 	}
 	b.Subtitle(sub)
 	if q.Title != "" {
@@ -165,12 +156,4 @@ func quoteWorkbook(q *QuoteResponse) (*ExportFile, error) {
 		return nil, err
 	}
 	return &ExportFile{Filename: docexport.SafeFilename(q.Number) + ".xlsx", Data: data}, nil
-}
-
-func writeFile(w http.ResponseWriter, file *ExportFile) {
-	w.Header().Set("Content-Type", docexport.ContentType)
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file.Filename))
-	w.Header().Set("Content-Length", strconv.Itoa(len(file.Data)))
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(file.Data)
 }

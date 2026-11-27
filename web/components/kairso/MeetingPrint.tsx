@@ -9,7 +9,7 @@ import { useLinkedTasks, useMeeting } from "@/lib/hooks/meetings";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { docTokens } from "@/lib/domain/brand";
 import { dateLocale, tr } from "@/lib/i18n";
-import { PdfDownloadButton, pageRule } from "@/components/kairso/PrintPaged";
+import { PdfDownloadButton, PrintStatus, pageRule } from "@/components/kairso/PrintPaged";
 import { FormatSwitch, usePrintOptions } from "@/components/print/AdminDoc";
 import { AdminMeetingPrint } from "./AdminMeetingPrint";
 import { PrintSignatures } from "@/components/kairso/DocSignatures";
@@ -30,8 +30,8 @@ export function MeetingPrint({ id }: { id: string }) {
     if (m) document.title = pdfName(m.meetingDate);
   }, [m, sp]);
 
-  if (q.isLoading) return <Center>{tr().meetingPrint.loading}</Center>;
-  if (!m) return <Center>{tr().meetingPrint.failed}</Center>;
+  if (q.isLoading) return <PrintStatus>{tr().meetingPrint.loading}</PrintStatus>;
+  if (!m) return <PrintStatus>{tr().meetingPrint.failed}</PrintStatus>;
   const pdf = { path: `/v1/meetings/${m.id}/pdf`, filename: `${pdfName(m.meetingDate)}.pdf` };
   if (opts.format === "admin") return <AdminMeetingPrint m={m} ws={ws} tasks={linked.map} pdf={pdf} />;
 
@@ -118,9 +118,6 @@ export function MeetingPrint({ id }: { id: string }) {
   );
 }
 
-function Center({ children }: { children: ReactNode }) {
-  return <div className="grid min-h-screen place-items-center text-[13px] text-ink-muted">{children}</div>;
-}
 
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (

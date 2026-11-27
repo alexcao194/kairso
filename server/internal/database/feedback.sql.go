@@ -190,15 +190,15 @@ func (q *Queries) ListCustomerFeedbacks(ctx context.Context, arg ListCustomerFee
 	return items, nil
 }
 
-const listFeedbackBeneficiaries = `-- name: ListFeedbackBeneficiaries :many
+const listFeedbackBeneficiariesByFeedbackIDs = `-- name: ListFeedbackBeneficiariesByFeedbackIDs :many
 SELECT cfb.id, cfb.feedback_id, cfb.user_id, cfb.weight,
        u.alias AS user_alias, u.name AS user_name, u.avatar AS user_avatar
 FROM customer_feedback_beneficiaries cfb
 JOIN users u ON u.id = cfb.user_id
-WHERE cfb.feedback_id = $1
+WHERE cfb.feedback_id = ANY($1::uuid[])
 `
 
-type ListFeedbackBeneficiariesRow struct {
+type ListFeedbackBeneficiariesByFeedbackIDsRow struct {
 	ID         pgtype.UUID `json:"id"`
 	FeedbackID pgtype.UUID `json:"feedback_id"`
 	UserID     pgtype.UUID `json:"user_id"`
@@ -208,15 +208,15 @@ type ListFeedbackBeneficiariesRow struct {
 	UserAvatar pgtype.Text `json:"user_avatar"`
 }
 
-func (q *Queries) ListFeedbackBeneficiaries(ctx context.Context, feedbackID pgtype.UUID) ([]ListFeedbackBeneficiariesRow, error) {
-	rows, err := q.db.Query(ctx, listFeedbackBeneficiaries, feedbackID)
+func (q *Queries) ListFeedbackBeneficiariesByFeedbackIDs(ctx context.Context, feedbackIds []pgtype.UUID) ([]ListFeedbackBeneficiariesByFeedbackIDsRow, error) {
+	rows, err := q.db.Query(ctx, listFeedbackBeneficiariesByFeedbackIDs, feedbackIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListFeedbackBeneficiariesRow{}
+	items := []ListFeedbackBeneficiariesByFeedbackIDsRow{}
 	for rows.Next() {
-		var i ListFeedbackBeneficiariesRow
+		var i ListFeedbackBeneficiariesByFeedbackIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.FeedbackID,

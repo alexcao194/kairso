@@ -50,12 +50,12 @@ VALUES (sqlc.arg(feedback_id), sqlc.arg(user_id), sqlc.arg(weight))
 ON CONFLICT (feedback_id, user_id) DO UPDATE SET weight = EXCLUDED.weight
 RETURNING id, feedback_id, user_id, weight;
 
--- name: ListFeedbackBeneficiaries :many
+-- name: ListFeedbackBeneficiariesByFeedbackIDs :many
 SELECT cfb.id, cfb.feedback_id, cfb.user_id, cfb.weight,
        u.alias AS user_alias, u.name AS user_name, u.avatar AS user_avatar
 FROM customer_feedback_beneficiaries cfb
 JOIN users u ON u.id = cfb.user_id
-WHERE cfb.feedback_id = $1;
+WHERE cfb.feedback_id = ANY(sqlc.arg(feedback_ids)::uuid[]);
 
 -- name: DeleteFeedbackBeneficiaries :exec
 DELETE FROM customer_feedback_beneficiaries WHERE feedback_id = $1;

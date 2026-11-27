@@ -83,3 +83,12 @@ func GetConnIDFromContext(ctx context.Context) string {
 	connID, _ := ctx.Value(ConnContextKey).(string)
 	return connID
 }
+
+// RequireUser returns the authenticated user's ID, or writes 401 and returns false.
+func RequireUser(w http.ResponseWriter, r *http.Request) (string, bool) {
+	id, ok := GetUserIDFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
+	}
+	return id, ok
+}

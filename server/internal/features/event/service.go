@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"errors"
+
 	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/features/workspace"

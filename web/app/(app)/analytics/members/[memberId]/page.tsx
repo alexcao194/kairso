@@ -13,7 +13,7 @@ import { useMemberCalendar } from "@/lib/hooks/attendance";
 import { fetchKpiRecords } from "@/lib/kpi/kpiRecords";
 import { qk } from "@/lib/query/keys";
 import { dayInfo } from "@/lib/domain/attendance";
-import { monthKey, fmtDate, fmtDayMonth } from "@/lib/domain/format";
+import { monthKey, fmtDate, fmtDayMonth, recentMonths, round1 } from "@/lib/domain/format";
 import { PRIORITY_META, priorityLevel } from "@/lib/domain/task";
 import { statusSegments } from "@/components/charts/statusSegments";
 import { prioritySegments } from "@/components/charts/prioritySegments";
@@ -26,12 +26,9 @@ import { Select } from "@/components/ui/form";
 import { StatusChip } from "@/components/kairso/StatusChip";
 import { TopBar, TopBarSpacer } from "@/components/shell/TopBar";
 import { Breadcrumb } from "@/components/shell/Breadcrumb";
-import { IconChart } from "@/components/icons";
 import { tr } from "@/lib/i18n";
 import { monthKeyTitle, shortMonth } from "@/lib/domain/format";
 
-const months = () => Array.from({ length: 12 }, (_, i) => monthKey(new Date(new Date().getFullYear(), new Date().getMonth() - i, 1)));
-const r1 = (n: number) => Math.round(n * 10) / 10;
 function monthDays(month: string) {
   const [y, m] = month.split("-").map(Number);
   const last = new Date(y, m, 0).getDate();
@@ -74,12 +71,12 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
 
   const kpiRows = k
     ? [
-        { key: "progress", label: tr().memberStats.progress, value: r1(k.progress.kpi) },
-        { key: "quality", label: tr().memberStats.quality, value: r1(k.quality.kpi) },
-        { key: "punctuality", label: tr().memberStats.punctuality, value: r1(k.punctuality.kpi) },
-        { key: "attitude", label: tr().memberStats.attitude, value: r1(k.attitude.kpi) },
-        { key: "initiative", label: tr().memberStats.initiative, value: r1(k.initiative.kpi) },
-        { key: "customer", label: tr().memberStats.customer, value: r1(k.customer.kpi) },
+        { key: "progress", label: tr().memberStats.progress, value: round1(k.progress.kpi) },
+        { key: "quality", label: tr().memberStats.quality, value: round1(k.quality.kpi) },
+        { key: "punctuality", label: tr().memberStats.punctuality, value: round1(k.punctuality.kpi) },
+        { key: "attitude", label: tr().memberStats.attitude, value: round1(k.attitude.kpi) },
+        { key: "initiative", label: tr().memberStats.initiative, value: round1(k.initiative.kpi) },
+        { key: "customer", label: tr().memberStats.customer, value: round1(k.customer.kpi) },
       ]
     : [];
 
@@ -89,7 +86,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
         <Breadcrumb items={[{ label: tr().memberStats.analytics, href: "/analytics?tab=members" }, { label: name }]} />
         <TopBarSpacer />
         <Select small aria-label={tr().memberStats.month} className="w-40" value={month} onChange={(e) => setMonth(e.target.value)}>
-          {months().map((m) => <option key={m} value={m}>{monthKeyTitle(m)}</option>)}
+          {recentMonths(12).map((m) => <option key={m} value={m}>{monthKeyTitle(m)}</option>)}
         </Select>
       </TopBar>
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -101,7 +98,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
               <h1 className="truncate text-[16px] font-semibold">{name}</h1>
               <p className="text-[12.5px] text-ink-muted">{tr().memberStats.detailOf(monthKeyTitle(month))}</p>
             </div>
-            {k && <div className="text-right"><div className="font-mono text-[22px] font-bold text-ink">{r1(k.totalKpi)}%</div><div className="text-[11.5px] text-ink-faint">{tr().memberStats.totalKpi}</div></div>}
+            {k && <div className="text-right"><div className="font-mono text-[22px] font-bold text-ink">{round1(k.totalKpi)}%</div><div className="text-[11.5px] text-ink-faint">{tr().memberStats.totalKpi}</div></div>}
           </div>
 
           {/* Biểu đồ */}
@@ -121,7 +118,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
               title={tr().memberStats.trend}
               unit="%"
               labels={trendMonths.map((m) => shortMonth(m))}
-              series={[{ key: "kpi", label: tr().memberStats.totalKpi, color: "var(--chart-1)", points: trend.map((q) => r1(q.data?.find((x) => x.memberId === memberId)?.totalKpi ?? 0)) }]}
+              series={[{ key: "kpi", label: tr().memberStats.totalKpi, color: "var(--chart-1)", points: trend.map((q) => round1(q.data?.find((x) => x.memberId === memberId)?.totalKpi ?? 0)) }]}
             />
           </Card>
 
@@ -143,7 +140,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
                       <span className="font-mono text-[12px] text-ink-2">{fmtDate(d.key)}</span>
                       {d.late && <Badge tone="warning">{tr().memberStats.late}</Badge>}
                       {d.early && <Badge tone="warning">{tr().memberStats.early}</Badge>}
-                      <span className="ml-auto font-mono text-[11.5px] text-ink-faint">{r1(d.hours)}h</span>
+                      <span className="ml-auto font-mono text-[11.5px] text-ink-faint">{round1(d.hours)}h</span>
                     </li>
                   ))}
                 </ul>
@@ -156,7 +153,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
                     <li key={l.id} className="flex items-center gap-2">
                       <span className="font-mono text-[12px] text-ink-2">{fmtDate(l.lateTime)}</span>
                       <span className="truncate text-ink-muted">{l.content || "—"}</span>
-                      <span className="ml-auto font-mono text-[11.5px] text-danger">−{r1(l.estimate)}</span>
+                      <span className="ml-auto font-mono text-[11.5px] text-danger">−{round1(l.estimate)}</span>
                     </li>
                   ))}
                 </ul>
@@ -168,7 +165,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
                   {rec!.initiatives.map((it) => (
                     <li key={it.id} className="flex items-center gap-2">
                       <span className="truncate font-medium">{it.content}</span>
-                      <span className="ml-auto shrink-0 font-mono text-[11.5px] text-success">+{r1(it.estimate)}</span>
+                      <span className="ml-auto shrink-0 font-mono text-[11.5px] text-success">+{round1(it.estimate)}</span>
                     </li>
                   ))}
                 </ul>
@@ -180,7 +177,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ memberI
                   {rec!.feedbacks.map((f) => (
                     <li key={f.id} className="flex items-center gap-2">
                       <span className="truncate">{f.content}</span>
-                      <span className="ml-auto shrink-0 font-mono text-[11.5px] text-success">+{r1(f.estimate)}</span>
+                      <span className="ml-auto shrink-0 font-mono text-[11.5px] text-success">+{round1(f.estimate)}</span>
                     </li>
                   ))}
                 </ul>

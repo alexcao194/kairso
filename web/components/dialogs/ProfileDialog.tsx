@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Field, Input, Textarea } from "@/components/ui/form";
 import { tr } from "@/lib/i18n";
+import { toDateInput } from "@/lib/domain/format";
 
 export function ProfileDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
@@ -19,8 +20,6 @@ export function ProfileDialog({ open, onClose }: { open: boolean; onClose: () =>
     </Modal>
   );
 }
-
-const toDateInput = (v?: string) => (v ? v.slice(0, 10) : "");
 
 function Form({ onClose }: { onClose: () => void }) {
   const { user, setUser } = useAuth();

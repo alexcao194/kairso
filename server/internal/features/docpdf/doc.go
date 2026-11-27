@@ -132,9 +132,6 @@ type Run struct {
 	Color RGB
 }
 
-// R is a regular run in ink.
-func R(text string, size float64) Run { return Run{Text: text, Size: size, Color: Ink} }
-
 // Runs writes styled text that wraps at the margins, starting indent mm into the first line.
 func (d *Doc) Runs(lh, indent float64, runs ...Run) {
 	d.P.SetX(d.m.Left + indent)

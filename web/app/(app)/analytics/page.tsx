@@ -6,7 +6,7 @@ import { useQueries } from "@tanstack/react-query";
 import { getWorkspaceAttendanceStatistics, getWorkspaceKpi, getWorkspaceTaskStatistics } from "@/lib/api/endpoints";
 import type { KPIMemberResponse, KPISettingsResponse } from "@/lib/api/schema";
 import { qk } from "@/lib/query/keys";
-import { monthKey, projectColor } from "@/lib/domain/format";
+import { monthKey, projectColor, recentMonths, round1 } from "@/lib/domain/format";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { useUrlState } from "@/lib/hooks/useUrlState";
 import { useKpi, useKpiSettings, useMyKpi, usePerformanceMutations } from "@/lib/hooks/performance";
@@ -33,8 +33,6 @@ import { IconChart, IconDownload } from "@/components/icons";
 import { tr } from "@/lib/i18n";
 import { monthKeyTitle, shortMonth } from "@/lib/domain/format";
 
-const months = () => Array.from({ length: 12 }, (_, i) => monthKey(new Date(new Date().getFullYear(), new Date().getMonth() - i, 1)));
-const r1 = (n: number) => Math.round(n * 10) / 10;
 
 export default function AnalyticsPage() {
   const { can } = useWorkspace();
@@ -45,7 +43,7 @@ export default function AnalyticsPage() {
   return (
     <>
       <TopBar><Breadcrumb items={[{ label: tr().analytics.title }]} /><TopBarSpacer />
-        <Select small aria-label={tr().analytics.month} className="w-40" value={month} onChange={(e) => setMonth(e.target.value)}>{months().map((m) => <option key={m} value={m}>{monthKeyTitle(m)}</option>)}</Select>
+        <Select small aria-label={tr().analytics.month} className="w-40" value={month} onChange={(e) => setMonth(e.target.value)}>{recentMonths(12).map((m) => <option key={m} value={m}>{monthKeyTitle(m)}</option>)}</Select>
       </TopBar>
       <Tabs label={tr().analytics.title} value={t} onChange={setTab} className="bg-surface px-3" tabs={canViewTeam ? [{ value: "workspace", label: "Workspace" }, { value: "members", label: tr().analytics.members }, { value: "projects", label: tr().analytics.projects }] : [{ value: "mine", label: tr().analytics.mine }]} />
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -67,13 +65,13 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
 function KpiBreakdown({ k }: { k: KPIMemberResponse }) {
   return (
     <MetricStrip metrics={[
-      { label: tr().analytics.totalKpi, value: `${r1(k.totalKpi)}%` },
-      { label: tr().analytics.progress, value: r1(k.progress.kpi), hint: tr().analytics.lateHint(Math.round(k.progress.lateRatio * 100)) },
-      { label: tr().analytics.quality, value: r1(k.quality.kpi), hint: tr().analytics.cleanHint(Math.round(k.quality.ratio * 100)) },
-      { label: tr().analytics.punctuality, value: r1(k.punctuality.kpi), hint: `−${r1(k.punctuality.deduction)}` },
-      { label: tr().analytics.attitude, value: r1(k.attitude.kpi) },
-      { label: tr().analytics.initiative, value: r1(k.initiative.kpi) },
-      { label: tr().analytics.customer, value: r1(k.customer.kpi) },
+      { label: tr().analytics.totalKpi, value: `${round1(k.totalKpi)}%` },
+      { label: tr().analytics.progress, value: round1(k.progress.kpi), hint: tr().analytics.lateHint(Math.round(k.progress.lateRatio * 100)) },
+      { label: tr().analytics.quality, value: round1(k.quality.kpi), hint: tr().analytics.cleanHint(Math.round(k.quality.ratio * 100)) },
+      { label: tr().analytics.punctuality, value: round1(k.punctuality.kpi), hint: `−${round1(k.punctuality.deduction)}` },
+      { label: tr().analytics.attitude, value: round1(k.attitude.kpi) },
+      { label: tr().analytics.initiative, value: round1(k.initiative.kpi) },
+      { label: tr().analytics.customer, value: round1(k.customer.kpi) },
     ]} />
   );
 }
@@ -106,7 +104,7 @@ function WorkspaceTab({ month }: { month: string }) {
   const list = [...(kpi.data ?? [])].sort((a, b) => b.totalKpi - a.totalKpi);
   const t = stats.data?.totals;
   const a = att.data?.totals;
-  const kpiRows = list.map((k) => ({ key: k.memberId, label: k.memberName, value: r1(k.totalKpi) }));
+  const kpiRows = list.map((k) => ({ key: k.memberId, label: k.memberName, value: round1(k.totalKpi) }));
   const kpiBalance = kpiRows.length > 1 ? workloadBalance(kpiRows) : null;
   return (
     <>
@@ -114,8 +112,8 @@ function WorkspaceTab({ month }: { month: string }) {
         { label: tr().analytics.totalTasks, value: t?.totalTasks ?? "—" },
         { label: tr().analytics.done, value: t?.done ?? "—" },
         { label: tr().analytics.overdue, value: t?.totalOverdue ?? "—", tone: (t?.totalOverdue ?? 0) > 0 ? "danger" : "default" },
-        { label: tr().analytics.avgCycle, value: t && t.cycleTimeSampleSize > 0 ? r1(t.avgCycleDays) : "—", hint: t && t.cycleTimeSampleSize > 0 ? tr().analytics.days : undefined },
-        { label: tr().analytics.hours, value: a ? r1(a.attendanceHours) : "—", hint: "h" },
+        { label: tr().analytics.avgCycle, value: t && t.cycleTimeSampleSize > 0 ? round1(t.avgCycleDays) : "—", hint: t && t.cycleTimeSampleSize > 0 ? tr().analytics.days : undefined },
+        { label: tr().analytics.hours, value: a ? round1(a.attendanceHours) : "—", hint: "h" },
         { label: tr().analytics.lateDays, value: a?.lateDays ?? "—" },
       ]} />
       <div className="grid grid-cols-2 gap-5 max-lg:grid-cols-1">
@@ -132,7 +130,7 @@ function WorkspaceTab({ month }: { month: string }) {
               <BarList label={tr().analytics.totalKpiByMember} unit="%" rows={kpiRows} />
               {kpiBalance && (
                 <p className="border-t border-line pt-2 text-[12px] text-ink-muted">
-                  {tr().analytics.balance(String(r1(kpiBalance.mean)), String(r1(kpiBalance.stdDev)), Math.round(kpiBalance.cv * 100), kpiBalance.cv < 0.1 ? tr().analytics.even : kpiBalance.cv < 0.25 ? tr().analytics.moderate : tr().analytics.uneven)}
+                  {tr().analytics.balance(String(round1(kpiBalance.mean)), String(round1(kpiBalance.stdDev)), Math.round(kpiBalance.cv * 100), kpiBalance.cv < 0.1 ? tr().analytics.even : kpiBalance.cv < 0.25 ? tr().analytics.moderate : tr().analytics.uneven)}
                 </p>
               )}
             </div>
@@ -183,7 +181,7 @@ function WorkspaceTrend() {
         title={tr().analytics.hoursByMonth}
         unit="h"
         labels={labels}
-        series={[{ key: "hours", label: tr().analytics.hours, color: "var(--chart-1)", points: attRes.map((r) => r1(r.data?.totals?.attendanceHours ?? 0)) }]}
+        series={[{ key: "hours", label: tr().analytics.hours, color: "var(--chart-1)", points: attRes.map((r) => round1(r.data?.totals?.attendanceHours ?? 0)) }]}
       />
     </div>
   );
@@ -273,13 +271,13 @@ function MembersTab({ month }: { month: string }) {
                     <Avatar person={{ id: k.memberId, name: k.memberName, avatar: k.memberAvatar }} /><span className="truncate font-medium text-ink">{k.memberName}</span>
                   </Link>
                 </td>
-                <td className="px-2 text-right font-mono text-ink-2">{r1(k.progress.kpi)}<span className="text-ink-faint">/{r1(m.progress)}</span></td>
-                <td className="px-2 text-right font-mono text-ink-2">{r1(k.quality.kpi)}<span className="text-ink-faint">/{r1(m.quality)}</span></td>
-                <td className="px-2 text-right font-mono text-ink-2">{r1(k.punctuality.kpi)}<span className="text-ink-faint">/{r1(m.punctuality)}</span></td>
-                <td className="px-2 text-right font-mono text-ink-2">{r1(k.attitude.kpi)}<span className="text-ink-faint">/{r1(m.attitude)}</span></td>
-                <td className="px-2 text-right font-mono text-ink-2">{r1(k.initiative.kpi)}<span className="text-ink-faint">/{r1(m.initiative)}</span></td>
-                <td className="px-2 text-right font-mono text-ink-2">{r1(k.customer.kpi)}<span className="text-ink-faint">/{r1(m.customer)}</span></td>
-                <td className={`px-3 text-right font-mono text-[14px] font-bold ${TOTAL_TONE_CLASS[totalTone(k.totalKpi)]}`}>{r1(k.totalKpi)}%</td>
+                <td className="px-2 text-right font-mono text-ink-2">{round1(k.progress.kpi)}<span className="text-ink-faint">/{round1(m.progress)}</span></td>
+                <td className="px-2 text-right font-mono text-ink-2">{round1(k.quality.kpi)}<span className="text-ink-faint">/{round1(m.quality)}</span></td>
+                <td className="px-2 text-right font-mono text-ink-2">{round1(k.punctuality.kpi)}<span className="text-ink-faint">/{round1(m.punctuality)}</span></td>
+                <td className="px-2 text-right font-mono text-ink-2">{round1(k.attitude.kpi)}<span className="text-ink-faint">/{round1(m.attitude)}</span></td>
+                <td className="px-2 text-right font-mono text-ink-2">{round1(k.initiative.kpi)}<span className="text-ink-faint">/{round1(m.initiative)}</span></td>
+                <td className="px-2 text-right font-mono text-ink-2">{round1(k.customer.kpi)}<span className="text-ink-faint">/{round1(m.customer)}</span></td>
+                <td className={`px-3 text-right font-mono text-[14px] font-bold ${TOTAL_TONE_CLASS[totalTone(k.totalKpi)]}`}>{round1(k.totalKpi)}%</td>
                 <td className="px-2 text-right"><Button size="sm" variant="ghost" onClick={() => setSel(k)}>{tr().analytics.kpiSlip}</Button></td>
               </tr>
             ))}
@@ -324,16 +322,16 @@ function KpiSlip({
 
   const rows: Array<{ stt: string | number; label: string; how?: string; weight: number; result: number; note?: string; section?: boolean }> = [
     { stt: "A", label: tr().analytics.secCustomer, weight: settings.customerWeight, result: k.customer.kpi, section: true },
-    { stt: 1, label: tr().analytics.positive, how: tr().analytics.positiveHow, weight: r1(settings.customerWeight * 0.7), result: r1(k.customer.kpi) },
-    { stt: 2, label: tr().analytics.noResponse, weight: r1(settings.customerWeight * 0.3), result: 0 },
+    { stt: 1, label: tr().analytics.positive, how: tr().analytics.positiveHow, weight: round1(settings.customerWeight * 0.7), result: round1(k.customer.kpi) },
+    { stt: 2, label: tr().analytics.noResponse, weight: round1(settings.customerWeight * 0.3), result: 0 },
     { stt: 3, label: "Claim", weight: 0, result: 0 },
     { stt: "B", label: tr().analytics.secWork, weight: settings.progressWeight + settings.qualityWeight + settings.initiativeWeight, result: k.progress.kpi + k.quality.kpi + k.initiative.kpi, section: true },
-    { stt: 1, label: tr().analytics.progressRow, how: tr().analytics.progressHow, weight: settings.progressWeight, result: r1(k.progress.kpi), note: tr().analytics.lateNote(Math.round(k.progress.lateRatio * 100)) },
-    { stt: 2, label: tr().analytics.qualityRow, how: tr().analytics.qualityHow, weight: settings.qualityWeight, result: r1(k.quality.kpi), note: tr().analytics.cleanNote(Math.round(k.quality.ratio * 100)) },
-    { stt: 3, label: tr().analytics.initiativeRow, how: tr().analytics.initiativeHow, weight: settings.initiativeWeight, result: r1(k.initiative.kpi) },
+    { stt: 1, label: tr().analytics.progressRow, how: tr().analytics.progressHow, weight: settings.progressWeight, result: round1(k.progress.kpi), note: tr().analytics.lateNote(Math.round(k.progress.lateRatio * 100)) },
+    { stt: 2, label: tr().analytics.qualityRow, how: tr().analytics.qualityHow, weight: settings.qualityWeight, result: round1(k.quality.kpi), note: tr().analytics.cleanNote(Math.round(k.quality.ratio * 100)) },
+    { stt: 3, label: tr().analytics.initiativeRow, how: tr().analytics.initiativeHow, weight: settings.initiativeWeight, result: round1(k.initiative.kpi) },
     { stt: "C", label: tr().analytics.secDiscipline, weight: settings.punctualityWeight + settings.attitudeWeight, result: k.punctuality.kpi + k.attitude.kpi, section: true },
-    { stt: 1, label: tr().analytics.punctualityRow, how: tr().analytics.punctualityHow, weight: settings.punctualityWeight, result: r1(k.punctuality.kpi), note: `−${r1(k.punctuality.deduction)}` },
-    { stt: 2, label: tr().analytics.attitudeRow, how: tr().analytics.attitudeHow, weight: settings.attitudeWeight, result: r1(k.attitude.kpi) },
+    { stt: 1, label: tr().analytics.punctualityRow, how: tr().analytics.punctualityHow, weight: settings.punctualityWeight, result: round1(k.punctuality.kpi), note: `−${round1(k.punctuality.deduction)}` },
+    { stt: 2, label: tr().analytics.attitudeRow, how: tr().analytics.attitudeHow, weight: settings.attitudeWeight, result: round1(k.attitude.kpi) },
   ];
 
   const doExport = async () => {
@@ -378,8 +376,8 @@ function KpiSlip({
                 <span className="flex items-center justify-center px-1 py-2 font-mono">{row.stt}</span>
                 <span className={`flex items-center px-3 py-2 ${row.section ? "" : "pl-5 text-ink-2"}`}>{row.label}</span>
                 <span className="flex items-center px-3 py-2 text-[11.5px] leading-snug text-ink-faint">{row.how}</span>
-                <span className="flex items-center justify-center px-1 py-2 font-mono tabular-nums">{r1(row.weight)}%</span>
-                <span className="flex items-center justify-center px-1 py-2 font-mono tabular-nums">{r1(row.result)}%</span>
+                <span className="flex items-center justify-center px-1 py-2 font-mono tabular-nums">{round1(row.weight)}%</span>
+                <span className="flex items-center justify-center px-1 py-2 font-mono tabular-nums">{round1(row.result)}%</span>
                 <span className="flex items-center px-3 py-2 text-[11.5px] text-ink-faint">{row.note}</span>
               </div>
             ))}
@@ -388,7 +386,7 @@ function KpiSlip({
               <span className="flex items-center px-3 py-2.5 text-accent-ink">{tr().analytics.totalKpiCaps}</span>
               <span />
               <span className="flex items-center justify-center px-1 py-2.5 font-mono tabular-nums text-accent-ink">100%</span>
-              <span className={`flex items-center justify-center px-1 py-2.5 font-mono text-[14px] tabular-nums ${TOTAL_TONE_CLASS[totalTone(k.totalKpi)]}`}>{r1(k.totalKpi)}%</span>
+              <span className={`flex items-center justify-center px-1 py-2.5 font-mono text-[14px] tabular-nums ${TOTAL_TONE_CLASS[totalTone(k.totalKpi)]}`}>{round1(k.totalKpi)}%</span>
               <span />
             </div>
           </div>
@@ -446,7 +444,7 @@ function ProjectsTab({ month }: { month: string }) {
           <Card key={p.id} title={p.name}>
             {res[i]?.isLoading ? <Skeleton className="h-10" /> : !t || t.totalTasks === 0 ? <p className="text-[13px] text-ink-muted">{tr().analytics.noTasksPeriod}</p> : (
               <div className="flex flex-col gap-3">
-                <p className="flex flex-wrap gap-x-6 text-[12.5px] text-ink-muted"><span><span className="mr-1.5 inline-block size-2 rounded-[2px]" style={{ background: projectColor(p.id) }} />{tr().analytics.total} <b className="font-mono text-ink">{t.totalTasks}</b></span><span>{tr().analytics.overdue} <b className={`font-mono ${t.totalOverdue ? "text-danger" : "text-ink"}`}>{t.totalOverdue}</b></span><span>{tr().analytics.estHours} <b className="font-mono text-ink">{r1(t.totalEstimation)}h</b></span></p>
+                <p className="flex flex-wrap gap-x-6 text-[12.5px] text-ink-muted"><span><span className="mr-1.5 inline-block size-2 rounded-[2px]" style={{ background: projectColor(p.id) }} />{tr().analytics.total} <b className="font-mono text-ink">{t.totalTasks}</b></span><span>{tr().analytics.overdue} <b className={`font-mono ${t.totalOverdue ? "text-danger" : "text-ink"}`}>{t.totalOverdue}</b></span><span>{tr().analytics.estHours} <b className="font-mono text-ink">{round1(t.totalEstimation)}h</b></span></p>
                 <StackedBar label={tr().analytics.statusOf(p.name)} segments={statusSegments(t)} height={10} />
               </div>
             )}

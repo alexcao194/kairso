@@ -32,9 +32,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/devices [post]
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req RegisterDeviceRequest
@@ -61,9 +60,8 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/devices [delete]
 func (h *Handler) Unregister(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UnregisterDeviceRequest

@@ -220,8 +220,8 @@ func workspaceResponseFromRow(row workspaceRow) WorkspaceResponse {
 		UpdatedAt:   row.UpdatedAt,
 		CreatedByID: pgutil.UUIDToString(row.CreatedByID),
 		Name:        row.Name,
-		Avatar:      textString(row.Avatar),
-		BrandColor:  textString(row.BrandColor),
+		Avatar:      pgutil.Text(row.Avatar),
+		BrandColor:  pgutil.Text(row.BrandColor),
 	}
 }
 
@@ -344,7 +344,7 @@ func workspaceInvitationSummaryResponseFromRow(row workspaceInvitationSummaryRow
 		InviterID:     pgutil.UUIDToString(row.InviterID),
 		InviterAlias:  row.InviterAlias,
 		InviterName:   row.InviterName,
-		InviterAvatar: textString(row.InviterAvatar),
+		InviterAvatar: pgutil.Text(row.InviterAvatar),
 		Role:          row.Role,
 		Status:        row.Status,
 		CreatedAt:     row.CreatedAt,
@@ -378,8 +378,8 @@ func workspaceHistoryResponseFromRow(row workspaceHistoryRow) WorkspaceHistoryRe
 			Avatar: row.ChangedByAvatar,
 		},
 		Field:     row.Field,
-		OldValue:  textPtr(row.OldValue),
-		NewValue:  textPtr(row.NewValue),
+		OldValue:  pgutil.TextPtr(row.OldValue),
+		NewValue:  pgutil.TextPtr(row.NewValue),
 		CreatedAt: row.CreatedAt,
 	}
 }
@@ -389,28 +389,14 @@ func workspaceHistoryResponseFromDatabaseHistory(row database.ListWorkspaceHisto
 		ID:              row.ID,
 		EntityID:        row.EntityID,
 		ChangedByID:     row.ChangedByID,
-		ChangedByAlias:  textString(row.ChangedByAlias),
-		ChangedByName:   textString(row.ChangedByName),
+		ChangedByAlias:  pgutil.Text(row.ChangedByAlias),
+		ChangedByName:   pgutil.Text(row.ChangedByName),
 		ChangedByAvatar: row.ChangedByAvatar,
 		Field:           row.Field,
 		OldValue:        row.OldValue,
 		NewValue:        row.NewValue,
 		CreatedAt:       row.CreatedAt.Time,
 	})
-}
-
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
-}
-
-func textPtr(value pgtype.Text) *string {
-	if !value.Valid {
-		return nil
-	}
-	return &value.String
 }
 
 func normalizeUpdateWorkspaceRequest(req *UpdateWorkspaceRequest) error {
@@ -738,18 +724,4 @@ func workspaceFileResponseFromDatabaseListFile(row database.ListWorkspaceFilesRo
 		CreatorAlias:  row.CreatorAlias,
 		CreatorAvatar: row.CreatorAvatar,
 	})
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func pgtypeText(value *string) pgtype.Text {
-	if value == nil {
-		return pgtype.Text{}
-	}
-	return pgtype.Text{String: *value, Valid: true}
 }

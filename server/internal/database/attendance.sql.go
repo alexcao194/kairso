@@ -1084,15 +1084,15 @@ func (q *Queries) ListDailyReportsByAlias(ctx context.Context, arg ListDailyRepo
 	return items, nil
 }
 
-const listWorkScheduleSessionsByDayID = `-- name: ListWorkScheduleSessionsByDayID :many
+const listWorkScheduleSessionsByDayIDs = `-- name: ListWorkScheduleSessionsByDayIDs :many
 SELECT id, created_at, updated_at, day_id, start_at, end_at
 FROM work_schedule_sessions
-WHERE day_id = $1
-ORDER BY start_at, id
+WHERE day_id = ANY($1::uuid[])
+ORDER BY day_id, start_at, id
 `
 
-func (q *Queries) ListWorkScheduleSessionsByDayID(ctx context.Context, dayID pgtype.UUID) ([]WorkScheduleSession, error) {
-	rows, err := q.db.Query(ctx, listWorkScheduleSessionsByDayID, dayID)
+func (q *Queries) ListWorkScheduleSessionsByDayIDs(ctx context.Context, dayIds []pgtype.UUID) ([]WorkScheduleSession, error) {
+	rows, err := q.db.Query(ctx, listWorkScheduleSessionsByDayIDs, dayIds)
 	if err != nil {
 		return nil, err
 	}
@@ -1268,42 +1268,61 @@ func (q *Queries) ListWorkspaceMembersForStatistics(ctx context.Context, arg Lis
 	return items, nil
 }
 
-const sumAssignedTaskHoursByWorkspace = `-- name: SumAssignedTaskHoursByWorkspace :one
+const sumAssignedTaskHoursByMembers = `-- name: SumAssignedTaskHoursByMembers :many
 WITH task_workers_total AS (
     SELECT task_id, SUM(weight) AS total_weight
     FROM task_workers
     GROUP BY task_id
 )
-SELECT COALESCE(SUM(t.estimation * tw.weight / NULLIF(twt.total_weight, 0)), 0)::float8
+SELECT tw.user_id, COALESCE(SUM(t.estimation * tw.weight / NULLIF(twt.total_weight, 0)), 0)::float8 AS total
 FROM tasks t
 INNER JOIN task_workers tw ON tw.task_id = t.id
 INNER JOIN task_workers_total twt ON twt.task_id = t.id
 INNER JOIN projects p ON p.id = t.project_id
 WHERE p.workspace_id = $1::uuid
   AND t.deleted_at IS NULL
-  AND tw.user_id = $2
+  AND tw.user_id = ANY($2::uuid[])
   AND (t.start_date IS NULL OR t.start_date < $3::timestamptz)
   AND (t.end_date IS NULL OR t.end_date >= $4::timestamptz)
   AND (t.status IN ('review'::task_status, 'done'::task_status) OR (t.end_date IS NOT NULL AND t.end_date < NOW()))
+GROUP BY tw.user_id
 `
 
-type SumAssignedTaskHoursByWorkspaceParams struct {
+type SumAssignedTaskHoursByMembersParams struct {
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`
-	MemberID    pgtype.UUID        `json:"member_id"`
+	MemberIds   []pgtype.UUID      `json:"member_ids"`
 	MonthEnd    pgtype.Timestamptz `json:"month_end"`
 	MonthStart  pgtype.Timestamptz `json:"month_start"`
 }
 
-func (q *Queries) SumAssignedTaskHoursByWorkspace(ctx context.Context, arg SumAssignedTaskHoursByWorkspaceParams) (float64, error) {
-	row := q.db.QueryRow(ctx, sumAssignedTaskHoursByWorkspace,
+type SumAssignedTaskHoursByMembersRow struct {
+	UserID pgtype.UUID `json:"user_id"`
+	Total  float64     `json:"total"`
+}
+
+func (q *Queries) SumAssignedTaskHoursByMembers(ctx context.Context, arg SumAssignedTaskHoursByMembersParams) ([]SumAssignedTaskHoursByMembersRow, error) {
+	rows, err := q.db.Query(ctx, sumAssignedTaskHoursByMembers,
 		arg.WorkspaceID,
-		arg.MemberID,
+		arg.MemberIds,
 		arg.MonthEnd,
 		arg.MonthStart,
 	)
-	var column_1 float64
-	err := row.Scan(&column_1)
-	return column_1, err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SumAssignedTaskHoursByMembersRow{}
+	for rows.Next() {
+		var i SumAssignedTaskHoursByMembersRow
+		if err := rows.Scan(&i.UserID, &i.Total); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateAttendanceCorrectionRequestDecisionByID = `-- name: UpdateAttendanceCorrectionRequestDecisionByID :one

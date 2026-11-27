@@ -570,7 +570,7 @@ func (r *repository) hydrate(ctx context.Context, resp *ProjectFeedbackResponse,
 		user, err := r.queries.GetUserByID(ctx, respondedByID)
 		if err == nil {
 			resp.RespondedBy = &UserSummary{
-				ID: pgutil.UUIDToString(user.ID), Name: user.Name, Alias: user.Alias, Avatar: textString(user.Avatar),
+				ID: pgutil.UUIDToString(user.ID), Name: user.Name, Alias: user.Alias, Avatar: pgutil.Text(user.Avatar),
 			}
 		}
 	}

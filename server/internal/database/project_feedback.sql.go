@@ -207,6 +207,41 @@ func (q *Queries) DeleteProjectFeedbackImages(ctx context.Context, feedbackID pg
 	return err
 }
 
+const filterMemberProjectIDs = `-- name: FilterMemberProjectIDs :many
+SELECT p.id
+FROM projects p
+WHERE p.id = ANY($1::uuid[])
+  AND (
+    EXISTS (SELECT 1 FROM project_users pu WHERE pu.project_id = p.id AND pu.user_id = $2)
+    OR EXISTS (SELECT 1 FROM workspace_users wu WHERE wu.workspace_id = p.workspace_id AND wu.user_id = $2)
+  )
+`
+
+type FilterMemberProjectIDsParams struct {
+	ProjectIds []pgtype.UUID `json:"project_ids"`
+	UserID     pgtype.UUID   `json:"user_id"`
+}
+
+func (q *Queries) FilterMemberProjectIDs(ctx context.Context, arg FilterMemberProjectIDsParams) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, filterMemberProjectIDs, arg.ProjectIds, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []pgtype.UUID{}
+	for rows.Next() {
+		var id pgtype.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getProjectFeedbackByID = `-- name: GetProjectFeedbackByID :one
 SELECT id, created_at, updated_at, project_id, submitter_name, submitter_company,
        feature_name, content, priority, status, response, responded_at, responded_by_id,

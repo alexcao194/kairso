@@ -50,7 +50,7 @@ export function newMeetingItem(section: MeetingSection): MeetingItem {
 
 export const isBlankItem = (it: MeetingItem) => !it.content.trim() && !it.module.trim() && !it.note.trim() && !(it.tasks ?? []).length;
 
-export const toDateInput = (v?: string) => (v ? v.slice(0, 10) : "");
+export { toDateInput } from "./format";
 
 export const todayKey = () => localDateKey();
 

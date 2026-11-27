@@ -10,6 +10,7 @@ import (
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/realtime"
+	"github.com/alexcao194/kairso/pkg/vntime"
 )
 
 type Service interface {
@@ -243,7 +244,7 @@ func (s *service) CreateSprint(ctx context.Context, moduleID, callerID string, r
 		sp.Name = fmt.Sprintf("Sprint %d", len(m.Sprints)+1)
 	}
 	if sp.StartDate == "" {
-		start := time.Now().In(vietnamLocation())
+		start := time.Now().In(vntime.Location)
 		if n := len(m.Sprints); n > 0 {
 			if last, err := time.Parse(time.DateOnly, m.Sprints[n-1].EndDate); err == nil {
 				start = last.AddDate(0, 0, 1)

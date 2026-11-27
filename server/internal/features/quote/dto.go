@@ -2,13 +2,15 @@ package quote
 
 import (
 	"encoding/json"
-	"github.com/alexcao194/kairso/internal/features/docsign"
 	"math"
 	"time"
+
+	"github.com/alexcao194/kairso/internal/features/docsign"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/currency"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/vntime"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -240,13 +242,6 @@ func percentToBp(p float64) int32  { return int32(math.Round(p * 100)) }
 func milliToQty(m int64) float64   { return float64(m) / qtyScale }
 func qtyToMilli(q float64) int64   { return int64(math.Round(q * qtyScale)) }
 
-func dateString(d pgtype.Date) string {
-	if !d.Valid {
-		return ""
-	}
-	return d.Time.Format(time.DateOnly)
-}
-
 func parseDate(s string) (pgtype.Date, error) {
 	if s == "" {
 		return pgtype.Date{}, nil
@@ -267,11 +262,7 @@ func timePtr(ts pgtype.Timestamptz) *time.Time {
 }
 
 func vietnamToday() time.Time {
-	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-	if err != nil {
-		loc = time.FixedZone("ICT", 7*3600)
-	}
-	now := time.Now().In(loc)
+	now := time.Now().In(vntime.Location)
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 }
 
@@ -392,8 +383,8 @@ func quoteResponse(row database.GetQuoteRow, items []database.QuoteItem, events 
 		Currency:      row.Currency,
 		MinorUnits:    currency.MinorUnits(row.Currency),
 		Language:      row.Language,
-		IssueDate:     dateString(row.IssueDate),
-		ValidUntil:    dateString(row.ValidUntil),
+		IssueDate:     pgutil.DateString(row.IssueDate),
+		ValidUntil:    pgutil.DateString(row.ValidUntil),
 		DiscountType:  row.DiscountType,
 		VatRate:       bpToPercent(row.VatBp),
 		Subtotal:      row.Subtotal,
@@ -458,8 +449,8 @@ func quoteSummaryResponse(row database.ListQuotesRow) QuoteSummaryResponse {
 		Status:       effectiveStatus(row.Status, row.ValidUntil),
 		Currency:     row.Currency,
 		MinorUnits:   currency.MinorUnits(row.Currency),
-		IssueDate:    dateString(row.IssueDate),
-		ValidUntil:   dateString(row.ValidUntil),
+		IssueDate:    pgutil.DateString(row.IssueDate),
+		ValidUntil:   pgutil.DateString(row.ValidUntil),
 		GrandTotal:   row.GrandTotal,
 		ProjectID:    pgutil.UUIDToString(row.ProjectID),
 		ProjectName:  row.ProjectName,

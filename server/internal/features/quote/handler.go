@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/docexport"
 	"github.com/alexcao194/kairso/internal/features/docpdf"
 	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/currency"
@@ -47,15 +48,6 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 	mux.HandleFunc("DELETE /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role}", authMid.Handle(h.UnsignQuote))
 }
 
-func (h *Handler) caller(w http.ResponseWriter, r *http.Request) (string, bool) {
-	id, ok := middleware.GetUserIDFromContext(r.Context())
-	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
-		return "", false
-	}
-	return id, true
-}
-
 func writeErr(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, ErrForbidden):
@@ -90,7 +82,7 @@ func decode(w http.ResponseWriter, r *http.Request, v any) bool {
 // @Success 200 {array} currency.Currency
 // @Router /v1/currencies [get]
 func (h *Handler) ListCurrencies(w http.ResponseWriter, r *http.Request) {
-	if _, ok := h.caller(w, r); !ok {
+	if _, ok := middleware.RequireUser(w, r); !ok {
 		return
 	}
 	var list []currency.Currency = h.svc.Currencies()
@@ -106,7 +98,7 @@ func (h *Handler) ListCurrencies(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/customers [get]
 func (h *Handler) ListCustomers(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -130,7 +122,7 @@ func (h *Handler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/customers [post]
 func (h *Handler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -159,7 +151,7 @@ func (h *Handler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/customers/{customerId} [put]
 func (h *Handler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -185,7 +177,7 @@ func (h *Handler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/customers/{customerId} [delete]
 func (h *Handler) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -204,7 +196,7 @@ func (h *Handler) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} QuoteSettingsResponse
 // @Router /v1/workspaces/{workspaceId}/quote-settings [get]
 func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -227,7 +219,7 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quote-settings [put]
 func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -255,7 +247,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} pagination.Response[QuoteSummaryResponse]
 // @Router /v1/workspaces/{workspaceId}/quotes [get]
 func (h *Handler) ListQuotes(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -281,7 +273,7 @@ func (h *Handler) ListQuotes(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes [post]
 func (h *Handler) CreateQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -307,7 +299,7 @@ func (h *Handler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId} [get]
 func (h *Handler) GetQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -333,7 +325,7 @@ func (h *Handler) GetQuote(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId} [put]
 func (h *Handler) UpdateQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -358,7 +350,7 @@ func (h *Handler) UpdateQuote(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId} [delete]
 func (h *Handler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -381,7 +373,7 @@ func (h *Handler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/send [post]
 func (h *Handler) SendQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -402,7 +394,7 @@ func (h *Handler) SendQuote(w http.ResponseWriter, r *http.Request) {
 // @Success 201 {object} QuoteResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/duplicate [post]
 func (h *Handler) DuplicateQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -427,7 +419,7 @@ func (h *Handler) DuplicateQuote(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/status [post]
 func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -459,7 +451,7 @@ func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/export [get]
 func (h *Handler) ExportQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -479,5 +471,5 @@ func (h *Handler) ExportQuote(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, err)
 		return
 	}
-	writeFile(w, file)
+	docexport.Write(w, file.Filename, file.Data)
 }

@@ -14,8 +14,6 @@ import type {
 import { fetchAll } from "@/lib/query/paged";
 import { qk } from "@/lib/query/keys";
 
-export const dateOnly = (d: Date) => `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}-${`${d.getDate()}`.padStart(2, "0")}`;
-
 export const useAttendanceSettings = (ws: string) =>
   useQuery({ queryKey: qk.attSettings(ws), queryFn: () => api.getWorkspaceAttendanceSettings(ws), enabled: !!ws });
 

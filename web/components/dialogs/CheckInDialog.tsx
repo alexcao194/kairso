@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { useToast } from "@/lib/toast/ToastProvider";
-import { dateOnly, useAttendanceMutations, useAttendanceSettings, useMyDailyReports } from "@/lib/hooks/attendance";
+import { useAttendanceMutations, useAttendanceSettings, useMyDailyReports } from "@/lib/hooks/attendance";
 import { fmtTime } from "@/lib/domain/format";
+import { localDateKey } from "@/lib/domain/task";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/form";
@@ -30,7 +31,7 @@ function Body({ onClose }: { onClose: () => void }) {
   const [status, setStatus] = useState<AttendanceStatusResponse | null>(null);
   const [now, setNow] = useState(new Date());
 
-  const today = dateOnly(new Date());
+  const today = localDateKey();
   const reports = useMyDailyReports(workspaceId, today, today);
   const existing = reports.data?.[0];
   const [report, setReport] = useState({ done: "", inProgress: "", issues: "" });

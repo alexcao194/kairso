@@ -216,11 +216,11 @@ WHERE d.workspace_id = sqlc.arg(workspace_id)::uuid
 ORDER BY d.schedule_date DESC, u.alias
 LIMIT sqlc.arg(limit_count) OFFSET sqlc.arg(offset_count);
 
--- name: ListWorkScheduleSessionsByDayID :many
+-- name: ListWorkScheduleSessionsByDayIDs :many
 SELECT id, created_at, updated_at, day_id, start_at, end_at
 FROM work_schedule_sessions
-WHERE day_id = $1
-ORDER BY start_at, id;
+WHERE day_id = ANY(sqlc.arg(day_ids)::uuid[])
+ORDER BY day_id, start_at, id;
 
 -- name: ListWorkspaceMembersForStatistics :many
 SELECT wu.user_id AS member_id, u.alias AS member_alias, u.name AS member_name, u.avatar AS member_avatar
@@ -230,23 +230,24 @@ WHERE wu.workspace_id = sqlc.arg(workspace_id)::uuid
   AND (sqlc.narg(member_id)::uuid IS NULL OR wu.user_id = sqlc.narg(member_id)::uuid)
 ORDER BY u.alias;
 
--- name: SumAssignedTaskHoursByWorkspace :one
+-- name: SumAssignedTaskHoursByMembers :many
 WITH task_workers_total AS (
     SELECT task_id, SUM(weight) AS total_weight
     FROM task_workers
     GROUP BY task_id
 )
-SELECT COALESCE(SUM(t.estimation * tw.weight / NULLIF(twt.total_weight, 0)), 0)::float8
+SELECT tw.user_id, COALESCE(SUM(t.estimation * tw.weight / NULLIF(twt.total_weight, 0)), 0)::float8 AS total
 FROM tasks t
 INNER JOIN task_workers tw ON tw.task_id = t.id
 INNER JOIN task_workers_total twt ON twt.task_id = t.id
 INNER JOIN projects p ON p.id = t.project_id
 WHERE p.workspace_id = sqlc.arg(workspace_id)::uuid
   AND t.deleted_at IS NULL
-  AND tw.user_id = sqlc.arg(member_id)
+  AND tw.user_id = ANY(sqlc.arg(member_ids)::uuid[])
   AND (t.start_date IS NULL OR t.start_date < sqlc.arg(month_end)::timestamptz)
   AND (t.end_date IS NULL OR t.end_date >= sqlc.arg(month_start)::timestamptz)
-  AND (t.status IN ('review'::task_status, 'done'::task_status) OR (t.end_date IS NOT NULL AND t.end_date < NOW()));
+  AND (t.status IN ('review'::task_status, 'done'::task_status) OR (t.end_date IS NOT NULL AND t.end_date < NOW()))
+GROUP BY tw.user_id;
 
 -- name: GetWorkWeekByAlias :many
 SELECT d.id, d.created_at, d.updated_at, d.workspace_id, d.day_of_week

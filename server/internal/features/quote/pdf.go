@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/features/docexport"
 	"github.com/alexcao194/kairso/internal/features/docpdf"
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -38,7 +39,7 @@ func (h *Handler) SetPDF(e *docpdf.Exporter) { h.pdf = e }
 // @Failure 503 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/pdf [get]
 func (h *Handler) ExportQuotePDF(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -144,13 +145,6 @@ func formatMoney(minor int64, currency string, minorUnits int, lang string) stri
 	return n + " " + sym[0]
 }
 
-func fmtPDFDate(d string) string {
-	if t, err := time.Parse("2006-01-02", d); err == nil {
-		return t.Format("02/01/2006")
-	}
-	return d
-}
-
 func pdfPartyLines(p PartyInfo, l pdfLabels) []string {
 	var lines []string
 	if p.Address != "" {
@@ -238,9 +232,9 @@ func (h *Handler) modernQuotePDF(ctx context.Context, wsID string, q *QuoteRespo
 	d.P.SetXY(rx, y0)
 	d.P.CellFormat(rightW, docpdf.LineH(px(22), 1.1), l.docTitle, "", 2, "R", false, 0, "")
 	d.Gap(1.5)
-	meta := []string{fmt.Sprintf("%s: %s", l.number, q.Number), fmt.Sprintf("%s: %s", l.date, fmtPDFDate(q.IssueDate))}
+	meta := []string{fmt.Sprintf("%s: %s", l.number, q.Number), fmt.Sprintf("%s: %s", l.date, docexport.FormatDate(q.IssueDate))}
 	if q.ValidUntil != "" {
-		meta = append(meta, fmt.Sprintf("%s: %s", l.validUntil, fmtPDFDate(q.ValidUntil)))
+		meta = append(meta, fmt.Sprintf("%s: %s", l.validUntil, docexport.FormatDate(q.ValidUntil)))
 	}
 	d.Font("", px(11), docpdf.Ink2)
 	for i, m := range meta {
@@ -419,19 +413,9 @@ func (h *Handler) adminQuotePDF(ctx context.Context, wsID string, q *QuoteRespon
 	left, width := d.Left(), d.Width()
 	lh := docpdf.LineH(13, 1.35)
 
-	org := q.Issuer.Name
-	if org == "" {
-		org = ws.Name
-	}
-	place := o.Place
-	if place == "" {
-		place = docpdf.PlaceFromAddress(q.Issuer.Address)
-	}
-	issued, err := time.Parse("2006-01-02", q.IssueDate)
-	if err != nil {
-		issued = time.Now()
-	}
-	d.AdminHeader(org, q.Number, true, issued, place)
+	a := h.adminSetup(ctx, wsID, ws.Name, q, o)
+	org := a.org
+	d.AdminHeader(org, q.Number, true, a.issued, a.place)
 
 	d.Gap(8)
 	d.Centered("BẢNG BÁO GIÁ", "B", 14, docpdf.Black, docpdf.LineH(14, 1.3))
@@ -455,7 +439,7 @@ func (h *Handler) adminQuotePDF(ctx context.Context, wsID string, q *QuoteRespon
 	if q.Customer.Address != "" {
 		plain(q.Customer.Address)
 	}
-	if line := joinNonEmpty(" · ", prefixed(l.taxCode, q.Customer.TaxCode), prefixed(l.tel, q.Customer.Phone), q.Customer.Email); line != "" {
+	if line := docexport.Join(" · ", prefixed(l.taxCode, q.Customer.TaxCode), prefixed(l.tel, q.Customer.Phone), q.Customer.Email); line != "" {
 		plain(line)
 	}
 	d.Gap(2)
@@ -463,10 +447,10 @@ func (h *Handler) adminQuotePDF(ctx context.Context, wsID string, q *QuoteRespon
 	if q.Issuer.Address != "" {
 		plain(q.Issuer.Address)
 	}
-	if line := joinNonEmpty(" · ", prefixed(l.taxCode, q.Issuer.TaxCode), prefixed(l.tel, q.Issuer.Phone), q.Issuer.Email); line != "" {
+	if line := docexport.Join(" · ", prefixed(l.taxCode, q.Issuer.TaxCode), prefixed(l.tel, q.Issuer.Phone), q.Issuer.Email); line != "" {
 		plain(line)
 	}
-	if line := joinNonEmpty(" · ", prefixed(l.contact, q.Issuer.ContactName), q.Issuer.Website); line != "" {
+	if line := docexport.Join(" · ", prefixed(l.contact, q.Issuer.ContactName), q.Issuer.Website); line != "" {
 		plain(line)
 	}
 	d.Gap(3)
@@ -514,7 +498,7 @@ func (h *Handler) adminQuotePDF(ctx context.Context, wsID string, q *QuoteRespon
 	}
 	d.Gap(3)
 	if q.ValidUntil != "" {
-		d.Runs(lh, 10, black(fmt.Sprintf("Báo giá có hiệu lực đến hết ngày %s.", fmtPDFDate(q.ValidUntil)), ""))
+		d.Runs(lh, 10, black(fmt.Sprintf("Báo giá có hiệu lực đến hết ngày %s.", docexport.FormatDate(q.ValidUntil)), ""))
 	}
 	for _, b := range []struct{ title, body string }{{l.notes, q.Notes}, {l.terms, q.Terms}, {l.bank, q.Issuer.BankInfo}} {
 		if strings.TrimSpace(b.body) == "" {
@@ -529,15 +513,7 @@ func (h *Handler) adminQuotePDF(ctx context.Context, wsID string, q *QuoteRespon
 
 	// The quote is issued under the director's signature and seal; the preparer signs alongside.
 	// One block when the director prepared it (default: the workspace owner signed).
-	sig := preparerSig(q)
-	title := o.Signer
-	if title == "" {
-		title = "GIÁM ĐỐC"
-	}
-	single := o.Merge == "1"
-	if o.Merge == "" && sig != nil {
-		single = h.isHolder(ctx, wsID, sig.UserID)
-	}
+	sig, title, single := a.sig, a.title, a.single
 	signed := docpdf.Slot{Title: title, Hint: docpdf.HintSeal}
 	preparer := docpdf.Slot{Title: "NGƯỜI LẬP BÁO GIÁ", Hint: docpdf.HintSign}
 	if sig != nil {
@@ -555,6 +531,37 @@ func (h *Handler) adminQuotePDF(ctx context.Context, wsID string, q *QuoteRespon
 	return d.Bytes()
 }
 
+// adminQuote holds what the administrative PDF and Excel decide the same way.
+type adminQuote struct {
+	org, place string
+	issued     time.Time
+	sig        *docsign.Signature // the preparer's signature, if signed
+	title      string             // approver title
+	single     bool               // one signature block (the director prepared the quote)
+}
+
+func (h *Handler) adminSetup(ctx context.Context, wsID, wsName string, q *QuoteResponse, o docpdf.Options) adminQuote {
+	a := adminQuote{org: q.Issuer.Name, place: o.Place, title: o.Signer, sig: preparerSig(q)}
+	if a.org == "" {
+		a.org = wsName
+	}
+	if a.place == "" {
+		a.place = docpdf.PlaceFromAddress(q.Issuer.Address)
+	}
+	var err error
+	if a.issued, err = time.Parse("2006-01-02", q.IssueDate); err != nil {
+		a.issued = time.Now()
+	}
+	if a.title == "" {
+		a.title = "GIÁM ĐỐC"
+	}
+	a.single = o.Merge == "1"
+	if o.Merge == "" && a.sig != nil {
+		a.single = h.isHolder(ctx, wsID, a.sig.UserID)
+	}
+	return a
+}
+
 func (h *Handler) isHolder(ctx context.Context, wsID, userID string) bool {
 	wid, err1 := pgutil.ParseUUID(wsID)
 	uid, err2 := pgutil.ParseUUID(userID)
@@ -570,14 +577,4 @@ func prefixed(label, v string) string {
 		return ""
 	}
 	return label + ": " + v
-}
-
-func joinNonEmpty(sep string, parts ...string) string {
-	var out []string
-	for _, p := range parts {
-		if p != "" {
-			out = append(out, p)
-		}
-	}
-	return strings.Join(out, sep)
 }

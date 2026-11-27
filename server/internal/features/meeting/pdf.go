@@ -14,6 +14,7 @@ import (
 	"github.com/alexcao194/kairso/internal/features/docpdf"
 	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/httpx"
+	"github.com/alexcao194/kairso/pkg/vntime"
 )
 
 // SetPDF enables PDF export.
@@ -40,9 +41,8 @@ func (s *service) TaskDueDates(ctx context.Context, ids []string) (map[string]ti
 // @Failure 503 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId}/pdf [get]
 func (h *Handler) ExportMeetingPDF(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	m, err := h.svc.Get(r.Context(), r.PathValue("meetingId"), userID)
@@ -57,7 +57,7 @@ func (h *Handler) ExportMeetingPDF(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, docpdf.Status(err), "Không thể tạo PDF biên bản họp: "+err.Error())
 		return
 	}
-	name := "Bien-ban-hop-" + strings.ReplaceAll(fmtMeetingDate(m.MeetingDate), "/", "-")
+	name := "Bien-ban-hop-" + strings.ReplaceAll(docexport.FormatDate(m.MeetingDate), "/", "-")
 	docpdf.Write(w, docexport.SafeFilename(name)+".pdf", data)
 }
 
@@ -161,15 +161,8 @@ func itemDue(r MeetingItem, due map[string]time.Time) string {
 	if latest.IsZero() {
 		return ""
 	}
-	return latest.In(vnTime).Format("02/01/2006")
+	return latest.In(vntime.Location).Format("02/01/2006")
 }
-
-var vnTime = func() *time.Location {
-	if loc, err := time.LoadLocation("Asia/Ho_Chi_Minh"); err == nil {
-		return loc
-	}
-	return time.FixedZone("ICT", 7*3600)
-}()
 
 func signatureOf(m *MeetingMinutesResponse, role string) (string, time.Time) {
 	for _, s := range m.Signatures {
@@ -240,7 +233,7 @@ func (h *Handler) modernMinutesPDF(ctx context.Context, m *MeetingMinutesRespons
 		w            float64
 		label, value string
 	}{
-		{unit, "Thời gian", fmtMeetingDate(m.MeetingDate)},
+		{unit, "Thời gian", docexport.FormatDate(m.MeetingDate)},
 		{unit * 1.6, "Địa điểm / hình thức", m.Location},
 		{unit * 1.2, "Người ghi biên bản", participantNames(m.Recorders)},
 	}
@@ -319,7 +312,7 @@ func (h *Handler) modernMinutesPDF(ctx context.Context, m *MeetingMinutesRespons
 				for _, t := range r.Tasks {
 					codes = append(codes, t.Code)
 				}
-				sub := joinParts(" · ", r.Note, strings.Join(codes, ", "))
+				sub := docexport.Join(" · ", r.Note, strings.Join(codes, ", "))
 				row := []docpdf.Cell{{Text: strconv.Itoa(i + 1), Bold: true, Color: &brand}, {Text: r.Module, Bold: true}, {Text: r.Content, Sub: sub}}
 				if showDue {
 					row = append(row, docpdf.C(itemDue(r, due)))
@@ -395,7 +388,7 @@ func (h *Handler) adminMinutesPDF(ctx context.Context, m *MeetingMinutesResponse
 		d.Runs(lh, 0, run(fmt.Sprintf("%s. %s", roman[n], strings.ToUpper(title)), "B"))
 	}
 	heading(0, "Thời gian, địa điểm")
-	d.Runs(lh, 0, run("- Thời gian: "+fmtMeetingDate(m.MeetingDate), ""))
+	d.Runs(lh, 0, run("- Thời gian: "+docexport.FormatDate(m.MeetingDate), ""))
 	d.Runs(lh, 0, run("- Địa điểm: "+or(m.Location), ""))
 	heading(1, "Thành phần tham dự")
 	d.Runs(lh, 0, run("- "+or(participantNames(m.Attendees)), ""))
@@ -469,14 +462,4 @@ func (h *Handler) adminMinutesPDF(ctx context.Context, m *MeetingMinutesResponse
 		{Title: "NGƯỜI KIỂM SOÁT", Hint: docpdf.HintSeal, Name: cName, SignedAt: cAt},
 	}, o.Wet, nil)
 	return d.Bytes()
-}
-
-func joinParts(sep string, parts ...string) string {
-	var out []string
-	for _, p := range parts {
-		if strings.TrimSpace(p) != "" {
-			out = append(out, p)
-		}
-	}
-	return strings.Join(out, sep)
 }

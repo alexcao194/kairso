@@ -8,12 +8,11 @@ import (
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/vntime"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const (
-	vietnamTimezone = "Asia/Ho_Chi_Minh"
-
 	NotificationTypeWorkScheduleRegistration   = "work_schedule_registration"
 	NotificationTypeWorkScheduleApproved       = "work_schedule_approved"
 	NotificationTypeWorkScheduleRejected       = "work_schedule_rejected"
@@ -42,21 +41,6 @@ const (
 	AttendanceCorrectionStatusApproved AttendanceCorrectionStatus = "approved"
 	AttendanceCorrectionStatusRejected AttendanceCorrectionStatus = "rejected"
 )
-
-func textString(v pgtype.Text) string {
-	if !v.Valid {
-		return ""
-	}
-	return v.String
-}
-
-func timestamptzPtr(value pgtype.Timestamptz) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	t := value.Time
-	return &t
-}
 
 type AttendanceType string
 
@@ -641,7 +625,7 @@ func normalizeSubmitAttendanceCorrectionRequest(req *SubmitAttendanceCorrectionR
 
 func normalizeWorkScheduleRequest(req *UpsertWorkScheduleRequest) error {
 	req.Date = strings.TrimSpace(req.Date)
-	if _, err := parseDate(req.Date); err != nil {
+	if _, err := vntime.ParseDate(req.Date); err != nil {
 		return fmt.Errorf("%w: ngày phải theo định dạng YYYY-MM-DD", ErrInvalidWorkSchedule)
 	}
 	if len(req.Sessions) > 3 {
@@ -746,7 +730,7 @@ func dailyReportResponseFromListRow(row database.ListDailyReportsByAliasRow) Dai
 	})
 	resp.MemberAlias = row.MemberAlias
 	resp.MemberName = row.MemberName
-	resp.MemberAvatar = textString(row.MemberAvatar)
+	resp.MemberAvatar = pgutil.Text(row.MemberAvatar)
 	return resp
 }
 
@@ -793,7 +777,7 @@ func attendanceRecordResponseFromListRow(row database.ListAttendanceRecordsByAli
 	})
 	resp.MemberAlias = row.MemberAlias
 	resp.MemberName = row.MemberName
-	resp.MemberAvatar = textString(row.MemberAvatar)
+	resp.MemberAvatar = pgutil.Text(row.MemberAvatar)
 	return resp
 }
 
@@ -806,16 +790,16 @@ func attendanceCorrectionRequestResponseFromDatabase(row database.AttendanceCorr
 		MemberID:               pgutil.UUIDToString(row.MemberID),
 		Reason:                 row.Reason,
 		Status:                 AttendanceCorrectionStatus(row.Status),
-		CheckInAt:              timestamptzPtr(row.CheckInAt),
-		CheckOutAt:             timestamptzPtr(row.CheckOutAt),
+		CheckInAt:              pgutil.TimePtr(row.CheckInAt),
+		CheckOutAt:             pgutil.TimePtr(row.CheckOutAt),
 		TargetCheckInRecordID:  pgutil.UUIDToString(row.TargetCheckInRecordID),
 		TargetCheckOutRecordID: pgutil.UUIDToString(row.TargetCheckOutRecordID),
-		OriginalCheckInAt:      timestamptzPtr(row.OriginalCheckInAt),
-		OriginalCheckOutAt:     timestamptzPtr(row.OriginalCheckOutAt),
+		OriginalCheckInAt:      pgutil.TimePtr(row.OriginalCheckInAt),
+		OriginalCheckOutAt:     pgutil.TimePtr(row.OriginalCheckOutAt),
 		ResultCheckInRecordID:  pgutil.UUIDToString(row.ResultCheckInRecordID),
 		ResultCheckOutRecordID: pgutil.UUIDToString(row.ResultCheckOutRecordID),
 		DecidedByID:            pgutil.UUIDToString(row.DecidedBy),
-		DecidedAt:              timestamptzPtr(row.DecidedAt),
+		DecidedAt:              pgutil.TimePtr(row.DecidedAt),
 	}
 }
 
@@ -839,9 +823,9 @@ func attendanceCorrectionRequestResponseFromListRow(row database.ListAttendanceC
 	})
 	resp.MemberAlias = row.MemberAlias
 	resp.MemberName = row.MemberName
-	resp.MemberAvatar = textString(row.MemberAvatar)
-	resp.DecidedByAlias = textString(row.DecidedByAlias)
-	resp.DecidedByName = textString(row.DecidedByName)
+	resp.MemberAvatar = pgutil.Text(row.MemberAvatar)
+	resp.DecidedByAlias = pgutil.Text(row.DecidedByAlias)
+	resp.DecidedByName = pgutil.Text(row.DecidedByName)
 	return resp
 }
 
@@ -876,10 +860,10 @@ func workScheduleDayResponseFromListRow(row database.ListWorkSchedulesByAliasRow
 	})
 	resp.MemberAlias = row.MemberAlias
 	resp.MemberName = row.MemberName
-	resp.MemberAvatar = textString(row.MemberAvatar)
-	resp.RegisteredByAlias = textString(row.RegisteredByAlias)
-	resp.RegisteredByName = textString(row.RegisteredByName)
-	resp.RegisteredByAvatar = textString(row.RegisteredByAvatar)
+	resp.MemberAvatar = pgutil.Text(row.MemberAvatar)
+	resp.RegisteredByAlias = pgutil.Text(row.RegisteredByAlias)
+	resp.RegisteredByName = pgutil.Text(row.RegisteredByName)
+	resp.RegisteredByAvatar = pgutil.Text(row.RegisteredByAvatar)
 	return resp
 }
 
@@ -899,16 +883,12 @@ func workspaceMemberBriefFromRow(row database.ListWorkspaceMembersForStatisticsR
 		MemberID:     pgutil.UUIDToString(row.MemberID),
 		MemberAlias:  row.MemberAlias,
 		MemberName:   row.MemberName,
-		MemberAvatar: textString(row.MemberAvatar),
+		MemberAvatar: pgutil.Text(row.MemberAvatar),
 	}
 }
 
-func parseDate(value string) (time.Time, error) {
-	return time.ParseInLocation(time.DateOnly, value, vietnamLocation())
-}
-
 func parseMonth(value string) (time.Time, error) {
-	return time.ParseInLocation("2006-01", value, vietnamLocation())
+	return time.ParseInLocation("2006-01", value, vntime.Location)
 }
 
 func parseOptionalTime(value string, endOfDay bool) (time.Time, bool, error) {
@@ -919,7 +899,7 @@ func parseOptionalTime(value string, endOfDay bool) (time.Time, bool, error) {
 	if parsed, err := time.Parse(time.RFC3339, value); err == nil {
 		return parsed, true, nil
 	}
-	parsed, err := parseDate(value)
+	parsed, err := vntime.ParseDate(value)
 	if err != nil {
 		return time.Time{}, false, fmt.Errorf("Thời gian phải theo định dạng RFC3339 hoặc YYYY-MM-DD")
 	}
@@ -937,16 +917,8 @@ func parseClockMinutes(value string) (int, error) {
 	return parsed.Hour()*60 + parsed.Minute(), nil
 }
 
-func vietnamLocation() *time.Location {
-	loc, err := time.LoadLocation(vietnamTimezone)
-	if err != nil {
-		return time.FixedZone(vietnamTimezone, 7*60*60)
-	}
-	return loc
-}
-
 func vietnamTime(year int, month time.Month, day, hour, minute int) time.Time {
-	return time.Date(year, month, day, hour, minute, 0, 0, vietnamLocation())
+	return time.Date(year, month, day, hour, minute, 0, 0, vntime.Location)
 }
 
 func normalizeSQLTime(value string) string {
@@ -956,32 +928,11 @@ func normalizeSQLTime(value string) string {
 	return value
 }
 
-func pgUUIDOrNull(value string) (pgtype.UUID, error) {
-	if strings.TrimSpace(value) == "" {
-		return pgtype.UUID{}, nil
-	}
-	return pgutil.ParseUUID(value)
-}
-
 func pgUUIDPtrOrNull(value *string) (pgtype.UUID, error) {
 	if value == nil {
 		return pgtype.UUID{}, nil
 	}
-	return pgUUIDOrNull(*value)
-}
-
-func pgTimeOrNull(value time.Time, valid bool) pgtype.Timestamptz {
-	if !valid {
-		return pgtype.Timestamptz{}
-	}
-	return pgtype.Timestamptz{Time: value, Valid: true}
-}
-
-func pgTimePtr(value *time.Time) pgtype.Timestamptz {
-	if value == nil {
-		return pgtype.Timestamptz{}
-	}
-	return pgtype.Timestamptz{Time: *value, Valid: true}
+	return pgutil.UUIDOrNull(*value)
 }
 
 func formatOptionalTime(value *time.Time) string {

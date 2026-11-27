@@ -6,7 +6,7 @@ import type { CalendarDayResponse } from "@/lib/api/schema";
 import { DAY_STATE_LABEL, dayInfo, LIVE_STATE_ORDER, memberDayTimeline, timelineWindow, type LiveState } from "@/lib/domain/attendance";
 import { addDays, startOfWeek } from "@/lib/domain/format";
 import { localDateKey } from "@/lib/domain/task";
-import { dateOnly, useMembersCalendar } from "@/lib/hooks/attendance";
+import { useMembersCalendar } from "@/lib/hooks/attendance";
 import { useUrlState } from "@/lib/hooks/useUrlState";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { Avatar } from "@/components/ui/Avatar";
@@ -226,7 +226,7 @@ function WeekTimeline({ toggle, openDay }: { toggle: React.ReactNode; openDay: (
   const canViewTeam = can("attendance.view_all");
   const [anchor, setAnchor] = useState(() => startOfWeek(new Date()));
   const days = Array.from({ length: 7 }, (_, i) => addDays(anchor, i));
-  const q = useMembersCalendar(workspaceId, dateOnly(anchor), dateOnly(days[6]), canViewTeam);
+  const q = useMembersCalendar(workspaceId, localDateKey(anchor), localDateKey(days[6]), canViewTeam);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">

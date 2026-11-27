@@ -62,9 +62,8 @@ func writeServiceError(w http.ResponseWriter, err error, fallback string) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/meetings [get]
 func (h *Handler) ListMeetings(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := ListMeetingMinutesFilter{ProjectID: r.URL.Query().Get("projectId"), Query: r.URL.Query().Get("q")}
@@ -89,9 +88,8 @@ func (h *Handler) ListMeetings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/meetings [post]
 func (h *Handler) CreateMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateMeetingMinutesRequest
@@ -118,9 +116,8 @@ func (h *Handler) CreateMeeting(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId} [get]
 func (h *Handler) GetMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.Get(r.Context(), r.PathValue("meetingId"), userID)
@@ -146,9 +143,8 @@ func (h *Handler) GetMeeting(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId} [patch]
 func (h *Handler) UpdateMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateMeetingMinutesRequest
@@ -174,9 +170,8 @@ func (h *Handler) UpdateMeeting(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId} [delete]
 func (h *Handler) DeleteMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.Delete(r.Context(), r.PathValue("meetingId"), userID); err != nil {

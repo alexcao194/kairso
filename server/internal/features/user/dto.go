@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/pkg/pgutil"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -82,13 +83,13 @@ func userResponseFromRow(row userRow) UserResponse {
 		UpdatedAt:     row.UpdatedAt,
 		Name:          row.Name,
 		Alias:         row.Alias,
-		Avatar:        textString(row.Avatar),
-		Email:         textString(row.Email),
+		Avatar:        pgutil.Text(row.Avatar),
+		Email:         pgutil.Text(row.Email),
 		EmailVerified: row.EmailVerified,
 		Birthday:      dateString(row.Birthday),
-		Bio:           textString(row.Bio),
-		Phone:         textString(row.Phone),
-		Nickname:      textString(row.Nickname),
+		Bio:           pgutil.Text(row.Bio),
+		Phone:         pgutil.Text(row.Phone),
+		Nickname:      pgutil.Text(row.Nickname),
 		Locale:        row.Locale,
 	}
 }
@@ -117,13 +118,6 @@ func userResponseFromDatabaseUser(row database.User) UserResponse {
 func userResponsePtrFromDatabaseUser(row database.User) *UserResponse {
 	resp := userResponseFromDatabaseUser(row)
 	return &resp
-}
-
-func pgtypeTextFromStringPtr(value *string) pgtype.Text {
-	if value == nil {
-		return pgtype.Text{}
-	}
-	return pgtype.Text{String: *value, Valid: true}
 }
 
 func pgtypeDateFromStringPtr(value *string) (pgtype.Date, error) {
@@ -156,13 +150,6 @@ type User struct {
 	Bio           string
 	Phone         string
 	Nickname      string
-}
-
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
 }
 
 func normalizeUpdateRequest(req *UpdateMeRequest) error {

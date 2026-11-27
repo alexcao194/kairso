@@ -2,8 +2,10 @@ package quote
 
 import (
 	"context"
-	"github.com/alexcao194/kairso/internal/features/access"
 	"net/http"
+
+	"github.com/alexcao194/kairso/internal/api/rest/middleware"
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/pkg/httpx"
@@ -102,7 +104,7 @@ func (s *Service) UnsignQuote(ctx context.Context, workspaceID, callerID, quoteI
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role} [post]
 func (h *Handler) SignQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}
@@ -127,7 +129,7 @@ func (h *Handler) SignQuote(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/quotes/{quoteId}/signatures/{role} [delete]
 func (h *Handler) UnsignQuote(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := h.caller(w, r)
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
 		return
 	}

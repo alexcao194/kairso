@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/features/docexport"
 	"github.com/alexcao194/kairso/internal/features/docsign"
-	"github.com/alexcao194/kairso/pkg/httpx"
 )
 
 var sectionTitles = map[MeetingSection]string{
@@ -30,13 +27,6 @@ func participantNames(list []MeetingParticipant) string {
 	return strings.Join(names, ", ")
 }
 
-func fmtMeetingDate(d string) string {
-	if t, err := time.Parse("2006-01-02", d[:min(len(d), 10)]); err == nil {
-		return t.Format("02/01/2006")
-	}
-	return d
-}
-
 // Export renders meeting minutes as an .xlsx sheet (Vietnamese, like the printed minutes).
 func (s *service) Export(ctx context.Context, id, callerID string) (*ExportFile, error) {
 	m, err := s.Get(ctx, id, callerID)
@@ -52,7 +42,7 @@ func meetingWorkbook(m *MeetingMinutesResponse) (*ExportFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	date := fmtMeetingDate(m.MeetingDate)
+	date := docexport.FormatDate(m.MeetingDate)
 	b.Title("BIÊN BẢN HỌP")
 	if m.Title != "" {
 		b.Subtitle(m.Title)
@@ -155,9 +145,8 @@ func meetingWorkbook(m *MeetingMinutesResponse) (*ExportFile, error) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId}/export [get]
 func (h *Handler) ExportMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	file, err := h.svc.Export(r.Context(), r.PathValue("meetingId"), userID)
@@ -165,9 +154,5 @@ func (h *Handler) ExportMeeting(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, err, "Không thể xuất biên bản họp")
 		return
 	}
-	w.Header().Set("Content-Type", docexport.ContentType)
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", file.Filename))
-	w.Header().Set("Content-Length", strconv.Itoa(len(file.Data)))
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(file.Data)
+	docexport.Write(w, file.Filename, file.Data)
 }

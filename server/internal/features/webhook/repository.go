@@ -2,12 +2,12 @@ package webhook
 
 import (
 	"context"
-	"errors"
+
 	"github.com/alexcao194/kairso/internal/features/access"
+	"github.com/alexcao194/kairso/pkg/pgutil"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/workspace"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -36,20 +36,8 @@ func NewRepository(pool *pgxpool.Pool) Repository {
 	return &repository{queries: database.New(pool)}
 }
 
-func found[T any](v T, err error) (T, bool, error) {
-	if errors.Is(err, pgx.ErrNoRows) {
-		var zero T
-		return zero, false, nil
-	}
-	if err != nil {
-		var zero T
-		return zero, false, err
-	}
-	return v, true, nil
-}
-
 func (r *repository) GetCallerRole(ctx context.Context, workspaceID, userID pgtype.UUID) (workspace.WorkspaceRole, error) {
-	role, ok, err := found(r.queries.GetCallerWorkspaceRole(ctx, database.GetCallerWorkspaceRoleParams{WorkspaceID: workspaceID, UserID: userID}))
+	role, ok, err := pgutil.Found(r.queries.GetCallerWorkspaceRole(ctx, database.GetCallerWorkspaceRoleParams{WorkspaceID: workspaceID, UserID: userID}))
 	if err != nil || !ok {
 		return "", err
 	}
@@ -69,7 +57,7 @@ func (r *repository) Count(ctx context.Context, workspaceID pgtype.UUID) (int64,
 }
 
 func (r *repository) Get(ctx context.Context, id, workspaceID pgtype.UUID) (database.Webhook, bool, error) {
-	return found(r.queries.GetWebhook(ctx, database.GetWebhookParams{ID: id, WorkspaceID: workspaceID}))
+	return pgutil.Found(r.queries.GetWebhook(ctx, database.GetWebhookParams{ID: id, WorkspaceID: workspaceID}))
 }
 
 func (r *repository) Create(ctx context.Context, arg database.CreateWebhookParams) (database.Webhook, error) {
@@ -77,7 +65,7 @@ func (r *repository) Create(ctx context.Context, arg database.CreateWebhookParam
 }
 
 func (r *repository) Update(ctx context.Context, arg database.UpdateWebhookParams) (database.Webhook, bool, error) {
-	return found(r.queries.UpdateWebhook(ctx, arg))
+	return pgutil.Found(r.queries.UpdateWebhook(ctx, arg))
 }
 
 func (r *repository) Delete(ctx context.Context, id, workspaceID pgtype.UUID) (int64, error) {

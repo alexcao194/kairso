@@ -138,9 +138,8 @@ func (r *repository) UpdateRolePermissions(ctx context.Context, workspaceID stri
 // guard runs next only when the caller passes check in the {workspaceId} of the path.
 func (h *Handler) guard(check func(access.Grant) bool, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		callerID, ok := middleware.GetUserIDFromContext(r.Context())
+		callerID, ok := middleware.RequireUser(w, r)
 		if !ok {
-			httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 			return
 		}
 		g, err := h.svc.CallerAccess(r.Context(), r.PathValue("workspaceId"), callerID)

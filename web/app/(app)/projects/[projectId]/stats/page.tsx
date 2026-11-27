@@ -5,7 +5,7 @@ import { useQueries } from "@tanstack/react-query";
 import { getWorkspaceTaskStatistics } from "@/lib/api/endpoints";
 import type { TaskStatsMemberResponse } from "@/lib/api/schema";
 import { qk } from "@/lib/query/keys";
-import { monthKey } from "@/lib/domain/format";
+import { recentMonths, round1 } from "@/lib/domain/format";
 import { useTaskStats } from "@/lib/hooks/stats";
 import { useProjectModules } from "@/lib/hooks/tasks";
 import { useUrlState } from "@/lib/hooks/useUrlState";
@@ -24,11 +24,6 @@ import { IconChart } from "@/components/icons";
 import { tr } from "@/lib/i18n";
 import { monthTitle } from "@/lib/domain/format";
 
-const r1 = (n: number) => Math.round(n * 10) / 10;
-const months = (n: number) => {
-  const now = new Date();
-  return Array.from({ length: n }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - (n - 1 - i), 1)));
-};
 
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="rounded-lg border border-line bg-surface p-4">
@@ -52,7 +47,7 @@ export default function ProjectStatsPage({ params }: { params: Promise<{ project
       <div className="flex h-toolbar shrink-0 items-center gap-2 border-b border-line bg-surface px-4">
         <Select small aria-label={tr().projStats.period} className="w-40" value={month} onChange={(e) => setMonth(e.target.value)}>
           <option value="all">{tr().projStats.allTime}</option>
-          {months(12).map((m) => <option key={m} value={m}>{monthTitle(new Date(Number(m.slice(0, 4)), Number(m.slice(5)) - 1, 1))}</option>)}
+          {recentMonths(12).reverse().map((m) => <option key={m} value={m}>{monthTitle(new Date(Number(m.slice(0, 4)), Number(m.slice(5)) - 1, 1))}</option>)}
         </Select>
         <Select small aria-label="Module" className="w-48" value={moduleId} onChange={(e) => setModuleId(e.target.value || null)}>
           <option value="">{tr().projStats.allModules}</option>
@@ -73,10 +68,10 @@ export default function ProjectStatsPage({ params }: { params: Promise<{ project
                 { label: tr().projStats.total, value: t.totalTasks },
                 { label: tr().projStats.done, value: t.done, hint: `${Math.round((t.done / t.totalTasks) * 100)}%` },
                 { label: tr().projStats.doneLate, value: t.totalOverdue, hint: tr().projStats.doneLateHint, tone: t.totalOverdue > 0 ? "danger" : "default" },
-                { label: tr().projStats.avgCycle, value: t.cycleTimeSampleSize > 0 ? r1(t.avgCycleDays) : "—", hint: t.cycleTimeSampleSize > 0 ? tr().projStats.cycleHint(t.cycleTimeSampleSize) : undefined },
-                { label: tr().projStats.estHours, value: r1(t.totalEstimation), hint: "h" },
-                { label: tr().projStats.lateHours, value: r1(t.totalLate), hint: tr().projStats.lateHoursHint },
-                { label: tr().projStats.bugHours, value: r1(t.totalBug), hint: "h" },
+                { label: tr().projStats.avgCycle, value: t.cycleTimeSampleSize > 0 ? round1(t.avgCycleDays) : "—", hint: t.cycleTimeSampleSize > 0 ? tr().projStats.cycleHint(t.cycleTimeSampleSize) : undefined },
+                { label: tr().projStats.estHours, value: round1(t.totalEstimation), hint: "h" },
+                { label: tr().projStats.lateHours, value: round1(t.totalLate), hint: tr().projStats.lateHoursHint },
+                { label: tr().projStats.bugHours, value: round1(t.totalBug), hint: "h" },
               ]}
             />
 
@@ -116,7 +111,7 @@ export default function ProjectStatsPage({ params }: { params: Promise<{ project
 }
 
 function WorkloadCard({ members }: { members: TaskStatsMemberResponse[] }) {
-  const rows = members.map((m) => ({ key: m.memberId, label: m.memberName, value: r1(m.totalEstimation) }));
+  const rows = members.map((m) => ({ key: m.memberId, label: m.memberName, value: round1(m.totalEstimation) }));
   if (rows.length === 0) return <p className="text-[13px] text-ink-muted">{tr().projStats.noData}</p>;
   const b = workloadBalance(rows);
   const verdict = rows.length < 2 ? null : b.cv < 0.15 ? tr().projStats.even : b.cv < 0.4 ? tr().projStats.moderate : tr().projStats.uneven;
@@ -125,8 +120,8 @@ function WorkloadCard({ members }: { members: TaskStatsMemberResponse[] }) {
       <BarList label={tr().projStats.estByMember} unit="h" color="var(--chart-2)" rows={rows.slice(0, 8)} />
       {verdict && (
         <p className="border-t border-line pt-2 text-[12px] text-ink-muted">
-          {tr().projStats.balance(String(r1(b.mean)), Math.round(b.cv * 100), verdict)}
-          {b.max && b.min && b.max.key !== b.min.key && tr().projStats.extremes(b.max.label, String(r1(b.max.value)), b.min.label, String(r1(b.min.value)))}
+          {tr().projStats.balance(String(round1(b.mean)), Math.round(b.cv * 100), verdict)}
+          {b.max && b.min && b.max.key !== b.min.key && tr().projStats.extremes(b.max.label, String(round1(b.max.value)), b.min.label, String(round1(b.min.value)))}
         </p>
       )}
     </div>
@@ -135,7 +130,7 @@ function WorkloadCard({ members }: { members: TaskStatsMemberResponse[] }) {
 
 function ProjectTrend({ projectId, moduleId }: { projectId: string; moduleId?: string }) {
   const { workspaceId } = useWorkspace();
-  const ms = useMemo(() => months(6), []);
+  const ms = useMemo(() => recentMonths(6).reverse(), []);
   const res = useQueries({
     queries: ms.map((m) => ({
       queryKey: qk.stats(workspaceId, "project-trend", { projectId, moduleId, m }),
@@ -199,9 +194,9 @@ function MemberTable({ members }: { members: TaskStatsMemberResponse[] }) {
               <td className="px-2"><StackedBar label={tr().projStats.statusOf(m.memberName)} segments={statusSegments(m)} showLegend={false} height={8} /></td>
               <td className="px-2 text-right font-mono">{m.totalTasks}</td>
               <td className={`px-2 text-right font-mono ${m.totalOverdue > 0 ? "text-danger" : ""}`}>{m.totalOverdue}</td>
-              <td className="px-2 text-right font-mono">{r1(m.totalEstimation)}h</td>
-              <td className="px-2 text-right font-mono">{r1(m.totalLate)}h</td>
-              <td className="px-4 text-right font-mono">{r1(m.totalBug)}h</td>
+              <td className="px-2 text-right font-mono">{round1(m.totalEstimation)}h</td>
+              <td className="px-2 text-right font-mono">{round1(m.totalLate)}h</td>
+              <td className="px-4 text-right font-mono">{round1(m.totalBug)}h</td>
             </tr>
           ))}
         </tbody>

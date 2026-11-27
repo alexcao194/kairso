@@ -63,9 +63,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects [post]
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectRequest
@@ -99,9 +98,8 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} pagination.Response[ProjectResponse]
 // @Router /v1/workspaces/{workspaceId}/projects [get]
 func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	params := pagination.ParseStats(r, 20, 100)
@@ -145,9 +143,8 @@ func (h *Handler) GetProjectOverviewsByIDs(w http.ResponseWriter, r *http.Reques
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId} [patch]
 func (h *Handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateProjectRequest
@@ -241,9 +238,8 @@ func (h *Handler) ListProjectMembers(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/members [post]
 func (h *Handler) AddProjectMember(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req AddProjectMemberRequest
@@ -289,9 +285,8 @@ func (h *Handler) AddProjectMember(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/members/{userId} [patch]
 func (h *Handler) UpdateProjectMemberRole(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateProjectMemberRoleRequest
@@ -329,9 +324,8 @@ func (h *Handler) UpdateProjectMemberRole(w http.ResponseWriter, r *http.Request
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/members/{userId} [delete]
 func (h *Handler) RemoveProjectMember(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.RemoveProjectMember(r.Context(), r.PathValue("projectId"), callerID, r.PathValue("userId")); err != nil {
@@ -361,9 +355,8 @@ func (h *Handler) RemoveProjectMember(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/links [post]
 func (h *Handler) CreateProjectLink(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectLinkRequest
@@ -458,9 +451,8 @@ func (h *Handler) DeleteProjectLink(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/notes [post]
 func (h *Handler) CreateProjectNote(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectNoteRequest
@@ -555,9 +547,8 @@ func (h *Handler) DeleteProjectNote(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/projects/{projectId}/files [post]
 func (h *Handler) CreateProjectFile(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateProjectFileRequest

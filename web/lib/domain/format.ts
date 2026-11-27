@@ -61,7 +61,24 @@ export const addDays = (d: Date, n: number) => {
   return r;
 };
 
+/** 24-hour "HH:MM" in local time; "" when empty. */
+export function hhmm(v?: string | Date | null): string {
+  const d = toDate(v);
+  return d ? `${`${d.getHours()}`.padStart(2, "0")}:${`${d.getMinutes()}`.padStart(2, "0")}` : "";
+}
+
+/** The YYYY-MM-DD part of an ISO date/time, for <input type="date">; "" when empty. */
+export const toDateInput = (v?: string | null) => (v ? v.slice(0, 10) : "");
+
+/** Rounds to one decimal. */
+export const round1 = (n: number) => Math.round(n * 10) / 10;
+
 export const monthKey = (d: Date) => `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, "0")}`;
+
+/** The last n month keys (YYYY-MM), newest first. */
+export function recentMonths(n: number, now: Date = new Date()): string[] {
+  return Array.from({ length: n }, (_, i) => monthKey(new Date(now.getFullYear(), now.getMonth() - i, 1)));
+}
 
 /** Localized weekday name, e.g. "Thứ Hai" / "Monday". */
 export const weekdayName = (d: Date, style: "long" | "short" = "long") => d.toLocaleDateString(dateLocale(), { weekday: style });

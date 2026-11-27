@@ -461,8 +461,8 @@ func taskHistoryResponseFromRow(row taskHistoryRow) TaskHistoryResponse {
 			Avatar: row.ChangedByAvatar,
 		},
 		Field:     row.Field,
-		OldValue:  textPtrValue(row.OldValue),
-		NewValue:  textPtrValue(row.NewValue),
+		OldValue:  pgutil.TextPtr(row.OldValue),
+		NewValue:  pgutil.TextPtr(row.NewValue),
 		CreatedAt: row.CreatedAt,
 	}
 }
@@ -508,28 +508,6 @@ func FeedbackCode(projectName string, sequenceNo int) string {
 	return fmt.Sprintf("#%s-F%d", taskCodePrefix(projectName), sequenceNo)
 }
 
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
-}
-
-func textPtrValue(value pgtype.Text) *string {
-	if !value.Valid {
-		return nil
-	}
-	return &value.String
-}
-
-func timestamptzPtr(value pgtype.Timestamptz) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	t := value.Time
-	return &t
-}
-
 func nullableUUID(id *string) (*pgtype.UUID, error) {
 	if id == nil || *id == "" {
 		return nil, nil
@@ -548,13 +526,6 @@ func pgtypeUUIDValue(value *pgtype.UUID) pgtype.UUID {
 	return *value
 }
 
-func nullableTimeValue(value *time.Time) pgtype.Timestamptz {
-	if value == nil {
-		return pgtype.Timestamptz{}
-	}
-	return pgtype.Timestamptz{Time: *value, Valid: true}
-}
-
 func intValue(value *int) int32 {
 	if value == nil {
 		return 0
@@ -564,13 +535,6 @@ func intValue(value *int) int32 {
 
 func boolValue(value *bool) bool {
 	return value != nil && *value
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
 }
 
 func normalizeCreateTaskRequest(req *CreateTaskRequest) error {
@@ -838,12 +802,12 @@ func taskResponseFromCreateTaskRow(row database.CreateTaskRow) TaskResponse {
 		CreatedByID:      pgutil.UUIDToString(row.CreatedByID),
 		ParentID:         pgutil.UUIDToString(row.ParentID),
 		Title:            row.Title,
-		Description:      textString(row.Description),
+		Description:      pgutil.Text(row.Description),
 		Status:           TaskStatus(string(row.Status)),
 		Priority:         int(row.Priority),
-		StartDate:        timestamptzPtr(row.StartDate),
-		EndDate:          timestamptzPtr(row.EndDate),
-		FirstCompletedAt: timestamptzPtr(row.FirstCompletedAt),
+		StartDate:        pgutil.TimePtr(row.StartDate),
+		EndDate:          pgutil.TimePtr(row.EndDate),
+		FirstCompletedAt: pgutil.TimePtr(row.FirstCompletedAt),
 		Estimation:       int(row.Estimation),
 		Archived:         row.Archived,
 		FaultHolderID:    pgutil.UUIDToString(row.FaultHolderID),
@@ -865,12 +829,12 @@ func taskResponseFromGetTaskByIDRow(row database.GetTaskByIDRow) TaskResponse {
 		CreatedByID:      pgutil.UUIDToString(row.CreatedByID),
 		ParentID:         pgutil.UUIDToString(row.ParentID),
 		Title:            row.Title,
-		Description:      textString(row.Description),
+		Description:      pgutil.Text(row.Description),
 		Status:           TaskStatus(string(row.Status)),
 		Priority:         int(row.Priority),
-		StartDate:        timestamptzPtr(row.StartDate),
-		EndDate:          timestamptzPtr(row.EndDate),
-		FirstCompletedAt: timestamptzPtr(row.FirstCompletedAt),
+		StartDate:        pgutil.TimePtr(row.StartDate),
+		EndDate:          pgutil.TimePtr(row.EndDate),
+		FirstCompletedAt: pgutil.TimePtr(row.FirstCompletedAt),
 		Estimation:       int(row.Estimation),
 		Archived:         row.Archived,
 		FaultHolderID:    pgutil.UUIDToString(row.FaultHolderID),
@@ -892,12 +856,12 @@ func taskResponseFromGetTaskByIDForUpdateRow(row database.GetTaskByIDForUpdateRo
 		CreatedByID:      pgutil.UUIDToString(row.CreatedByID),
 		ParentID:         pgutil.UUIDToString(row.ParentID),
 		Title:            row.Title,
-		Description:      textString(row.Description),
+		Description:      pgutil.Text(row.Description),
 		Status:           TaskStatus(string(row.Status)),
 		Priority:         int(row.Priority),
-		StartDate:        timestamptzPtr(row.StartDate),
-		EndDate:          timestamptzPtr(row.EndDate),
-		FirstCompletedAt: timestamptzPtr(row.FirstCompletedAt),
+		StartDate:        pgutil.TimePtr(row.StartDate),
+		EndDate:          pgutil.TimePtr(row.EndDate),
+		FirstCompletedAt: pgutil.TimePtr(row.FirstCompletedAt),
 		Estimation:       int(row.Estimation),
 		Archived:         row.Archived,
 		FaultHolderID:    pgutil.UUIDToString(row.FaultHolderID),
@@ -919,12 +883,12 @@ func taskResponseFromUpdateTaskRow(row database.UpdateTaskRow) TaskResponse {
 		CreatedByID:      pgutil.UUIDToString(row.CreatedByID),
 		ParentID:         pgutil.UUIDToString(row.ParentID),
 		Title:            row.Title,
-		Description:      textString(row.Description),
+		Description:      pgutil.Text(row.Description),
 		Status:           TaskStatus(string(row.Status)),
 		Priority:         int(row.Priority),
-		StartDate:        timestamptzPtr(row.StartDate),
-		EndDate:          timestamptzPtr(row.EndDate),
-		FirstCompletedAt: timestamptzPtr(row.FirstCompletedAt),
+		StartDate:        pgutil.TimePtr(row.StartDate),
+		EndDate:          pgutil.TimePtr(row.EndDate),
+		FirstCompletedAt: pgutil.TimePtr(row.FirstCompletedAt),
 		Estimation:       int(row.Estimation),
 		Archived:         row.Archived,
 		FaultHolderID:    pgutil.UUIDToString(row.FaultHolderID),
@@ -969,12 +933,12 @@ func taskResponseFromListRow(row taskListRow) TaskResponse {
 		CreatedByID:      pgutil.UUIDToString(row.CreatedByID),
 		ParentID:         pgutil.UUIDToString(row.ParentID),
 		Title:            row.Title,
-		Description:      textString(row.Description),
+		Description:      pgutil.Text(row.Description),
 		Status:           TaskStatus(row.Status.(string)),
 		Priority:         int(row.Priority),
-		StartDate:        timestamptzPtr(row.StartDate),
-		EndDate:          timestamptzPtr(row.EndDate),
-		FirstCompletedAt: timestamptzPtr(row.FirstCompletedAt),
+		StartDate:        pgutil.TimePtr(row.StartDate),
+		EndDate:          pgutil.TimePtr(row.EndDate),
+		FirstCompletedAt: pgutil.TimePtr(row.FirstCompletedAt),
 		Estimation:       int(row.Estimation),
 		Archived:         row.Archived,
 		FaultHolderID:    pgutil.UUIDToString(row.FaultHolderID),
@@ -1057,7 +1021,7 @@ func taskWorkerResponseFromListRow(row database.ListTaskWorkersWithUserRow) Task
 			ID:     userID,
 			Name:   row.Name,
 			Alias:  row.Alias,
-			Avatar: textString(row.Avatar),
+			Avatar: pgutil.Text(row.Avatar),
 		},
 	}
 }
@@ -1074,7 +1038,7 @@ func taskWorkerResponseFromBatchRow(row database.ListTaskWorkersWithUserByTaskID
 			ID:     userID,
 			Name:   row.Name,
 			Alias:  row.Alias,
-			Avatar: textString(row.Avatar),
+			Avatar: pgutil.Text(row.Avatar),
 		},
 	}
 }
@@ -1091,7 +1055,7 @@ func taskWorkerResponseFromAssignRow(row database.AssignTaskWorkerRow) TaskWorke
 			ID:     userID,
 			Name:   row.Name,
 			Alias:  row.Alias,
-			Avatar: textString(row.Avatar),
+			Avatar: pgutil.Text(row.Avatar),
 		},
 	}
 }
@@ -1108,7 +1072,7 @@ func taskFaultHolderResponseFromListRow(row database.ListTaskFaultHoldersWithUse
 			ID:     userID,
 			Name:   row.Name,
 			Alias:  row.Alias,
-			Avatar: textString(row.Avatar),
+			Avatar: pgutil.Text(row.Avatar),
 		},
 	}
 }
@@ -1125,7 +1089,7 @@ func taskFaultHolderResponseFromBatchRow(row database.ListTaskFaultHoldersWithUs
 			ID:     userID,
 			Name:   row.Name,
 			Alias:  row.Alias,
-			Avatar: textString(row.Avatar),
+			Avatar: pgutil.Text(row.Avatar),
 		},
 	}
 }
@@ -1142,7 +1106,7 @@ func taskFaultHolderResponseFromAssignRow(row database.AssignTaskFaultHolderRow)
 			ID:     userID,
 			Name:   row.Name,
 			Alias:  row.Alias,
-			Avatar: textString(row.Avatar),
+			Avatar: pgutil.Text(row.Avatar),
 		},
 	}
 }
@@ -1152,8 +1116,8 @@ func taskHistoryResponseFromListRow(row database.ListTaskHistoriesRow) TaskHisto
 		ID:              row.ID,
 		EntityID:        row.EntityID,
 		ChangedByID:     row.ChangedByID,
-		ChangedByAlias:  textString(row.ChangedByAlias),
-		ChangedByName:   textString(row.ChangedByName),
+		ChangedByAlias:  pgutil.Text(row.ChangedByAlias),
+		ChangedByName:   pgutil.Text(row.ChangedByName),
 		ChangedByAvatar: row.ChangedByAvatar,
 		Field:           row.Field,
 		OldValue:        row.OldValue,

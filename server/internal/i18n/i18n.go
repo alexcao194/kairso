@@ -10,9 +10,6 @@ const Default = "vi"
 
 var supported = map[string]bool{"vi": true, "en": true}
 
-// Supported returns the list of locales the backend can render.
-func Supported() []string { return []string{"vi", "en"} }
-
 // IsSupported reports whether locale has a catalog.
 func IsSupported(locale string) bool { return supported[locale] }
 

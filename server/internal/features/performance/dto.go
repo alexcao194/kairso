@@ -11,13 +11,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func textString(v pgtype.Text) string {
-	if !v.Valid {
-		return ""
-	}
-	return v.String
-}
-
 type InitiativeStatus string
 
 const (
@@ -207,13 +200,13 @@ func initiativeResponseFromRow(row database.ListInitiativesRow) InitiativeRespon
 			ID:     pgutil.UUIDToString(row.ProposerID),
 			Alias:  row.ProposerAlias,
 			Name:   row.ProposerName,
-			Avatar: textString(row.ProposerAvatar),
+			Avatar: pgutil.Text(row.ProposerAvatar),
 		},
 		RefMember: ProposerResponse{
 			ID:     pgutil.UUIDToString(row.RefMemberID),
 			Alias:  row.RefMemberAlias,
 			Name:   row.RefMemberName,
-			Avatar: textString(row.RefMemberAvatar),
+			Avatar: pgutil.Text(row.RefMemberAvatar),
 		},
 		Content:  row.Content,
 		Status:   InitiativeStatus(row.Status),
@@ -243,13 +236,13 @@ func lateLogResponseFromRow(row database.ListLateLogsRow) LateLogResponse {
 			ID:     pgutil.UUIDToString(row.CreatorID),
 			Alias:  row.CreatorAlias,
 			Name:   row.CreatorName,
-			Avatar: textString(row.CreatorAvatar),
+			Avatar: pgutil.Text(row.CreatorAvatar),
 		},
 		LateUser: LateUserResponse{
 			ID:     pgutil.UUIDToString(row.LateUserID),
 			Alias:  row.LateUserAlias,
 			Name:   row.LateUserName,
-			Avatar: textString(row.LateUserAvatar),
+			Avatar: pgutil.Text(row.LateUserAvatar),
 		},
 		Content:  row.Content,
 		LateTime: row.LateTime.Time,
@@ -269,7 +262,7 @@ func feedbackResponseFromFields(
 	feedbackText string,
 	content string,
 	estimate float64,
-	beneficiaries []database.ListFeedbackBeneficiariesRow,
+	beneficiaries []database.ListFeedbackBeneficiariesByFeedbackIDsRow,
 ) FeedbackResponse {
 	bens := make([]BeneficiaryResponse, 0, len(beneficiaries))
 	for _, b := range beneficiaries {
@@ -277,7 +270,7 @@ func feedbackResponseFromFields(
 			ID:     pgutil.UUIDToString(b.UserID),
 			Alias:  b.UserAlias,
 			Name:   b.UserName,
-			Avatar: textString(b.UserAvatar),
+			Avatar: pgutil.Text(b.UserAvatar),
 			Weight: b.Weight,
 		})
 	}
@@ -290,7 +283,7 @@ func feedbackResponseFromFields(
 			ID:     pgutil.UUIDToString(creatorID),
 			Alias:  creatorAlias,
 			Name:   creatorName,
-			Avatar: textString(creatorAvatar),
+			Avatar: pgutil.Text(creatorAvatar),
 		},
 		FeedbackText:  feedbackText,
 		Content:       content,
@@ -632,12 +625,4 @@ type memberTaskRow struct {
 	brief         MemberTaskBrief
 	isWorker      bool
 	isFaultHolder bool
-}
-
-func timestamptzPtr(v pgtype.Timestamptz) *time.Time {
-	if !v.Valid {
-		return nil
-	}
-	t := v.Time
-	return &t
 }

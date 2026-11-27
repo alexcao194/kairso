@@ -10,6 +10,7 @@ import (
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/ptr"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
@@ -25,6 +26,7 @@ type Repository interface {
 	DeleteTask(ctx context.Context, taskID string) error
 	CheckTaskMembership(ctx context.Context, taskID, callerID string) (bool, error)
 	CheckProjectMembership(ctx context.Context, projectID, callerID string) (bool, error)
+	FilterMemberProjects(ctx context.Context, projectIDs []string, callerID string) ([]string, error)
 	CheckLabelMembership(ctx context.Context, labelID, callerID string) (bool, error)
 
 	AddAttachment(ctx context.Context, taskID, uploaderID string, req CreateTaskAttachmentRequest) (*TaskAttachmentResponse, error)
@@ -132,8 +134,8 @@ func (r *repository) CreateTask(ctx context.Context, projectAlias, userID string
 		Description:   req.Description,
 		Status:        database.TaskStatus(req.Status),
 		Priority:      int32(*req.Priority),
-		StartDate:     nullableTimeValue(req.StartDate),
-		EndDate:       nullableTimeValue(req.EndDate),
+		StartDate:     pgutil.Timestamptz(req.StartDate),
+		EndDate:       pgutil.Timestamptz(req.EndDate),
 		Estimation:    int32(req.Estimation),
 		Archived:      req.Archived,
 		FaultHolderID: pgtypeUUIDValue(faultHolderID),
@@ -384,17 +386,17 @@ func (r *repository) UpdateTask(ctx context.Context, taskID, callerID string, re
 		ParentIDPresent:      req.parentIDPresent(),
 		ParentID:             pgtypeUUIDValue(parentID),
 		TitlePresent:         req.titlePresent(),
-		Title:                stringValue(req.Title),
+		Title:                ptr.Value(req.Title),
 		DescriptionPresent:   req.descriptionPresent(),
-		Description:          stringValue(req.Description),
+		Description:          ptr.Value(req.Description),
 		StatusPresent:        req.statusPresent(),
-		Status:               stringValue(status),
+		Status:               ptr.Value(status),
 		PriorityPresent:      req.priorityPresent(),
 		Priority:             intValue(req.Priority),
 		StartDatePresent:     req.startDatePresent(),
-		StartDate:            nullableTimeValue(req.StartDate),
+		StartDate:            pgutil.Timestamptz(req.StartDate),
 		EndDatePresent:       req.endDatePresent(),
-		EndDate:              nullableTimeValue(req.EndDate),
+		EndDate:              pgutil.Timestamptz(req.EndDate),
 		EstimationPresent:    req.estimationPresent(),
 		Estimation:           intValue(req.Estimation),
 		ArchivedPresent:      req.archivedPresent(),
@@ -415,18 +417,18 @@ func (r *repository) UpdateTask(ctx context.Context, taskID, callerID string, re
 		old     *string
 		new     *string
 	}{
-		{req.moduleIDPresent(), "moduleId", uuidStringPtr(before.ModuleID), uuidStringPtr(task.ModuleID)},
-		{req.parentIDPresent(), "parentId", uuidStringPtr(before.ParentID), uuidStringPtr(task.ParentID)},
+		{req.moduleIDPresent(), "moduleId", ptr.NonEmpty(before.ModuleID), ptr.NonEmpty(task.ModuleID)},
+		{req.parentIDPresent(), "parentId", ptr.NonEmpty(before.ParentID), ptr.NonEmpty(task.ParentID)},
 		{req.titlePresent(), "title", stringPtr(before.Title), stringPtr(task.Title)},
-		{req.descriptionPresent(), "description", nullableStringPtr(before.Description), nullableStringPtr(task.Description)},
+		{req.descriptionPresent(), "description", ptr.NonEmpty(before.Description), ptr.NonEmpty(task.Description)},
 		{req.statusPresent(), "status", stringPtr(string(before.Status)), stringPtr(string(task.Status))},
 		{req.priorityPresent(), "priority", intPtrString(before.Priority), intPtrString(task.Priority)},
-		{req.startDatePresent(), "startDate", timePtrString(before.StartDate), timePtrString(task.StartDate)},
-		{req.endDatePresent(), "endDate", timePtrString(before.EndDate), timePtrString(task.EndDate)},
+		{req.startDatePresent(), "startDate", ptr.RFC3339(before.StartDate), ptr.RFC3339(task.StartDate)},
+		{req.endDatePresent(), "endDate", ptr.RFC3339(before.EndDate), ptr.RFC3339(task.EndDate)},
 		{req.estimationPresent(), "estimation", intPtrString(before.Estimation), intPtrString(task.Estimation)},
 		{req.archivedPresent(), "archived", boolPtrString(before.Archived), boolPtrString(task.Archived)},
 		{req.returnCountPresent(), "return_count", intPtrString(before.ReturnCount), intPtrString(task.ReturnCount)},
-		{req.faultHolderIDPresent(), "fault_holder_id", uuidStringPtr(before.FaultHolderID), uuidStringPtr(task.FaultHolderID)},
+		{req.faultHolderIDPresent(), "fault_holder_id", ptr.NonEmpty(before.FaultHolderID), ptr.NonEmpty(task.FaultHolderID)},
 	} {
 		if change.present {
 			if err := insertHistory(ctx, txQueries, "task", task.ID, callerUID, change.field, change.old, change.new); err != nil {
@@ -475,8 +477,8 @@ func (r *repository) AddAttachment(ctx context.Context, taskID, uploaderID strin
 		UploaderID:  uid,
 		FileName:    req.FileName,
 		FileUrl:     req.FileURL,
-		ContentType: pgtypeTextFromString(req.ContentType),
-		SizeBytes:   pgtypeInt8(req.SizeBytes),
+		ContentType: pgutil.TextOrNull(req.ContentType),
+		SizeBytes:   pgutil.Int8OrNull(req.SizeBytes),
 	})
 	if err != nil {
 		return nil, err
@@ -488,8 +490,8 @@ func (r *repository) AddAttachment(ctx context.Context, taskID, uploaderID strin
 		UploaderID:  pgutil.UUIDToString(row.UploaderID),
 		FileName:    row.FileName,
 		FileURL:     row.FileUrl,
-		ContentType: textString(row.ContentType),
-		SizeBytes:   int8Value(row.SizeBytes),
+		ContentType: pgutil.Text(row.ContentType),
+		SizeBytes:   pgutil.Int8Value(row.SizeBytes),
 	}, nil
 }
 
@@ -516,8 +518,8 @@ func (r *repository) ListAttachments(ctx context.Context, taskID string) ([]Task
 			UploaderName:  row.UploaderName,
 			FileName:      row.FileName,
 			FileURL:       row.FileUrl,
-			ContentType:   textString(row.ContentType),
-			SizeBytes:     int8Value(row.SizeBytes),
+			ContentType:   pgutil.Text(row.ContentType),
+			SizeBytes:     pgutil.Int8Value(row.SizeBytes),
 		})
 	}
 	return items, nil
@@ -570,8 +572,8 @@ func (r *repository) CreateTaskComment(ctx context.Context, taskID, authorID, co
 			UploaderID:  aid,
 			FileName:    a.FileName,
 			FileUrl:     a.FileURL,
-			ContentType: pgtypeTextFromString(a.ContentType),
-			SizeBytes:   pgtypeInt8(a.SizeBytes),
+			ContentType: pgutil.TextOrNull(a.ContentType),
+			SizeBytes:   pgutil.Int8OrNull(a.SizeBytes),
 		})
 		if err != nil {
 			return nil, err
@@ -583,8 +585,8 @@ func (r *repository) CreateTaskComment(ctx context.Context, taskID, authorID, co
 			UploaderID:  pgutil.UUIDToString(arow.UploaderID),
 			FileName:    arow.FileName,
 			FileURL:     arow.FileUrl,
-			ContentType: textString(arow.ContentType),
-			SizeBytes:   int8Value(arow.SizeBytes),
+			ContentType: pgutil.Text(arow.ContentType),
+			SizeBytes:   pgutil.Int8Value(arow.SizeBytes),
 		})
 	}
 
@@ -609,7 +611,7 @@ func (r *repository) CreateTaskComment(ctx context.Context, taskID, authorID, co
 	if user, err := r.queries.GetUserByID(ctx, aid); err == nil {
 		resp.AuthorAlias = user.Alias
 		resp.AuthorName = user.Name
-		resp.AuthorAvatar = textString(user.Avatar)
+		resp.AuthorAvatar = pgutil.Text(user.Avatar)
 	}
 	return resp, nil
 }
@@ -651,8 +653,8 @@ func (r *repository) listCommentAttachments(ctx context.Context, commentID pgtyp
 			UploaderID:  pgutil.UUIDToString(arow.UploaderID),
 			FileName:    arow.FileName,
 			FileURL:     arow.FileUrl,
-			ContentType: textString(arow.ContentType),
-			SizeBytes:   int8Value(arow.SizeBytes),
+			ContentType: pgutil.Text(arow.ContentType),
+			SizeBytes:   pgutil.Int8Value(arow.SizeBytes),
 		})
 	}
 	return attachments, nil
@@ -681,7 +683,7 @@ func (r *repository) ListTaskComments(ctx context.Context, taskID string) ([]Tas
 			AuthorID:         pgutil.UUIDToString(row.AuthorID),
 			AuthorAlias:      row.AuthorAlias,
 			AuthorName:       row.AuthorName,
-			AuthorAvatar:     textString(row.AuthorAvatar),
+			AuthorAvatar:     pgutil.Text(row.AuthorAvatar),
 			Content:          row.Content,
 			MentionedUserIDs: parseMentionedUserIDs(row.Content),
 			Attachments:      attachments,
@@ -727,7 +729,7 @@ func (r *repository) GetTaskComment(ctx context.Context, commentID string) (*Tas
 		AuthorID:         pgutil.UUIDToString(row.AuthorID),
 		AuthorAlias:      row.AuthorAlias,
 		AuthorName:       row.AuthorName,
-		AuthorAvatar:     textString(row.AuthorAvatar),
+		AuthorAvatar:     pgutil.Text(row.AuthorAvatar),
 		Content:          row.Content,
 		MentionedUserIDs: parseMentionedUserIDs(row.Content),
 		Attachments:      attachments,
@@ -778,7 +780,7 @@ func (r *repository) UpdateTaskComment(ctx context.Context, commentID, content s
 	if user, err := r.queries.GetUserByID(ctx, row.AuthorID); err == nil {
 		resp.AuthorAlias = user.Alias
 		resp.AuthorName = user.Name
-		resp.AuthorAvatar = textString(user.Avatar)
+		resp.AuthorAvatar = pgutil.Text(user.Avatar)
 	}
 	return resp, nil
 }
@@ -870,6 +872,31 @@ func (r *repository) CheckProjectMembership(ctx context.Context, projectID, call
 		return false, err
 	}
 	return r.queries.CheckProjectMembership(ctx, database.CheckProjectMembershipParams{ProjectID: pid, UserID: uid})
+}
+
+// FilterMemberProjects keeps the projects the caller belongs to (directly or through the workspace).
+func (r *repository) FilterMemberProjects(ctx context.Context, projectIDs []string, callerID string) ([]string, error) {
+	uid, err := pgutil.ParseUUID(callerID)
+	if err != nil {
+		return nil, err
+	}
+	pids := make([]pgtype.UUID, 0, len(projectIDs))
+	for _, id := range projectIDs {
+		pid, err := pgutil.ParseUUID(id)
+		if err != nil {
+			return nil, err
+		}
+		pids = append(pids, pid)
+	}
+	rows, err := r.queries.FilterMemberProjectIDs(ctx, database.FilterMemberProjectIDsParams{ProjectIds: pids, UserID: uid})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(rows))
+	for _, id := range rows {
+		out = append(out, pgutil.UUIDToString(id))
+	}
+	return out, nil
 }
 
 func (r *repository) CheckLabelMembership(ctx context.Context, labelID, callerID string) (bool, error) {
@@ -1361,7 +1388,7 @@ func (r *repository) assignTaskCodes(ctx context.Context, resps []*TaskResponse)
 }
 
 func insertHistory(ctx context.Context, txQueries *database.Queries, entityType, entityID string, changedByID pgtype.UUID, field string, oldValue, newValue *string) error {
-	if equalStringPtr(oldValue, newValue) {
+	if ptr.Equal(oldValue, newValue) {
 		return nil
 	}
 	oldValue = resolveHistoryDisplayValue(ctx, txQueries, field, oldValue)
@@ -1417,20 +1444,6 @@ func stringPtr(value string) *string {
 	return &value
 }
 
-func nullableStringPtr(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
-}
-
-func uuidStringPtr(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
-}
-
 func intPtrString(value int) *string {
 	formatted := strconv.Itoa(value)
 	return &formatted
@@ -1439,21 +1452,6 @@ func intPtrString(value int) *string {
 func boolPtrString(value bool) *string {
 	formatted := strconv.FormatBool(value)
 	return &formatted
-}
-
-func timePtrString(value *time.Time) *string {
-	if value == nil {
-		return nil
-	}
-	formatted := value.UTC().Format(time.RFC3339Nano)
-	return &formatted
-}
-
-func equalStringPtr(left, right *string) bool {
-	if left == nil || right == nil {
-		return left == right
-	}
-	return *left == *right
 }
 
 func equalTimePtr(a, b *time.Time) bool {
@@ -1626,7 +1624,7 @@ func threadResponseFromRow(row database.ListThreadsRow) ThreadResponse {
 			AuthorID:     pgutil.UUIDToString(row.LatestCommentAuthorID),
 			AuthorAlias:  row.LatestCommentAuthorAlias,
 			AuthorName:   row.LatestCommentAuthorName,
-			AuthorAvatar: textString(row.LatestCommentAuthorAvatar),
+			AuthorAvatar: pgutil.Text(row.LatestCommentAuthorAvatar),
 			Content:      row.LatestCommentContent,
 			CreatedAt:    row.LatestCommentCreatedAt.Time,
 		},
@@ -1738,25 +1736,4 @@ func (r *repository) ListTaskWorkerUserIDs(ctx context.Context, taskID string) (
 		items = append(items, pgutil.UUIDToString(row))
 	}
 	return items, nil
-}
-
-func pgtypeTextFromString(value string) pgtype.Text {
-	if value == "" {
-		return pgtype.Text{}
-	}
-	return pgtype.Text{String: value, Valid: true}
-}
-
-func pgtypeInt8(value int64) pgtype.Int8 {
-	if value == 0 {
-		return pgtype.Int8{}
-	}
-	return pgtype.Int8{Int64: value, Valid: true}
-}
-
-func int8Value(value pgtype.Int8) int64 {
-	if !value.Valid {
-		return 0
-	}
-	return value.Int64
 }

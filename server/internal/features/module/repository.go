@@ -3,36 +3,17 @@ package module
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/alexcao194/kairso/internal/database"
+	"github.com/alexcao194/kairso/internal/features/history"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/ptr"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-func vietnamLocation() *time.Location {
-	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-	if err != nil {
-		return time.FixedZone("ICT", 7*60*60)
-	}
-	return loc
-}
-
-func monthRange(month string) (from, to pgtype.Timestamptz, err error) {
-	if month == "" {
-		return from, to, nil
-	}
-	start, err := time.ParseInLocation("2006-01", month, vietnamLocation())
-	if err != nil {
-		return from, to, fmt.Errorf("month phải theo định dạng YYYY-MM")
-	}
-	end := start.AddDate(0, 1, 0).Add(-time.Second)
-	return pgtype.Timestamptz{Time: start, Valid: true}, pgtype.Timestamptz{Time: end, Valid: true}, nil
-}
 
 type Repository interface {
 	ExecTx(ctx context.Context, fn func(Repository) error) error
@@ -89,8 +70,8 @@ func (r *repository) CreateModule(ctx context.Context, projectID string, req Cre
 	row, err := r.queries.CreateModule(ctx, database.CreateModuleParams{
 		ProjectID: pid,
 		Name:      req.Name,
-		StartDate: nullableTimeValue(req.StartDate),
-		EndDate:   nullableTimeValue(req.EndDate),
+		StartDate: pgutil.Timestamptz(req.StartDate),
+		EndDate:   pgutil.Timestamptz(req.EndDate),
 	})
 	if err != nil {
 		return nil, err
@@ -108,7 +89,7 @@ func (r *repository) ListModules(ctx context.Context, projectAlias string, param
 	if err != nil {
 		return empty, err
 	}
-	fromTime, toTime, err := monthRange(params.Month)
+	fromTime, toTime, err := pgutil.MonthRange(params.Month)
 	if err != nil {
 		return empty, err
 	}
@@ -215,11 +196,11 @@ func (r *repository) UpdateModule(ctx context.Context, moduleID, callerID string
 
 	afterRow, err := txQueries.UpdateModuleByID(ctx, database.UpdateModuleByIDParams{
 		NamePresent:        req.namePresent(),
-		Name:               stringValue(req.Name),
+		Name:               ptr.Value(req.Name),
 		StartDatePresent:   req.startDatePresent(),
-		StartDate:          nullableTimeValue(req.StartDate),
+		StartDate:          pgutil.Timestamptz(req.StartDate),
 		EndDatePresent:     req.endDatePresent(),
-		EndDate:            nullableTimeValue(req.EndDate),
+		EndDate:            pgutil.Timestamptz(req.EndDate),
 		ScrumStatusPresent: statusPresent,
 		ScrumStatus:        string(status),
 		ReleasedAtPresent:  releasedPresent,
@@ -242,12 +223,12 @@ func (r *repository) UpdateModule(ctx context.Context, moduleID, callerID string
 		new     *string
 	}{
 		{req.namePresent(), "name", stringPtr(before.Name), stringPtr(after.Name)},
-		{req.startDatePresent(), "startDate", timePtrString(before.StartDate), timePtrString(after.StartDate)},
-		{req.endDatePresent(), "endDate", timePtrString(before.EndDate), timePtrString(after.EndDate)},
+		{req.startDatePresent(), "startDate", ptr.RFC3339(before.StartDate), ptr.RFC3339(after.StartDate)},
+		{req.endDatePresent(), "endDate", ptr.RFC3339(before.EndDate), ptr.RFC3339(after.EndDate)},
 		{statusPresent, "status", stringPtr(string(before.Status)), stringPtr(string(after.Status))},
 	} {
 		if change.present {
-			if err := insertHistory(ctx, txQueries, "module", after.ID, callerUID, change.field, change.old, change.new); err != nil {
+			if err := history.Insert(ctx, txQueries, "module", after.ID, callerUID, change.field, change.old, change.new); err != nil {
 				return nil, err
 			}
 		}
@@ -290,24 +271,6 @@ func (r *repository) DeleteModule(ctx context.Context, moduleID string) error {
 	return r.queries.SoftDeleteModule(ctx, mid)
 }
 
-func insertHistory(ctx context.Context, txQueries *database.Queries, entityType, entityID string, changedByID pgtype.UUID, field string, oldValue, newValue *string) error {
-	if equalStringPtr(oldValue, newValue) {
-		return nil
-	}
-	eid, err := pgutil.ParseUUID(entityID)
-	if err != nil {
-		return err
-	}
-	return txQueries.InsertEntityHistory(ctx, database.InsertEntityHistoryParams{
-		EntityType:  entityType,
-		EntityID:    eid,
-		ChangedByID: changedByID,
-		Field:       field,
-		OldValue:    pgtypeText(oldValue),
-		NewValue:    pgtypeText(newValue),
-	})
-}
-
 func (r *repository) AddAttachment(ctx context.Context, moduleID, uploaderID string, req CreateModuleAttachmentRequest) (*ModuleAttachmentResponse, error) {
 	mid, err := pgutil.ParseUUID(moduleID)
 	if err != nil {
@@ -323,8 +286,8 @@ func (r *repository) AddAttachment(ctx context.Context, moduleID, uploaderID str
 		UploaderID:  uid,
 		FileName:    req.FileName,
 		FileUrl:     req.FileURL,
-		ContentType: pgtypeTextFromString(req.ContentType),
-		SizeBytes:   pgtypeInt8(req.SizeBytes),
+		ContentType: pgutil.TextOrNull(req.ContentType),
+		SizeBytes:   pgutil.Int8OrNull(req.SizeBytes),
 	})
 	if err != nil {
 		return nil, err
@@ -336,8 +299,8 @@ func (r *repository) AddAttachment(ctx context.Context, moduleID, uploaderID str
 		UploaderID:  pgutil.UUIDToString(row.UploaderID),
 		FileName:    row.FileName,
 		FileURL:     row.FileUrl,
-		ContentType: textString(row.ContentType),
-		SizeBytes:   int8Value(row.SizeBytes),
+		ContentType: pgutil.Text(row.ContentType),
+		SizeBytes:   pgutil.Int8Value(row.SizeBytes),
 	}, nil
 }
 
@@ -364,8 +327,8 @@ func (r *repository) ListAttachments(ctx context.Context, moduleID string) ([]Mo
 			UploaderName:  row.UploaderName,
 			FileName:      row.FileName,
 			FileURL:       row.FileUrl,
-			ContentType:   textString(row.ContentType),
-			SizeBytes:     int8Value(row.SizeBytes),
+			ContentType:   pgutil.Text(row.ContentType),
+			SizeBytes:     pgutil.Int8Value(row.SizeBytes),
 		})
 	}
 	return items, nil
@@ -382,27 +345,6 @@ func (r *repository) DeleteAttachment(ctx context.Context, attachmentID string) 
 	})
 }
 
-func pgtypeTextFromString(value string) pgtype.Text {
-	if value == "" {
-		return pgtype.Text{}
-	}
-	return pgtype.Text{String: value, Valid: true}
-}
-
-func pgtypeInt8(value int64) pgtype.Int8 {
-	if value == 0 {
-		return pgtype.Int8{}
-	}
-	return pgtype.Int8{Int64: value, Valid: true}
-}
-
-func int8Value(value pgtype.Int8) int64 {
-	if !value.Valid {
-		return 0
-	}
-	return value.Int64
-}
-
 func (r *repository) GetWorkspaceIDByProjectID(ctx context.Context, projectID string) (string, error) {
 	pid, err := pgutil.ParseUUID(projectID)
 	if err != nil {
@@ -417,21 +359,6 @@ func (r *repository) GetWorkspaceIDByProjectID(ctx context.Context, projectID st
 
 func stringPtr(value string) *string {
 	return &value
-}
-
-func timePtrString(value *time.Time) *string {
-	if value == nil {
-		return nil
-	}
-	formatted := value.UTC().Format(time.RFC3339Nano)
-	return &formatted
-}
-
-func equalStringPtr(left, right *string) bool {
-	if left == nil || right == nil {
-		return left == right
-	}
-	return *left == *right
 }
 
 func (r *repository) ListSprints(ctx context.Context, moduleID string) ([]ModuleSprintResponse, error) {
@@ -539,7 +466,7 @@ func (r *repository) InsertHistory(ctx context.Context, moduleID, callerID, fiel
 	if err != nil {
 		return err
 	}
-	return insertHistory(ctx, r.queries, "module", moduleID, uid, field, oldValue, newValue)
+	return history.Insert(ctx, r.queries, "module", moduleID, uid, field, oldValue, newValue)
 }
 
 func (r *repository) CheckModuleMembership(ctx context.Context, moduleID, callerID string) (bool, error) {

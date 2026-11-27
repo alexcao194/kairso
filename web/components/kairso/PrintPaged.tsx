@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { downloadFile } from "@/lib/download";
 import { useToast } from "@/lib/toast/ToastProvider";
@@ -59,4 +59,9 @@ export function PdfDownloadButton({ path, filename, label }: { path: string; fil
       {busy ? "…" : (label ?? tr().adminDoc.downloadPdf)}
     </button>
   );
+}
+
+/** Full-page message while a printed document loads or fails. */
+export function PrintStatus({ children }: { children: ReactNode }) {
+  return <div className="grid min-h-screen place-items-center text-[13px] text-ink-muted">{children}</div>;
 }

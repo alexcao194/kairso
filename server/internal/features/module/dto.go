@@ -75,21 +75,14 @@ type UpdateModuleSprintRequest struct {
 	RetroNote  *string       `json:"retroNote,omitempty"`
 }
 
-func dateString(d pgtype.Date) string {
-	if !d.Valid {
-		return ""
-	}
-	return d.Time.Format(time.DateOnly)
-}
-
 func sprintResponseFromDatabase(row database.ModuleSprint) ModuleSprintResponse {
 	return ModuleSprintResponse{
 		ID:         pgutil.UUIDToString(row.ID),
 		ModuleID:   pgutil.UUIDToString(row.ModuleID),
 		Name:       row.Name,
 		Goal:       row.Goal,
-		StartDate:  dateString(row.StartDate),
-		EndDate:    dateString(row.EndDate),
+		StartDate:  pgutil.DateString(row.StartDate),
+		EndDate:    pgutil.DateString(row.EndDate),
 		Status:     SprintStatus(row.Status),
 		ReviewNote: row.ReviewNote,
 		RetroNote:  row.RetroNote,
@@ -204,10 +197,10 @@ func moduleResponseFromRow(row moduleRow) ModuleResponse {
 		UpdatedAt:       row.UpdatedAt,
 		Name:            row.Name,
 		ProjectID:       pgutil.UUIDToString(row.ProjectID),
-		StartDate:       timestamptzPtr(row.StartDate),
-		EndDate:         timestamptzPtr(row.EndDate),
+		StartDate:       pgutil.TimePtr(row.StartDate),
+		EndDate:         pgutil.TimePtr(row.EndDate),
 		Status:          row.Status,
-		ReleasedAt:      timestamptzPtr(row.ReleasedAt),
+		ReleasedAt:      pgutil.TimePtr(row.ReleasedAt),
 		Sprints:         []ModuleSprintResponse{},
 		TaskCount:       row.TaskCount,
 		TotalEstimation: row.TotalEstimation,
@@ -259,8 +252,8 @@ func moduleHistoryResponseFromRow(row moduleHistoryRow) ModuleHistoryResponse {
 			Avatar: row.ChangedByAvatar,
 		},
 		Field:     row.Field,
-		OldValue:  textPtr(row.OldValue),
-		NewValue:  textPtr(row.NewValue),
+		OldValue:  pgutil.TextPtr(row.OldValue),
+		NewValue:  pgutil.TextPtr(row.NewValue),
 		CreatedAt: row.CreatedAt,
 	}
 }
@@ -270,28 +263,14 @@ func moduleHistoryResponseFromDatabaseHistory(row database.ListModuleHistoriesBy
 		ID:              row.ID,
 		EntityID:        row.EntityID,
 		ChangedByID:     row.ChangedByID,
-		ChangedByAlias:  textString(row.ChangedByAlias),
-		ChangedByName:   textString(row.ChangedByName),
+		ChangedByAlias:  pgutil.Text(row.ChangedByAlias),
+		ChangedByName:   pgutil.Text(row.ChangedByName),
 		ChangedByAvatar: row.ChangedByAvatar,
 		Field:           row.Field,
 		OldValue:        row.OldValue,
 		NewValue:        row.NewValue,
 		CreatedAt:       row.CreatedAt.Time,
 	})
-}
-
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
-}
-
-func textPtr(value pgtype.Text) *string {
-	if !value.Valid {
-		return nil
-	}
-	return &value.String
 }
 
 func normalizeUpdateModuleRequest(req *UpdateModuleRequest) error {
@@ -336,33 +315,4 @@ func (req *UpdateModuleRequest) UnmarshalJSON(data []byte) error {
 	_, req.EndDateSet = raw["endDate"]
 	_, req.StatusSet = raw["status"]
 	return nil
-}
-
-func timestamptzPtr(value pgtype.Timestamptz) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	t := value.Time
-	return &t
-}
-
-func nullableTimeValue(value *time.Time) pgtype.Timestamptz {
-	if value == nil {
-		return pgtype.Timestamptz{}
-	}
-	return pgtype.Timestamptz{Time: *value, Valid: true}
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func pgtypeText(value *string) pgtype.Text {
-	if value == nil {
-		return pgtype.Text{}
-	}
-	return pgtype.Text{String: *value, Valid: true}
 }

@@ -2,12 +2,9 @@
 
 import { useState, type ComponentProps } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getProjectModules } from "@/lib/api/endpoints";
-import { fetchAll } from "@/lib/query/paged";
-import { qk } from "@/lib/query/keys";
 import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { useCurrencies, useCustomers, useQuoteMutations } from "@/lib/hooks/quotes";
+import { useProjectModules } from "@/lib/hooks/tasks";
 import { currencyName } from "@/lib/domain/money";
 import { useLocale, useT } from "@/lib/i18n";
 import { useToast } from "@/lib/toast/ToastProvider";
@@ -48,15 +45,6 @@ export function CurrencySelect({ value, onChange, ...rest }: { value: string; on
   );
 }
 
-export function useProjectModules(projectId: string) {
-  const { workspaceId } = useWorkspace();
-  return useQuery({
-    queryKey: qk.modules(workspaceId, projectId),
-    queryFn: () => fetchAll((p) => getProjectModules(projectId, p)),
-    enabled: !!workspaceId && !!projectId,
-  });
-}
-
 /** Create a draft quote for a module, then open it in the editor. */
 export function NewQuoteModal({ open, onClose, projectId: initialProject = "", moduleId: initialModule = "" }: { open: boolean; onClose: () => void; projectId?: string; moduleId?: string }) {
   const t = useT();
@@ -66,7 +54,7 @@ export function NewQuoteModal({ open, onClose, projectId: initialProject = "", m
   const [projectId, setProjectId] = useState(initialProject);
   const [moduleId, setModuleId] = useState(initialModule);
   const [customerId, setCustomerId] = useState("");
-  const modules = useProjectModules(projectId);
+  const modules = useProjectModules(workspaceId, projectId);
   const customers = useCustomers(workspaceId);
   const { create } = useQuoteMutations(workspaceId);
 

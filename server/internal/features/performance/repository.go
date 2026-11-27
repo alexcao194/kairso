@@ -3,8 +3,9 @@ package performance
 import (
 	"context"
 	"errors"
-	"github.com/alexcao194/kairso/internal/features/access"
 	"time"
+
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/attendance"
@@ -403,12 +404,14 @@ func (r *repository) ListFeedbacks(ctx context.Context, workspaceAlias string, p
 	if err != nil {
 		return empty, err
 	}
+	allBens, err := r.queries.ListFeedbackBeneficiariesByFeedbackIDs(ctx, pgutil.IDs(rows, func(r database.ListCustomerFeedbacksRow) pgtype.UUID { return r.ID }))
+	if err != nil {
+		return empty, err
+	}
+	bensOf := pgutil.GroupBy(allBens, func(b database.ListFeedbackBeneficiariesByFeedbackIDsRow) pgtype.UUID { return b.FeedbackID })
 	items := make([]FeedbackResponse, 0, len(rows))
 	for _, row := range rows {
-		bens, err := r.queries.ListFeedbackBeneficiaries(ctx, row.ID)
-		if err != nil {
-			return empty, err
-		}
+		bens := bensOf[row.ID.Bytes]
 		items = append(items, feedbackResponseFromFields(
 			row.ID,
 			row.CreatedAt,
@@ -437,7 +440,7 @@ func (r *repository) GetFeedback(ctx context.Context, feedbackID string) (*Feedb
 	if err != nil {
 		return nil, err
 	}
-	bens, err := r.queries.ListFeedbackBeneficiaries(ctx, cf.ID)
+	bens, err := r.queries.ListFeedbackBeneficiariesByFeedbackIDs(ctx, []pgtype.UUID{cf.ID})
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +654,7 @@ func (r *repository) GetKPIAttitudes(ctx context.Context, workspaceAlias, member
 		m[id] = kpiAttitude{
 			memberID: id,
 			score:    row.Score,
-			comment:  textString(row.Comment),
+			comment:  pgutil.Text(row.Comment),
 		}
 	}
 	return m, nil
@@ -731,7 +734,7 @@ func (r *repository) SetAttitude(ctx context.Context, workspaceAlias, callerID s
 		MemberID:    pgutil.UUIDToString(row.MemberID),
 		Month:       row.Month.Time.Format("2006-01"),
 		Score:       row.Score,
-		Comment:     textString(row.Comment),
+		Comment:     pgutil.Text(row.Comment),
 		UpdatedByID: pgutil.UUIDToString(row.UpdatedByID),
 		UpdatedAt:   row.UpdatedAt.Time,
 	}
@@ -739,7 +742,7 @@ func (r *repository) SetAttitude(ctx context.Context, workspaceAlias, callerID s
 	if err == nil {
 		resp.MemberAlias = userRow.Alias
 		resp.MemberName = userRow.Name
-		resp.MemberAvatar = textString(userRow.Avatar)
+		resp.MemberAvatar = pgutil.Text(userRow.Avatar)
 	}
 	return resp, nil
 }
@@ -789,6 +792,10 @@ func (r *repository) ListWorkspaceScheduleStats(ctx context.Context, workspaceAl
 	if err != nil {
 		return nil, err
 	}
+	byDay, err := attendance.SessionsByDay(ctx, r.queries, pgutil.IDs(rows, func(r database.ListWorkSchedulesByAliasRow) pgtype.UUID { return r.ID }))
+	if err != nil {
+		return nil, err
+	}
 	items := make([]attendance.WorkScheduleDayResponse, 0, len(rows))
 	for _, row := range rows {
 		item := attendance.WorkScheduleDayResponse{
@@ -799,15 +806,11 @@ func (r *repository) ListWorkspaceScheduleStats(ctx context.Context, workspaceAl
 			MemberID:     pgutil.UUIDToString(row.MemberID),
 			MemberAlias:  row.MemberAlias,
 			MemberName:   row.MemberName,
-			MemberAvatar: textString(row.MemberAvatar),
+			MemberAvatar: pgutil.Text(row.MemberAvatar),
 			Date:         row.ScheduleDate.Time.Format(time.DateOnly),
 			Status:       attendance.WorkScheduleStatus(row.Status),
 		}
-		sessions, err := r.queries.ListWorkScheduleSessionsByDayID(ctx, row.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, s := range sessions {
+		for _, s := range byDay[row.ID.Bytes] {
 			item.Sessions = append(item.Sessions, attendance.WorkScheduleSessionResponse{
 				ID:        pgutil.UUIDToString(s.ID),
 				CreatedAt: s.CreatedAt.Time,
@@ -852,7 +855,7 @@ func (r *repository) ListWorkspaceAttendanceStats(ctx context.Context, workspace
 			MemberID:       pgutil.UUIDToString(row.MemberID),
 			MemberAlias:    row.MemberAlias,
 			MemberName:     row.MemberName,
-			MemberAvatar:   textString(row.MemberAvatar),
+			MemberAvatar:   pgutil.Text(row.MemberAvatar),
 			Type:           attendance.AttendanceType(row.Type),
 			RecordedAt:     row.RecordedAt.Time,
 			Latitude:       row.Latitude,
@@ -895,9 +898,9 @@ func (r *repository) ListMemberTaskBreakdown(ctx context.Context, workspaceAlias
 				ProjectName:      row.ProjectName,
 				Status:           status,
 				Priority:         int(row.Priority),
-				StartDate:        timestamptzPtr(row.StartDate),
-				EndDate:          timestamptzPtr(row.EndDate),
-				FirstCompletedAt: timestamptzPtr(row.FirstCompletedAt),
+				StartDate:        pgutil.TimePtr(row.StartDate),
+				EndDate:          pgutil.TimePtr(row.EndDate),
+				FirstCompletedAt: pgutil.TimePtr(row.FirstCompletedAt),
 				ReturnCount:      int(row.ReturnCount),
 				Estimation:       int(row.Estimation),
 			},

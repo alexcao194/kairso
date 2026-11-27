@@ -32,9 +32,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/users/me [get]
 func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	user, err := h.svc.GetMe(r.Context(), userID)
@@ -59,9 +58,8 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpx.ErrorResponse
 // @Router /v1/users/me [patch]
 func (h *Handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateMeRequest

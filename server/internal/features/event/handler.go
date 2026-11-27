@@ -37,9 +37,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/calendar/events [get]
 func (h *Handler) ListEvents(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := CalendarEventFilter{
@@ -67,9 +66,8 @@ func (h *Handler) ListEvents(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/calendar/events/me [get]
 func (h *Handler) ListMyEvents(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := CalendarEventFilter{
@@ -97,9 +95,8 @@ func (h *Handler) ListMyEvents(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/calendar/members/events [get]
 func (h *Handler) ListMembersEvents(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	params := pagination.Parse(r, 20, 100)

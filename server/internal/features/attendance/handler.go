@@ -71,9 +71,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/settings [get]
 func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.settings.GetSettings(r.Context(), r.PathValue("workspaceId"), callerID)
@@ -97,9 +96,8 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/settings [put]
 func (h *Handler) UpsertSettings(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertAttendanceSettingRequest
@@ -132,9 +130,8 @@ func (h *Handler) UpsertSettings(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/status [post]
 func (h *Handler) CheckStatus(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req AttendanceCheckRequest
@@ -187,9 +184,8 @@ func (h *Handler) CheckOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) check(w http.ResponseWriter, r *http.Request, fn func(ctx context.Context, workspaceId, callerID string, req AttendanceCheckRequest) (*AttendanceRecordResponse, error)) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req AttendanceCheckRequest
@@ -221,9 +217,8 @@ func (h *Handler) check(w http.ResponseWriter, r *http.Request, fn func(ctx cont
 // @Success 200 {object} pagination.Response[AttendanceRecordResponse]
 // @Router /v1/workspaces/{workspaceId}/attendance/records [get]
 func (h *Handler) ListAttendanceRecords(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := AttendanceRecordFilter{
@@ -250,9 +245,8 @@ func (h *Handler) ListAttendanceRecords(w http.ResponseWriter, r *http.Request) 
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/records/{recordId} [delete]
 func (h *Handler) DeleteAttendanceRecord(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.attendance.DeleteRecord(r.Context(), r.PathValue("workspaceId"), callerID, r.PathValue("recordId")); err != nil {
@@ -276,9 +270,8 @@ func (h *Handler) DeleteAttendanceRecord(w http.ResponseWriter, r *http.Request)
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/sessions [post]
 func (h *Handler) UpsertAttendanceSession(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertAttendanceSessionRequest
@@ -307,9 +300,8 @@ func (h *Handler) UpsertAttendanceSession(w http.ResponseWriter, r *http.Request
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/check-requests [post]
 func (h *Handler) SubmitCheckRequest(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req SubmitAttendanceCorrectionRequest
@@ -338,9 +330,8 @@ func (h *Handler) SubmitCheckRequest(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/check-requests [get]
 func (h *Handler) ListCheckRequests(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := AttendanceCorrectionRequestFilter{
@@ -366,9 +357,8 @@ func (h *Handler) ListCheckRequests(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/check-requests/me [get]
 func (h *Handler) ListMyCheckRequests(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := AttendanceCorrectionRequestFilter{
@@ -411,9 +401,8 @@ func (h *Handler) RejectCheckRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) decideCheckRequest(w http.ResponseWriter, r *http.Request, fn func(ctx context.Context, workspaceId, callerID, requestID string) (*AttendanceCorrectionRequestResponse, error), fallback string) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := fn(r.Context(), r.PathValue("workspaceId"), callerID, r.PathValue("requestId"))
@@ -436,9 +425,8 @@ func (h *Handler) decideCheckRequest(w http.ResponseWriter, r *http.Request, fn 
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/schedules [put]
 func (h *Handler) UpsertWorkSchedules(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertWorkSchedulesRequest
@@ -468,9 +456,8 @@ func (h *Handler) UpsertWorkSchedules(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/schedules/{memberId} [put]
 func (h *Handler) UpsertMemberWorkSchedules(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertMemberWorkSchedulesRequest
@@ -498,9 +485,8 @@ func (h *Handler) UpsertMemberWorkSchedules(w http.ResponseWriter, r *http.Reque
 // @Success 200 {object} pagination.Response[WorkScheduleDayResponse]
 // @Router /v1/workspaces/{workspaceId}/work/schedules/me [get]
 func (h *Handler) ListMyWorkSchedules(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := WorkScheduleFilter{
@@ -532,9 +518,8 @@ func (h *Handler) ListMyWorkSchedules(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/schedules/pending [get]
 func (h *Handler) ListPendingWorkSchedules(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := WorkScheduleFilter{
@@ -567,9 +552,8 @@ func (h *Handler) ListPendingWorkSchedules(w http.ResponseWriter, r *http.Reques
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/schedules/{memberId} [get]
 func (h *Handler) ListMemberWorkSchedules(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := WorkScheduleFilter{
@@ -631,9 +615,8 @@ func (h *Handler) RejectWorkSchedules(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/schedules/{memberId}/approve-all [post]
 func (h *Handler) ApproveAllWorkSchedules(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.schedules.ApproveAllPendingSchedules(r.Context(), r.PathValue("workspaceId"), callerID, r.PathValue("memberId"))
@@ -645,9 +628,8 @@ func (h *Handler) ApproveAllWorkSchedules(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handler) updateScheduleStatus(w http.ResponseWriter, r *http.Request, fn func(ctx context.Context, workspaceId, callerID, memberID string, req UpdateWorkScheduleStatusRequest) ([]WorkScheduleDayResponse, error), fallback string) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateWorkScheduleStatusRequest
@@ -673,9 +655,8 @@ func (h *Handler) updateScheduleStatus(w http.ResponseWriter, r *http.Request, f
 // @Success 200 {object} AttendanceStatisticsSummaryResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/statistics [get]
 func (h *Handler) GetAttendanceStatistics(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := AttendanceStatisticsFilter{
@@ -708,9 +689,8 @@ func (h *Handler) GetAttendanceStatistics(w http.ResponseWriter, r *http.Request
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/task/statistics [get]
 func (h *Handler) GetTaskStatistics(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := TaskStatisticsFilter{
@@ -742,9 +722,8 @@ func (h *Handler) GetTaskStatistics(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/attendance/statistics/me [get]
 func (h *Handler) GetMyAttendanceStatistics(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := AttendanceStatisticsFilter{
@@ -775,9 +754,8 @@ func (h *Handler) GetMyAttendanceStatistics(w http.ResponseWriter, r *http.Reque
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/task/statistics/me [get]
 func (h *Handler) GetMyTaskStatistics(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := TaskStatisticsFilter{
@@ -805,9 +783,8 @@ func (h *Handler) GetMyTaskStatistics(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/week [get]
 func (h *Handler) GetWorkWeek(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.workWeek.GetWorkWeek(r.Context(), r.PathValue("workspaceId"), callerID)
@@ -831,9 +808,8 @@ func (h *Handler) GetWorkWeek(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/work/week [put]
 func (h *Handler) UpsertWorkWeek(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertWorkWeekRequest
@@ -857,9 +833,8 @@ func (h *Handler) UpsertWorkWeek(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} WorkWeekResponse
 // @Router /v1/workspaces/{workspaceId}/work/week/me [get]
 func (h *Handler) GetMyWorkWeek(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.workWeek.GetMyWorkWeek(r.Context(), r.PathValue("workspaceId"), callerID)
@@ -880,9 +855,8 @@ func (h *Handler) GetMyWorkWeek(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} WorkWeekResponse
 // @Router /v1/workspaces/{workspaceId}/work/week/me [put]
 func (h *Handler) UpsertMyWorkWeek(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertWorkWeekRequest
@@ -912,9 +886,8 @@ func (h *Handler) UpsertMyWorkWeek(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/daily-reports/me [put]
 func (h *Handler) UpsertMyDailyReport(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpsertDailyReportRequest
@@ -944,9 +917,8 @@ func (h *Handler) UpsertMyDailyReport(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/daily-reports/me [get]
 func (h *Handler) ListMyDailyReports(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := DailyReportFilter{
@@ -976,9 +948,8 @@ func (h *Handler) ListMyDailyReports(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/daily-reports [get]
 func (h *Handler) ListDailyReports(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	filter := DailyReportFilter{

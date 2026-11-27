@@ -2,12 +2,14 @@ package workspace
 
 import (
 	"context"
+
 	"github.com/alexcao194/kairso/internal/features/access"
+	"github.com/alexcao194/kairso/internal/features/history"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/alexcao194/kairso/pkg/ptr"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -164,11 +166,11 @@ func (r *repository) UpdateWorkspace(ctx context.Context, workspaceID, callerID 
 	before := workspaceResponseFromDatabaseWorkspace(beforeRow)
 	afterRow, err := txQueries.UpdateWorkspaceByID(ctx, database.UpdateWorkspaceByIDParams{
 		NamePresent:       req.namePresent(),
-		Name:              stringValue(req.Name),
+		Name:              ptr.Value(req.Name),
 		AvatarPresent:     req.avatarPresent(),
-		Avatar:            stringValue(req.Avatar),
+		Avatar:            ptr.Value(req.Avatar),
 		BrandColorPresent: req.brandColorPresent(),
-		BrandColor:        stringValue(req.BrandColor),
+		BrandColor:        ptr.Value(req.BrandColor),
 		ID:                wid,
 	})
 	if err != nil {
@@ -176,17 +178,17 @@ func (r *repository) UpdateWorkspace(ctx context.Context, workspaceID, callerID 
 	}
 	after := workspaceResponseFromDatabaseWorkspace(afterRow)
 	if req.namePresent() {
-		if err := insertHistory(ctx, txQueries, "workspace", after.ID, callerUID, "name", stringPtr(before.Name), stringPtr(after.Name)); err != nil {
+		if err := history.Insert(ctx, txQueries, "workspace", after.ID, callerUID, "name", stringPtr(before.Name), stringPtr(after.Name)); err != nil {
 			return nil, err
 		}
 	}
 	if req.avatarPresent() {
-		if err := insertHistory(ctx, txQueries, "workspace", after.ID, callerUID, "avatar", emptyToNil(before.Avatar), emptyToNil(after.Avatar)); err != nil {
+		if err := history.Insert(ctx, txQueries, "workspace", after.ID, callerUID, "avatar", ptr.NonEmpty(before.Avatar), ptr.NonEmpty(after.Avatar)); err != nil {
 			return nil, err
 		}
 	}
 	if req.brandColorPresent() {
-		if err := insertHistory(ctx, txQueries, "workspace", after.ID, callerUID, "brandColor", emptyToNil(before.BrandColor), emptyToNil(after.BrandColor)); err != nil {
+		if err := history.Insert(ctx, txQueries, "workspace", after.ID, callerUID, "brandColor", ptr.NonEmpty(before.BrandColor), ptr.NonEmpty(after.BrandColor)); err != nil {
 			return nil, err
 		}
 	}
@@ -532,8 +534,8 @@ func (r *repository) UpdateWorkspaceNote(ctx context.Context, noteID string, req
 	}
 	row, err := r.queries.UpdateWorkspaceNote(ctx, database.UpdateWorkspaceNoteParams{
 		ID:          noteUID,
-		NoteTitle:   pgtypeText(req.Title),
-		NoteContent: pgtypeText(req.Content),
+		NoteTitle:   pgutil.TextFrom(req.Title),
+		NoteContent: pgutil.TextFrom(req.Content),
 	})
 	if err != nil {
 		return nil, err
@@ -623,40 +625,8 @@ func (r *repository) GetUserIDByAlias(ctx context.Context, userAlias string) (st
 	return pgutil.UUIDToString(row.ID), nil
 }
 
-func insertHistory(ctx context.Context, txQueries *database.Queries, entityType, entityID string, changedByID pgtype.UUID, field string, oldValue, newValue *string) error {
-	if equalStringPtr(oldValue, newValue) {
-		return nil
-	}
-	eid, err := pgutil.ParseUUID(entityID)
-	if err != nil {
-		return err
-	}
-	return txQueries.InsertEntityHistory(ctx, database.InsertEntityHistoryParams{
-		EntityType:  entityType,
-		EntityID:    eid,
-		ChangedByID: changedByID,
-		Field:       field,
-		OldValue:    pgtypeText(oldValue),
-		NewValue:    pgtypeText(newValue),
-	})
-}
-
-func emptyToNil(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
-}
-
 func stringPtr(value string) *string {
 	return &value
-}
-
-func equalStringPtr(left, right *string) bool {
-	if left == nil || right == nil {
-		return left == right
-	}
-	return *left == *right
 }
 
 // GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).

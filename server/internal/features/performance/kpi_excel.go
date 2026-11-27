@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alexcao194/kairso/pkg/vntime"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -20,8 +21,8 @@ const (
 	kpiNoteWidth = 50
 )
 
-func kpiFmtDay(t time.Time) string     { return t.In(vietnamLocation()).Format("02/01") }
-func kpiFmtDayTime(t time.Time) string { return t.In(vietnamLocation()).Format("02/01 15:04") }
+func kpiFmtDay(t time.Time) string     { return t.In(vntime.Location).Format("02/01") }
+func kpiFmtDayTime(t time.Time) string { return t.In(vntime.Location).Format("02/01 15:04") }
 
 func kpiSigned(n float64) string {
 	r := math.Round(n*10) / 10
@@ -274,7 +275,7 @@ func fillKPISheet(f *excelize.File, sheet string, k KPIMemberResponse, settings 
 	_ = f.SetCellStyle(sheet, cellName(8, totalRow), cellName(8, totalRow), st.totalEmpty)
 	_ = f.SetRowHeight(sheet, totalRow, 20)
 
-	now := time.Now().In(vietnamLocation())
+	now := time.Now().In(vntime.Location)
 	dateRow := totalRow + 2
 	_ = f.MergeCell(sheet, cellName(6, dateRow), cellName(8, dateRow))
 	_ = f.SetCellValue(sheet, cellName(6, dateRow), fmt.Sprintf("Ngày %d Tháng %d Năm %d", now.Day(), int(now.Month()), now.Year()))

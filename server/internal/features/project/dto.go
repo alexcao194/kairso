@@ -217,7 +217,7 @@ func projectResponseFromRow(row projectRow) ProjectResponse {
 		UpdatedAt:       row.UpdatedAt,
 		Name:            row.Name,
 		WorkspaceID:     pgutil.UUIDToString(row.WorkspaceID),
-		Avatar:          textString(row.Avatar),
+		Avatar:          pgutil.Text(row.Avatar),
 		TaskCount:       row.TaskCount,
 		TotalEstimation: row.TotalEstimation,
 	}
@@ -389,8 +389,8 @@ func projectHistoryResponseFromRow(row projectHistoryRow) ProjectHistoryResponse
 			Avatar: row.ChangedByAvatar,
 		},
 		Field:     row.Field,
-		OldValue:  textPtr(row.OldValue),
-		NewValue:  textPtr(row.NewValue),
+		OldValue:  pgutil.TextPtr(row.OldValue),
+		NewValue:  pgutil.TextPtr(row.NewValue),
 		CreatedAt: row.CreatedAt,
 	}
 }
@@ -400,28 +400,14 @@ func projectHistoryResponseFromDatabaseHistory(row database.ListProjectHistories
 		ID:              row.ID,
 		EntityID:        row.EntityID,
 		ChangedByID:     row.ChangedByID,
-		ChangedByAlias:  textString(row.ChangedByAlias),
-		ChangedByName:   textString(row.ChangedByName),
+		ChangedByAlias:  pgutil.Text(row.ChangedByAlias),
+		ChangedByName:   pgutil.Text(row.ChangedByName),
 		ChangedByAvatar: row.ChangedByAvatar,
 		Field:           row.Field,
 		OldValue:        row.OldValue,
 		NewValue:        row.NewValue,
 		CreatedAt:       row.CreatedAt.Time,
 	})
-}
-
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
-}
-
-func textPtr(value pgtype.Text) *string {
-	if !value.Valid {
-		return nil
-	}
-	return &value.String
 }
 
 func normalizeUpdateProjectRequest(req *UpdateProjectRequest) error {
@@ -752,18 +738,4 @@ func projectFileResponseFromDatabaseListFile(row database.ListProjectFilesRow) P
 		CreatorAlias:  row.CreatorAlias,
 		CreatorAvatar: row.CreatorAvatar,
 	})
-}
-
-func stringValue(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
-func pgtypeText(value *string) pgtype.Text {
-	if value == nil {
-		return pgtype.Text{}
-	}
-	return pgtype.Text{String: *value, Valid: true}
 }

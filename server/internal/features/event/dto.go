@@ -8,23 +8,15 @@ import (
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/vntime"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const (
-	vietnamTimezone = "Asia/Ho_Chi_Minh"
-
 	attendanceTypeCheckIn  = "check_in"
 	attendanceTypeCheckOut = "check_out"
 	EventTypeBirthday      = "birthday"
 )
-
-func textString(v pgtype.Text) string {
-	if !v.Valid {
-		return ""
-	}
-	return v.String
-}
 
 type birthdayEventSource struct {
 	WorkspaceID string
@@ -143,7 +135,7 @@ func getDaySessions(dateStr string, memberID string, records []attendanceRecord)
 		if rec.MemberID != memberID {
 			continue
 		}
-		if rec.RecordedAt.In(vietnamLocation()).Format(time.DateOnly) != dateStr {
+		if rec.RecordedAt.In(vntime.Location).Format(time.DateOnly) != dateStr {
 			continue
 		}
 		dayRecords = append(dayRecords, rec)
@@ -272,7 +264,7 @@ func eventsFromSources(
 	}
 
 	for _, record := range records {
-		dateStr := record.RecordedAt.In(vietnamLocation()).Format(time.DateOnly)
+		dateStr := record.RecordedAt.In(vntime.Location).Format(time.DateOnly)
 		day := getOrCreateDay(dateStr, record.WorkspaceID, record.MemberID, record.MemberAlias, record.MemberName, record.MemberAvatar)
 		if len(day.Sessions) == 0 {
 			if sessions := getDaySessions(dateStr, record.MemberID, records); len(sessions) > 0 {
@@ -287,7 +279,7 @@ func eventsFromSources(
 			birthDay := b.Birthday.Day()
 
 			for y := fromDate.Year(); y <= toDate.Year(); y++ {
-				candidate := time.Date(y, birthMonth, birthDay, 0, 0, 0, 0, vietnamLocation())
+				candidate := time.Date(y, birthMonth, birthDay, 0, 0, 0, 0, vntime.Location)
 				if !candidate.Before(fromDate) && !candidate.After(toDate) {
 					dateStr := candidate.Format(time.DateOnly)
 					endAt := candidate.Add(24*time.Hour - 1*time.Second)
@@ -321,14 +313,14 @@ func eventsFromSources(
 			if !h.Year.Valid {
 				if h.DateType == "solar" {
 					for y := fromDate.Year(); y <= toDate.Year(); y++ {
-						candidate := time.Date(y, time.Month(h.Month), int(h.Day), 0, 0, 0, 0, vietnamLocation())
+						candidate := time.Date(y, time.Month(h.Month), int(h.Day), 0, 0, 0, 0, vntime.Location)
 						if !candidate.Before(fromDate) && !candidate.After(toDate) {
 							dates = append(dates, candidate)
 						}
 					}
 				}
 			} else {
-				candidate := time.Date(int(h.Year.Int32), time.Month(h.Month), int(h.Day), 0, 0, 0, 0, vietnamLocation())
+				candidate := time.Date(int(h.Year.Int32), time.Month(h.Month), int(h.Day), 0, 0, 0, 0, vntime.Location)
 				if !candidate.Before(fromDate) && !candidate.After(toDate) {
 					dates = append(dates, candidate)
 				}
@@ -390,13 +382,13 @@ func workScheduleDayFromRow(row database.ListWorkSchedulesByAliasRow, sessions [
 		MemberID:           pgutil.UUIDToString(row.MemberID),
 		MemberAlias:        row.MemberAlias,
 		MemberName:         row.MemberName,
-		MemberAvatar:       textString(row.MemberAvatar),
+		MemberAvatar:       pgutil.Text(row.MemberAvatar),
 		Date:               row.ScheduleDate.Time.Format(time.DateOnly),
 		Status:             row.Status,
 		RegisteredByID:     pgutil.UUIDToString(row.RegisteredBy),
-		RegisteredByAlias:  textString(row.RegisteredByAlias),
-		RegisteredByName:   textString(row.RegisteredByName),
-		RegisteredByAvatar: textString(row.RegisteredByAvatar),
+		RegisteredByAlias:  pgutil.Text(row.RegisteredByAlias),
+		RegisteredByName:   pgutil.Text(row.RegisteredByName),
+		RegisteredByAvatar: pgutil.Text(row.RegisteredByAvatar),
 	}
 	for _, session := range sessions {
 		item.Sessions = append(item.Sessions, workScheduleSession{
@@ -415,30 +407,11 @@ func attendanceRecordFromRow(row database.ListAttendanceRecordsByAliasRow) atten
 		MemberID:       pgutil.UUIDToString(row.MemberID),
 		MemberAlias:    row.MemberAlias,
 		MemberName:     row.MemberName,
-		MemberAvatar:   textString(row.MemberAvatar),
+		MemberAvatar:   pgutil.Text(row.MemberAvatar),
 		Type:           row.Type,
 		RecordedAt:     row.RecordedAt.Time,
 		DistanceMeters: row.DistanceMeters,
 	}
-}
-
-func parseDate(value string) (time.Time, error) {
-	return time.ParseInLocation(time.DateOnly, value, vietnamLocation())
-}
-
-func vietnamLocation() *time.Location {
-	loc, err := time.LoadLocation(vietnamTimezone)
-	if err != nil {
-		return time.FixedZone(vietnamTimezone, 7*60*60)
-	}
-	return loc
-}
-
-func pgUUIDOrNull(value string) (pgtype.UUID, error) {
-	if strings.TrimSpace(value) == "" {
-		return pgtype.UUID{}, nil
-	}
-	return pgutil.ParseUUID(value)
 }
 
 func parseOptionalTime(value string, endOfDay bool) (time.Time, bool, error) {
@@ -449,7 +422,7 @@ func parseOptionalTime(value string, endOfDay bool) (time.Time, bool, error) {
 	if parsed, err := time.Parse(time.RFC3339, value); err == nil {
 		return parsed, true, nil
 	}
-	if parsed, err := parseDate(value); err == nil {
+	if parsed, err := vntime.ParseDate(value); err == nil {
 		if endOfDay {
 			parsed = parsed.AddDate(0, 0, 1).Add(-time.Nanosecond)
 		}
@@ -463,21 +436,14 @@ func parseOptionalDate(value string) (time.Time, bool, error) {
 	if value == "" {
 		return time.Time{}, false, nil
 	}
-	if parsed, err := parseDate(value); err == nil {
+	if parsed, err := vntime.ParseDate(value); err == nil {
 		return parsed, true, nil
 	}
 	parsed, ok, err := parseOptionalTime(value, false)
 	if err != nil || !ok {
 		return time.Time{}, ok, err
 	}
-	return time.Date(parsed.In(vietnamLocation()).Year(), parsed.In(vietnamLocation()).Month(), parsed.In(vietnamLocation()).Day(), 0, 0, 0, 0, vietnamLocation()), true, nil
-}
-
-func pgTimeOrNull(value time.Time, valid bool) pgtype.Timestamptz {
-	if !valid {
-		return pgtype.Timestamptz{}
-	}
-	return pgtype.Timestamptz{Time: value, Valid: true}
+	return time.Date(parsed.In(vntime.Location).Year(), parsed.In(vntime.Location).Month(), parsed.In(vntime.Location).Day(), 0, 0, 0, 0, vntime.Location), true, nil
 }
 
 func pgDateOrNull(value time.Time, valid bool) pgtype.Date {
@@ -542,7 +508,7 @@ func memberEventsFromSources(
 		}
 
 		for _, rec := range memberRecords {
-			dateStr := rec.RecordedAt.In(vietnamLocation()).Format(time.DateOnly)
+			dateStr := rec.RecordedAt.In(vntime.Location).Format(time.DateOnly)
 			day := getOrCreate(dateStr)
 			if len(day.Sessions) == 0 {
 				if sessions := getDaySessions(dateStr, memberID, memberRecords); len(sessions) > 0 {

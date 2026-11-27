@@ -68,9 +68,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux, authMid *middleware.AuthMid
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces [post]
 func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateWorkspaceRequest
@@ -103,9 +102,8 @@ func (h *Handler) CreateWorkspace(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} pagination.Response[WorkspaceResponse]
 // @Router /v1/workspaces [get]
 func (h *Handler) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	params := pagination.Parse(r, 20, 100)
@@ -129,9 +127,8 @@ func (h *Handler) ListWorkspaces(w http.ResponseWriter, r *http.Request) {
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId} [patch]
 func (h *Handler) UpdateWorkspace(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateWorkspaceRequest
@@ -219,9 +216,8 @@ func (h *Handler) ListWorkspaceMembers(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/invitations [post]
 func (h *Handler) InviteMember(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req InviteMemberRequest
@@ -264,9 +260,8 @@ func (h *Handler) InviteMember(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/invitations [get]
 func (h *Handler) ListMyInvitations(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	params := pagination.Parse(r, 20, 100)
@@ -287,9 +282,8 @@ func (h *Handler) ListMyInvitations(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/invitations/{invitationId}/accept [post]
 func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.AcceptInvitation(r.Context(), r.PathValue("invitationId"), callerID); err != nil {
@@ -308,9 +302,8 @@ func (h *Handler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/invitations/{invitationId}/reject [post]
 func (h *Handler) RejectInvitation(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.RejectInvitation(r.Context(), r.PathValue("invitationId"), callerID); err != nil {
@@ -331,9 +324,8 @@ func (h *Handler) RejectInvitation(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/invitations/{invitationId} [delete]
 func (h *Handler) CancelInvitation(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.CancelInvitation(r.Context(), r.PathValue("invitationId"), callerID); err != nil {
@@ -358,9 +350,8 @@ func (h *Handler) CancelInvitation(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/members/{userId} [delete]
 func (h *Handler) RemoveMember(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	if err := h.svc.RemoveMember(r.Context(), r.PathValue("workspaceId"), callerID, r.PathValue("userId")); err != nil {
@@ -393,9 +384,8 @@ func (h *Handler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/members/{userId} [patch]
 func (h *Handler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
-	callerID, ok := middleware.GetUserIDFromContext(r.Context())
+	callerID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req UpdateMemberRoleRequest
@@ -435,9 +425,8 @@ func (h *Handler) UpdateMemberRole(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/links [post]
 func (h *Handler) CreateWorkspaceLink(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateWorkspaceLinkRequest
@@ -504,9 +493,8 @@ func (h *Handler) DeleteWorkspaceLink(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/notes [post]
 func (h *Handler) CreateWorkspaceNote(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateWorkspaceNoteRequest
@@ -599,9 +587,8 @@ func (h *Handler) DeleteWorkspaceNote(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpx.ErrorResponse
 // @Router /v1/workspaces/{workspaceId}/files [post]
 func (h *Handler) CreateWorkspaceFile(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	var req CreateWorkspaceFileRequest

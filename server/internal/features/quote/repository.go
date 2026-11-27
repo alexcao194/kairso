@@ -2,13 +2,13 @@ package quote
 
 import (
 	"context"
-	"errors"
+
 	"github.com/alexcao194/kairso/internal/features/access"
+	"github.com/alexcao194/kairso/pkg/pgutil"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/docsign"
 	"github.com/alexcao194/kairso/internal/features/workspace"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -68,20 +68,8 @@ func (r *repository) ExecTx(ctx context.Context, fn func(Repository) error) erro
 	return tx.Commit(ctx)
 }
 
-func found[T any](v T, err error) (T, bool, error) {
-	if errors.Is(err, pgx.ErrNoRows) {
-		var zero T
-		return zero, false, nil
-	}
-	if err != nil {
-		var zero T
-		return zero, false, err
-	}
-	return v, true, nil
-}
-
 func (r *repository) GetCallerRole(ctx context.Context, workspaceID, userID pgtype.UUID) (workspace.WorkspaceRole, error) {
-	role, ok, err := found(r.queries.GetCallerWorkspaceRole(ctx, database.GetCallerWorkspaceRoleParams{WorkspaceID: workspaceID, UserID: userID}))
+	role, ok, err := pgutil.Found(r.queries.GetCallerWorkspaceRole(ctx, database.GetCallerWorkspaceRoleParams{WorkspaceID: workspaceID, UserID: userID}))
 	if err != nil || !ok {
 		return "", err
 	}
@@ -93,7 +81,7 @@ func (r *repository) ListCustomers(ctx context.Context, workspaceID pgtype.UUID)
 }
 
 func (r *repository) GetCustomer(ctx context.Context, id, workspaceID pgtype.UUID) (database.Customer, bool, error) {
-	return found(r.queries.GetCustomer(ctx, database.GetCustomerParams{ID: id, WorkspaceID: workspaceID}))
+	return pgutil.Found(r.queries.GetCustomer(ctx, database.GetCustomerParams{ID: id, WorkspaceID: workspaceID}))
 }
 
 func (r *repository) CreateCustomer(ctx context.Context, arg database.CreateCustomerParams) (database.Customer, error) {
@@ -101,7 +89,7 @@ func (r *repository) CreateCustomer(ctx context.Context, arg database.CreateCust
 }
 
 func (r *repository) UpdateCustomer(ctx context.Context, arg database.UpdateCustomerParams) (database.Customer, bool, error) {
-	return found(r.queries.UpdateCustomer(ctx, arg))
+	return pgutil.Found(r.queries.UpdateCustomer(ctx, arg))
 }
 
 func (r *repository) DeleteCustomer(ctx context.Context, id, workspaceID pgtype.UUID) (int64, error) {
@@ -109,7 +97,7 @@ func (r *repository) DeleteCustomer(ctx context.Context, id, workspaceID pgtype.
 }
 
 func (r *repository) GetSettings(ctx context.Context, workspaceID pgtype.UUID) (database.QuoteSetting, bool, error) {
-	return found(r.queries.GetQuoteSettings(ctx, workspaceID))
+	return pgutil.Found(r.queries.GetQuoteSettings(ctx, workspaceID))
 }
 
 func (r *repository) UpsertSettings(ctx context.Context, arg database.UpsertQuoteSettingsParams) (database.QuoteSetting, error) {
@@ -121,7 +109,7 @@ func (r *repository) NextNumber(ctx context.Context, workspaceID pgtype.UUID, ye
 }
 
 func (r *repository) GetModuleContext(ctx context.Context, moduleID pgtype.UUID) (database.GetModuleContextRow, bool, error) {
-	return found(r.queries.GetModuleContext(ctx, moduleID))
+	return pgutil.Found(r.queries.GetModuleContext(ctx, moduleID))
 }
 
 func (r *repository) CreateQuote(ctx context.Context, arg database.CreateQuoteParams) (pgtype.UUID, error) {
@@ -129,7 +117,7 @@ func (r *repository) CreateQuote(ctx context.Context, arg database.CreateQuotePa
 }
 
 func (r *repository) GetQuote(ctx context.Context, id, workspaceID pgtype.UUID) (database.GetQuoteRow, bool, error) {
-	return found(r.queries.GetQuote(ctx, database.GetQuoteParams{ID: id, WorkspaceID: workspaceID}))
+	return pgutil.Found(r.queries.GetQuote(ctx, database.GetQuoteParams{ID: id, WorkspaceID: workspaceID}))
 }
 
 func (r *repository) ListQuotes(ctx context.Context, arg database.ListQuotesParams) ([]database.ListQuotesRow, error) {

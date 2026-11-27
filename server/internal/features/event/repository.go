@@ -2,11 +2,14 @@ package event
 
 import (
 	"context"
+
 	"github.com/alexcao194/kairso/internal/features/access"
+	"github.com/alexcao194/kairso/internal/features/attendance"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,7 +38,7 @@ func (r *repository) GetCallerRole(ctx context.Context, workspaceAlias, callerID
 }
 
 func (r *repository) ListEvents(ctx context.Context, workspaceAlias string, filter CalendarEventFilter) ([]CalendarDayResponse, error) {
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,20 +74,16 @@ func (r *repository) ListEvents(ctx context.Context, workspaceAlias string, filt
 	if err != nil {
 		return nil, err
 	}
-	schedules := make([]workScheduleDay, 0, len(scheduleRows))
-	for _, row := range scheduleRows {
-		sessions, err := r.queries.ListWorkScheduleSessionsByDayID(ctx, row.ID)
-		if err != nil {
-			return nil, err
-		}
-		schedules = append(schedules, workScheduleDayFromRow(row, sessions))
+	schedules, err := r.schedulesWithSessions(ctx, scheduleRows)
+	if err != nil {
+		return nil, err
 	}
 
 	attendanceRows, err := r.queries.ListAttendanceRecordsByAlias(ctx, database.ListAttendanceRecordsByAliasParams{
 		WorkspaceID: wid,
 		MemberID:    memberID,
-		FromTime:    pgTimeOrNull(fromTime, hasFromTime),
-		ToTime:      pgTimeOrNull(toTime, hasToTime),
+		FromTime:    pgutil.TimestamptzIf(fromTime, hasFromTime),
+		ToTime:      pgutil.TimestamptzIf(toTime, hasToTime),
 		OffsetCount: 0,
 		LimitCount:  10000,
 	})
@@ -173,19 +172,15 @@ func (r *repository) ListMembersEvents(ctx context.Context, workspaceAlias strin
 	if err != nil {
 		return nil, err
 	}
-	schedules := make([]workScheduleDay, 0, len(scheduleRows))
-	for _, row := range scheduleRows {
-		sessions, err := r.queries.ListWorkScheduleSessionsByDayID(ctx, row.ID)
-		if err != nil {
-			return nil, err
-		}
-		schedules = append(schedules, workScheduleDayFromRow(row, sessions))
+	schedules, err := r.schedulesWithSessions(ctx, scheduleRows)
+	if err != nil {
+		return nil, err
 	}
 
 	attendanceRows, err := r.queries.ListAttendanceRecordsByAlias(ctx, database.ListAttendanceRecordsByAliasParams{
 		WorkspaceID: wid2,
-		FromTime:    pgTimeOrNull(fromTime, hasFromTime),
-		ToTime:      pgTimeOrNull(toTime, hasToTime),
+		FromTime:    pgutil.TimestamptzIf(fromTime, hasFromTime),
+		ToTime:      pgutil.TimestamptzIf(toTime, hasToTime),
 		OffsetCount: 0,
 		LimitCount:  100000,
 	})
@@ -203,4 +198,17 @@ func (r *repository) ListMembersEvents(ctx context.Context, workspaceAlias strin
 // GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
 func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
 	return access.Load(ctx, r.queries, workspaceID, callerID)
+}
+
+// schedulesWithSessions attaches each day's sessions, loaded in one query.
+func (r *repository) schedulesWithSessions(ctx context.Context, rows []database.ListWorkSchedulesByAliasRow) ([]workScheduleDay, error) {
+	byDay, err := attendance.SessionsByDay(ctx, r.queries, pgutil.IDs(rows, func(r database.ListWorkSchedulesByAliasRow) pgtype.UUID { return r.ID }))
+	if err != nil {
+		return nil, err
+	}
+	schedules := make([]workScheduleDay, 0, len(rows))
+	for _, row := range rows {
+		schedules = append(schedules, workScheduleDayFromRow(row, byDay[row.ID.Bytes]))
+	}
+	return schedules, nil
 }

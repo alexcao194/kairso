@@ -2,36 +2,17 @@ package project
 
 import (
 	"context"
-	"fmt"
+
 	"github.com/alexcao194/kairso/internal/features/access"
-	"time"
+	"github.com/alexcao194/kairso/internal/features/history"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/ptr"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-func vietnamLocation() *time.Location {
-	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-	if err != nil {
-		return time.FixedZone("ICT", 7*60*60)
-	}
-	return loc
-}
-
-func monthRange(month string) (from, to pgtype.Timestamptz, err error) {
-	if month == "" {
-		return from, to, nil
-	}
-	start, err := time.ParseInLocation("2006-01", month, vietnamLocation())
-	if err != nil {
-		return from, to, fmt.Errorf("month phải theo định dạng YYYY-MM")
-	}
-	end := start.AddDate(0, 1, 0).Add(-time.Second)
-	return pgtype.Timestamptz{Time: start, Valid: true}, pgtype.Timestamptz{Time: end, Valid: true}, nil
-}
 
 type Repository interface {
 	ExecTx(ctx context.Context, fn func(Repository) error) error
@@ -158,7 +139,7 @@ func (r *repository) ListProjects(ctx context.Context, workspaceID, userID strin
 	if err != nil {
 		return empty, err
 	}
-	fromTime, toTime, err := monthRange(params.Month)
+	fromTime, toTime, err := pgutil.MonthRange(params.Month)
 	if err != nil {
 		return empty, err
 	}
@@ -227,9 +208,9 @@ func (r *repository) UpdateProject(ctx context.Context, projectID, callerID stri
 	before := projectResponseFromDatabaseProject(beforeRow)
 	afterRow, err := txQueries.UpdateProjectByID(ctx, database.UpdateProjectByIDParams{
 		NamePresent:   req.namePresent(),
-		Name:          stringValue(req.Name),
+		Name:          ptr.Value(req.Name),
 		AvatarPresent: req.avatarPresent(),
-		Avatar:        stringValue(req.Avatar),
+		Avatar:        ptr.Value(req.Avatar),
 		ID:            pid,
 	})
 	if err != nil {
@@ -237,12 +218,12 @@ func (r *repository) UpdateProject(ctx context.Context, projectID, callerID stri
 	}
 	after := projectResponseFromDatabaseProject(afterRow)
 	if req.namePresent() {
-		if err := insertHistory(ctx, txQueries, "project", after.ID, callerUID, "name", stringPtr(before.Name), stringPtr(after.Name)); err != nil {
+		if err := history.Insert(ctx, txQueries, "project", after.ID, callerUID, "name", stringPtr(before.Name), stringPtr(after.Name)); err != nil {
 			return nil, err
 		}
 	}
 	if req.avatarPresent() {
-		if err := insertHistory(ctx, txQueries, "project", after.ID, callerUID, "avatar", emptyToNil(before.Avatar), emptyToNil(after.Avatar)); err != nil {
+		if err := history.Insert(ctx, txQueries, "project", after.ID, callerUID, "avatar", ptr.NonEmpty(before.Avatar), ptr.NonEmpty(after.Avatar)); err != nil {
 			return nil, err
 		}
 	}
@@ -473,8 +454,8 @@ func (r *repository) UpdateProjectLink(ctx context.Context, linkID string, req U
 	}
 	row, err := r.queries.UpdateProjectLink(ctx, database.UpdateProjectLinkParams{
 		ID:        lid,
-		LinkTitle: pgtypeText(req.Title),
-		LinkUrl:   pgtypeText(req.URL),
+		LinkTitle: pgutil.TextFrom(req.Title),
+		LinkUrl:   pgutil.TextFrom(req.URL),
 	})
 	if err != nil {
 		return nil, err
@@ -550,8 +531,8 @@ func (r *repository) UpdateProjectNote(ctx context.Context, noteID string, req U
 	}
 	row, err := r.queries.UpdateProjectNote(ctx, database.UpdateProjectNoteParams{
 		ID:          nid,
-		NoteTitle:   pgtypeText(req.Title),
-		NoteContent: pgtypeText(req.Content),
+		NoteTitle:   pgutil.TextFrom(req.Title),
+		NoteContent: pgutil.TextFrom(req.Content),
 	})
 	if err != nil {
 		return nil, err
@@ -635,40 +616,8 @@ func (r *repository) DeleteProjectFile(ctx context.Context, fileID string) (stri
 	return pgutil.UUIDToString(pid), nil
 }
 
-func insertHistory(ctx context.Context, txQueries *database.Queries, entityType, entityID string, changedByID pgtype.UUID, field string, oldValue, newValue *string) error {
-	if equalStringPtr(oldValue, newValue) {
-		return nil
-	}
-	eid, err := pgutil.ParseUUID(entityID)
-	if err != nil {
-		return err
-	}
-	return txQueries.InsertEntityHistory(ctx, database.InsertEntityHistoryParams{
-		EntityType:  entityType,
-		EntityID:    eid,
-		ChangedByID: changedByID,
-		Field:       field,
-		OldValue:    pgtypeText(oldValue),
-		NewValue:    pgtypeText(newValue),
-	})
-}
-
-func emptyToNil(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
-}
-
 func stringPtr(value string) *string {
 	return &value
-}
-
-func equalStringPtr(left, right *string) bool {
-	if left == nil || right == nil {
-		return left == right
-	}
-	return *left == *right
 }
 
 // GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).

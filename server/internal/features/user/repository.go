@@ -72,18 +72,18 @@ func (r *repository) UpdateUser(ctx context.Context, id string, req UpdateMeRequ
 	}
 	row, err := r.queries.UpdateUserProfile(ctx, database.UpdateUserProfileParams{
 		ID:              uid,
-		Name:            pgtypeTextFromStringPtr(req.Name),
-		Alias:           pgtypeTextFromStringPtr(req.Alias),
-		Avatar:          pgtypeTextFromStringPtr(req.Avatar),
+		Name:            pgutil.TextFrom(req.Name),
+		Alias:           pgutil.TextFrom(req.Alias),
+		Avatar:          pgutil.TextFrom(req.Avatar),
 		BirthdayPresent: req.Birthday != nil,
 		Birthday:        birthdayVal,
 		BioPresent:      req.Bio != nil,
-		Bio:             pgtypeTextFromStringPtr(req.Bio),
+		Bio:             pgutil.TextFrom(req.Bio),
 		PhonePresent:    req.Phone != nil,
-		Phone:           pgtypeTextFromStringPtr(req.Phone),
+		Phone:           pgutil.TextFrom(req.Phone),
 		NicknamePresent: req.Nickname != nil,
-		Nickname:        pgtypeTextFromStringPtr(req.Nickname),
-		Locale:          pgtypeTextFromStringPtr(req.Locale),
+		Nickname:        pgutil.TextFrom(req.Nickname),
+		Locale:          pgutil.TextFrom(req.Locale),
 	})
 	if err != nil {
 		return nil, err

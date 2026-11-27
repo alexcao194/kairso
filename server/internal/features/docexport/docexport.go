@@ -6,7 +6,10 @@ package docexport
 import (
 	"fmt"
 	"math"
+	"net/http"
+	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/xuri/excelize/v2"
@@ -253,4 +256,32 @@ func SafeFilename(s string) string {
 // MinorToMajor converts an amount in minor units (cents, đồng) to a number for a Money cell.
 func MinorToMajor(v int64, minorUnits int) Money {
 	return Money(float64(v) / math.Pow10(minorUnits))
+}
+
+// Write sends a workbook as a download.
+func Write(w http.ResponseWriter, filename string, data []byte) {
+	w.Header().Set("Content-Type", ContentType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
+// FormatDate turns YYYY-MM-DD (or an RFC 3339 time) into DD/MM/YYYY; other text is kept.
+func FormatDate(d string) string {
+	if t, err := time.Parse("2006-01-02", d[:min(len(d), 10)]); err == nil {
+		return t.Format("02/01/2006")
+	}
+	return d
+}
+
+// Join joins the non-blank parts.
+func Join(sep string, parts ...string) string {
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if strings.TrimSpace(p) != "" {
+			out = append(out, p)
+		}
+	}
+	return strings.Join(out, sep)
 }

@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/alexcao194/kairso/internal/features/access"
 	"sort"
 	"time"
+
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/database"
@@ -15,6 +16,7 @@ import (
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
 	"github.com/alexcao194/kairso/pkg/realtime"
+	"github.com/alexcao194/kairso/pkg/vntime"
 )
 
 var (
@@ -670,7 +672,7 @@ func (s *services) computeKPI(ctx context.Context, workspaceAlias, memberID stri
 		memberRecords := recordsForMember(records, idStr)
 		lateDays, earlyLeaveDays := lateEarlyDays(memberSchedules, memberRecords)
 		resp := buildKPIMember(
-			idStr, m.MemberAlias, m.MemberName, textString(m.MemberAvatar), period, label,
+			idStr, m.MemberAlias, m.MemberName, pgutil.Text(m.MemberAvatar), period, label,
 			taskStatsMap[idStr],
 			feedbackMap[idStr],
 			initiativeMap[idStr],
@@ -701,18 +703,10 @@ func resolveKPIPeriod(month string) (from, to time.Time, err error) {
 	return
 }
 
-func vietnamLocation() *time.Location {
-	loc, err := time.LoadLocation("Asia/Ho_Chi_Minh")
-	if err != nil {
-		return time.FixedZone("Asia/Ho_Chi_Minh", 7*3600)
-	}
-	return loc
-}
-
 func lateEarlyDays(schedules []attendance.WorkScheduleDayResponse, records []attendance.AttendanceRecordResponse) (int, int) {
 	recordsByDate := map[string][]attendance.AttendanceRecordResponse{}
 	for _, record := range records {
-		date := record.RecordedAt.In(vietnamLocation()).Format(time.DateOnly)
+		date := record.RecordedAt.In(vntime.Location).Format(time.DateOnly)
 		recordsByDate[date] = append(recordsByDate[date], record)
 	}
 	var lateDays, earlyDays int

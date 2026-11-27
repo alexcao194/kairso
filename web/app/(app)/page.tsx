@@ -24,7 +24,7 @@ import { PriorityTag } from "@/components/kairso/PriorityTag";
 import { ResourcePanel } from "@/components/kairso/ResourcePanel";
 import { useDialogs } from "@/components/dialogs/DialogProvider";
 import { IconTile } from "@/components/ui/IconTile";
-import { IconAlert, IconCheckSquare, IconCircleCheck, IconClock, IconFolder, IconInbox, IconPlus, IconZap, IconBell } from "@/components/icons";
+import { IconAlert, IconCheckSquare, IconCircleCheck, IconClock, IconFolder, IconPlus, IconZap, IconBell } from "@/components/icons";
 
 interface Item {
   id: string;

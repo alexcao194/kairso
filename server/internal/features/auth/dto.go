@@ -133,12 +133,12 @@ func authUserFromRow(row authUserRow) *AuthUser {
 		UpdatedAt:     row.UpdatedAt,
 		Name:          row.Name,
 		Alias:         row.Alias,
-		Avatar:        textString(row.Avatar),
+		Avatar:        pgutil.Text(row.Avatar),
 		FirebaseUID:   row.FirebaseUID,
-		Email:         textString(row.Email),
+		Email:         pgutil.Text(row.Email),
 		EmailVerified: row.EmailVerified,
 		Provider:      row.Provider,
-		LastSignInAt:  timestamptzPtr(row.LastSignInAt),
+		LastSignInAt:  pgutil.TimePtr(row.LastSignInAt),
 	}
 }
 
@@ -196,21 +196,6 @@ func slugifyAlias(value string) string {
 	value = re.ReplaceAllString(value, "-")
 	value = strings.Trim(value, "-")
 	return value
-}
-
-func textString(value pgtype.Text) string {
-	if !value.Valid {
-		return ""
-	}
-	return value.String
-}
-
-func timestamptzPtr(value pgtype.Timestamptz) *time.Time {
-	if !value.Valid {
-		return nil
-	}
-	t := value.Time
-	return &t
 }
 
 func mapFirebaseToken(token *firebase.Token) *FirebaseToken {

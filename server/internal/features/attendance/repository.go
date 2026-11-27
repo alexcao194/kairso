@@ -3,14 +3,16 @@ package attendance
 import (
 	"context"
 	"errors"
-	"github.com/alexcao194/kairso/internal/features/access"
 	"sort"
 	"time"
+
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/database"
 	"github.com/alexcao194/kairso/internal/features/workspace"
 	"github.com/alexcao194/kairso/pkg/pagination"
 	"github.com/alexcao194/kairso/pkg/pgutil"
+	"github.com/alexcao194/kairso/pkg/vntime"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -135,7 +137,7 @@ func (r *repository) CreateAttendanceRecord(ctx context.Context, workspaceAlias,
 
 func (r *repository) ListAttendanceRecords(ctx context.Context, workspaceAlias, callerID string, filter AttendanceRecordFilter, params pagination.Params) (pagination.Response[AttendanceRecordResponse], error) {
 	var empty pagination.Response[AttendanceRecordResponse]
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return empty, err
 	}
@@ -154,8 +156,8 @@ func (r *repository) ListAttendanceRecords(ctx context.Context, workspaceAlias, 
 	rows, err := r.queries.ListAttendanceRecordsByAlias(ctx, database.ListAttendanceRecordsByAliasParams{
 		WorkspaceID: wid,
 		MemberID:    memberID,
-		FromTime:    pgTimeOrNull(from, fromOK),
-		ToTime:      pgTimeOrNull(to, toOK),
+		FromTime:    pgutil.TimestamptzIf(from, fromOK),
+		ToTime:      pgutil.TimestamptzIf(to, toOK),
 		OffsetCount: int32(params.Offset()),
 		LimitCount:  int32(params.LimitWithMore()),
 	})
@@ -216,11 +218,11 @@ func (r *repository) CreateCheckRequest(ctx context.Context, workspaceAlias, mem
 	if err != nil {
 		return nil, err
 	}
-	targetCheckIn, err := pgUUIDOrNull(params.TargetCheckInRecordID)
+	targetCheckIn, err := pgutil.UUIDOrNull(params.TargetCheckInRecordID)
 	if err != nil {
 		return nil, err
 	}
-	targetCheckOut, err := pgUUIDOrNull(params.TargetCheckOutRecordID)
+	targetCheckOut, err := pgutil.UUIDOrNull(params.TargetCheckOutRecordID)
 	if err != nil {
 		return nil, err
 	}
@@ -228,12 +230,12 @@ func (r *repository) CreateCheckRequest(ctx context.Context, workspaceAlias, mem
 		WorkspaceID:            wid,
 		MemberID:               uid,
 		Reason:                 params.Reason,
-		CheckInAt:              pgTimePtr(params.CheckInAt),
-		CheckOutAt:             pgTimePtr(params.CheckOutAt),
+		CheckInAt:              pgutil.Timestamptz(params.CheckInAt),
+		CheckOutAt:             pgutil.Timestamptz(params.CheckOutAt),
 		TargetCheckInRecordID:  targetCheckIn,
 		TargetCheckOutRecordID: targetCheckOut,
-		OriginalCheckInAt:      pgTimePtr(params.OriginalCheckInAt),
-		OriginalCheckOutAt:     pgTimePtr(params.OriginalCheckOutAt),
+		OriginalCheckInAt:      pgutil.Timestamptz(params.OriginalCheckInAt),
+		OriginalCheckOutAt:     pgutil.Timestamptz(params.OriginalCheckOutAt),
 	})
 	if err != nil {
 		return nil, err
@@ -297,7 +299,7 @@ func (r *repository) ListCheckRequests(ctx context.Context, workspaceAlias strin
 	if err != nil {
 		return empty, err
 	}
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return empty, err
 	}
@@ -385,11 +387,11 @@ func (r *repository) ReplaceWorkSchedule(ctx context.Context, workspaceAlias, me
 	if err != nil {
 		return nil, err
 	}
-	registeredByID, err := pgUUIDOrNull(registeredBy)
+	registeredByID, err := pgutil.UUIDOrNull(registeredBy)
 	if err != nil {
 		return nil, err
 	}
-	date, err := parseDate(req.Date)
+	date, err := vntime.ParseDate(req.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +487,7 @@ func (r *repository) UpdateWorkScheduleDayStatus(ctx context.Context, workspaceA
 	if err != nil {
 		return nil, err
 	}
-	responses := make([]WorkScheduleDayResponse, 0, len(dayIDs))
+	days := make([]database.WorkScheduleDay, 0, len(dayIDs))
 	for _, dayID := range dayIDs {
 		did, err := pgutil.ParseUUID(dayID)
 		if err != nil {
@@ -500,17 +502,9 @@ func (r *repository) UpdateWorkScheduleDayStatus(ctx context.Context, workspaceA
 		if err != nil {
 			return nil, err
 		}
-		resp := workScheduleDayResponseFromDatabase(day)
-		sessions, err := r.queries.ListWorkScheduleSessionsByDayID(ctx, day.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, session := range sessions {
-			resp.Sessions = append(resp.Sessions, workScheduleSessionResponseFromDatabase(session))
-		}
-		responses = append(responses, resp)
+		days = append(days, day)
 	}
-	return responses, nil
+	return r.dayResponses(ctx, days)
 }
 
 func (r *repository) ApproveAllPendingSchedules(ctx context.Context, workspaceAlias, memberID string) ([]WorkScheduleDayResponse, error) {
@@ -532,14 +526,19 @@ func (r *repository) ApproveAllPendingSchedules(ctx context.Context, workspaceAl
 	sort.Slice(days, func(i, j int) bool {
 		return days[i].ScheduleDate.Time.Before(days[j].ScheduleDate.Time)
 	})
+	return r.dayResponses(ctx, days)
+}
+
+// dayResponses maps schedule days with their sessions (one query for all of them).
+func (r *repository) dayResponses(ctx context.Context, days []database.WorkScheduleDay) ([]WorkScheduleDayResponse, error) {
+	byDay, err := SessionsByDay(ctx, r.queries, pgutil.IDs(days, func(d database.WorkScheduleDay) pgtype.UUID { return d.ID }))
+	if err != nil {
+		return nil, err
+	}
 	responses := make([]WorkScheduleDayResponse, 0, len(days))
 	for _, day := range days {
 		resp := workScheduleDayResponseFromDatabase(day)
-		sessions, err := r.queries.ListWorkScheduleSessionsByDayID(ctx, day.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, session := range sessions {
+		for _, session := range byDay[day.ID.Bytes] {
 			resp.Sessions = append(resp.Sessions, workScheduleSessionResponseFromDatabase(session))
 		}
 		responses = append(responses, resp)
@@ -552,7 +551,7 @@ func (r *repository) ListWorkspaceMembersForStatistics(ctx context.Context, work
 	if err != nil {
 		return nil, err
 	}
-	uid, err := pgUUIDOrNull(memberID)
+	uid, err := pgutil.UUIDOrNull(memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -591,21 +590,34 @@ func (r *repository) ListWorkspaceAttendanceStats(ctx context.Context, workspace
 	return resp.Items, nil
 }
 
-func (r *repository) SumAssignedTaskHours(ctx context.Context, workspaceAlias, memberID string, from, to time.Time) (float64, error) {
+// SumAssignedTaskHours returns each member's share of estimated task hours in the period.
+func (r *repository) SumAssignedTaskHours(ctx context.Context, workspaceAlias string, memberIDs []string, from, to time.Time) (map[string]float64, error) {
 	wid, err := pgutil.ParseUUID(workspaceAlias)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	uid, err := pgutil.ParseUUID(memberID)
-	if err != nil {
-		return 0, err
+	uids := make([]pgtype.UUID, 0, len(memberIDs))
+	for _, id := range memberIDs {
+		uid, err := pgutil.ParseUUID(id)
+		if err != nil {
+			return nil, err
+		}
+		uids = append(uids, uid)
 	}
-	return r.queries.SumAssignedTaskHoursByWorkspace(ctx, database.SumAssignedTaskHoursByWorkspaceParams{
+	rows, err := r.queries.SumAssignedTaskHoursByMembers(ctx, database.SumAssignedTaskHoursByMembersParams{
 		WorkspaceID: wid,
-		MemberID:    uid,
+		MemberIds:   uids,
 		MonthStart:  pgtype.Timestamptz{Time: from, Valid: true},
 		MonthEnd:    pgtype.Timestamptz{Time: to, Valid: true},
 	})
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]float64, len(rows))
+	for _, row := range rows {
+		out[pgutil.UUIDToString(row.UserID)] = row.Total
+	}
+	return out, nil
 }
 
 func (r *repository) GetMemberName(ctx context.Context, memberID string) (string, error) {
@@ -632,7 +644,7 @@ type scheduleDBFilter struct {
 }
 
 func workScheduleDBFilter(filter WorkScheduleFilter) (scheduleDBFilter, error) {
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return scheduleDBFilter{}, err
 	}
@@ -646,14 +658,14 @@ func workScheduleDBFilter(filter WorkScheduleFilter) (scheduleDBFilter, error) {
 		toDate = pgDate(month.AddDate(0, 1, -1))
 	}
 	if filter.From != "" {
-		from, err := parseDate(filter.From)
+		from, err := vntime.ParseDate(filter.From)
 		if err != nil {
 			return scheduleDBFilter{}, err
 		}
 		fromDate = pgDate(from)
 	}
 	if filter.To != "" {
-		to, err := parseDate(filter.To)
+		to, err := vntime.ParseDate(filter.To)
 		if err != nil {
 			return scheduleDBFilter{}, err
 		}
@@ -667,15 +679,15 @@ func workScheduleDBFilter(filter WorkScheduleFilter) (scheduleDBFilter, error) {
 }
 
 func (r *repository) GetTaskStatsByWorkspace(ctx context.Context, workspaceAlias string, filter TaskStatisticsFilter, from, to time.Time) ([]TaskStatsMemberResponse, error) {
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return nil, err
 	}
-	moduleID, err := pgUUIDOrNull(filter.ModuleID)
+	moduleID, err := pgutil.UUIDOrNull(filter.ModuleID)
 	if err != nil {
 		return nil, err
 	}
-	projectID, err := pgUUIDOrNull(filter.ProjectID)
+	projectID, err := pgutil.UUIDOrNull(filter.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -707,7 +719,7 @@ func (r *repository) GetTaskStatsByWorkspace(ctx context.Context, workspaceAlias
 			MemberID:                pgutil.UUIDToString(row.MemberID),
 			MemberAlias:             row.MemberAlias,
 			MemberName:              row.MemberName,
-			MemberAvatar:            textString(row.MemberAvatar),
+			MemberAvatar:            pgutil.Text(row.MemberAvatar),
 			TotalTasks:              row.TotalTasks,
 			Backlog:                 row.BacklogCount,
 			Todo:                    row.TodoCount,
@@ -730,15 +742,15 @@ func (r *repository) GetTaskStatsByWorkspace(ctx context.Context, workspaceAlias
 }
 
 func (r *repository) GetTaskCycleTimeByWorkspace(ctx context.Context, workspaceAlias string, filter TaskStatisticsFilter, from, to time.Time) (float64, int64, error) {
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return 0, 0, err
 	}
-	moduleID, err := pgUUIDOrNull(filter.ModuleID)
+	moduleID, err := pgutil.UUIDOrNull(filter.ModuleID)
 	if err != nil {
 		return 0, 0, err
 	}
-	projectID, err := pgUUIDOrNull(filter.ProjectID)
+	projectID, err := pgutil.UUIDOrNull(filter.ProjectID)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -927,7 +939,7 @@ func (r *repository) UpsertDailyReport(ctx context.Context, workspaceAlias, memb
 	if err != nil {
 		return nil, err
 	}
-	date, err := parseDate(req.Date)
+	date, err := vntime.ParseDate(req.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -952,20 +964,20 @@ func (r *repository) ListDailyReports(ctx context.Context, workspaceAlias string
 	if err != nil {
 		return empty, err
 	}
-	memberID, err := pgUUIDOrNull(filter.MemberID)
+	memberID, err := pgutil.UUIDOrNull(filter.MemberID)
 	if err != nil {
 		return empty, err
 	}
 	var fromDate, toDate pgtype.Date
 	if filter.From != "" {
-		from, err := parseDate(filter.From)
+		from, err := vntime.ParseDate(filter.From)
 		if err != nil {
 			return empty, err
 		}
 		fromDate = pgDate(from)
 	}
 	if filter.To != "" {
-		to, err := parseDate(filter.To)
+		to, err := vntime.ParseDate(filter.To)
 		if err != nil {
 			return empty, err
 		}
@@ -1010,7 +1022,7 @@ func (r *repository) SumInitiativeEstimates(ctx context.Context, workspaceAlias,
 	if err != nil {
 		return nil, err
 	}
-	memberUID, err := pgUUIDOrNull(memberID)
+	memberUID, err := pgutil.UUIDOrNull(memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -1035,7 +1047,7 @@ func (r *repository) SumLateLogEstimates(ctx context.Context, workspaceAlias, me
 	if err != nil {
 		return nil, err
 	}
-	memberUID, err := pgUUIDOrNull(memberID)
+	memberUID, err := pgutil.UUIDOrNull(memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -1060,7 +1072,7 @@ func (r *repository) SumFeedbackEstimates(ctx context.Context, workspaceAlias, m
 	if err != nil {
 		return nil, err
 	}
-	memberUID, err := pgUUIDOrNull(memberID)
+	memberUID, err := pgutil.UUIDOrNull(memberID)
 	if err != nil {
 		return nil, err
 	}
@@ -1081,14 +1093,14 @@ func (r *repository) SumFeedbackEstimates(ctx context.Context, workspaceAlias, m
 }
 
 func (r *repository) hydrateScheduleRows(ctx context.Context, rows []database.ListWorkSchedulesByAliasRow) ([]WorkScheduleDayResponse, error) {
+	byDay, err := SessionsByDay(ctx, r.queries, pgutil.IDs(rows, func(r database.ListWorkSchedulesByAliasRow) pgtype.UUID { return r.ID }))
+	if err != nil {
+		return nil, err
+	}
 	items := make([]WorkScheduleDayResponse, 0, len(rows))
 	for _, row := range rows {
 		item := workScheduleDayResponseFromListRow(row)
-		sessions, err := r.queries.ListWorkScheduleSessionsByDayID(ctx, row.ID)
-		if err != nil {
-			return nil, err
-		}
-		for _, session := range sessions {
+		for _, session := range byDay[row.ID.Bytes] {
 			item.Sessions = append(item.Sessions, workScheduleSessionResponseFromDatabase(session))
 		}
 		items = append(items, item)
@@ -1099,4 +1111,16 @@ func (r *repository) hydrateScheduleRows(ctx context.Context, rows []database.Li
 // GetCallerAccess returns what the caller may do in the workspace (zero Grant for a non-member).
 func (r *repository) GetCallerAccess(ctx context.Context, workspaceID, callerID string) (access.Grant, error) {
 	return access.Load(ctx, r.queries, workspaceID, callerID)
+}
+
+// SessionsByDay loads the sessions of many schedule days in one query, keyed by day ID.
+func SessionsByDay(ctx context.Context, q *database.Queries, dayIDs []pgtype.UUID) (map[[16]byte][]database.WorkScheduleSession, error) {
+	if len(dayIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := q.ListWorkScheduleSessionsByDayIDs(ctx, dayIDs)
+	if err != nil {
+		return nil, err
+	}
+	return pgutil.GroupBy(rows, func(s database.WorkScheduleSession) pgtype.UUID { return s.DayID }), nil
 }

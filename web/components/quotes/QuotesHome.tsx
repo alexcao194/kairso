@@ -20,7 +20,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Menu } from "@/components/ui/Popover";
 import { useConfirm } from "@/components/ui/Confirm";
 import { IconEdit, IconFile, IconMore, IconPlus, IconTrash, IconUsers } from "@/components/icons";
-import { CurrencySelect, NewQuoteModal, QuoteStatusBadge, useProjectModules } from "./shared";
+import { CurrencySelect, NewQuoteModal, QuoteStatusBadge } from "./shared";
+import { useProjectModules } from "@/lib/hooks/tasks";
 
 type Tab = "quotes" | "customers" | "settings";
 
@@ -69,7 +70,7 @@ function QuoteList() {
   const [project, setProject] = useUrlState("project", "");
   const [mod, setMod] = useUrlState("module", "");
   const [status, setStatus] = useUrlState("status", "");
-  const modules = useProjectModules(project);
+  const modules = useProjectModules(workspaceId, project);
   // "expired" is derived from a sent quote past its validity, so ask the server for "sent".
   const q = useQuotes(workspaceId, { projectId: project || undefined, moduleId: mod || undefined, status: status === "expired" ? "sent" : status || undefined });
   const rows = (q.data ?? []).filter((r) => (status === "expired" ? r.status === "expired" : status === "sent" ? r.status === "sent" : true));

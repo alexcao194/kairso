@@ -3,8 +3,9 @@ package meeting
 import (
 	"context"
 	"fmt"
-	"github.com/alexcao194/kairso/internal/features/access"
 	"net/http"
+
+	"github.com/alexcao194/kairso/internal/features/access"
 
 	"github.com/alexcao194/kairso/internal/api/rest/middleware"
 	"github.com/alexcao194/kairso/internal/features/docsign"
@@ -125,9 +126,8 @@ func (s *service) afterSign(ctx context.Context, m *MeetingMinutesResponse, call
 // @Failure 409 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId}/signatures/{role} [post]
 func (h *Handler) SignMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.Sign(r.Context(), r.PathValue("meetingId"), userID, r.PathValue("role"))
@@ -150,9 +150,8 @@ func (h *Handler) SignMeeting(w http.ResponseWriter, r *http.Request) {
 // @Failure 404 {object} httpx.ErrorResponse
 // @Router /v1/meetings/{meetingId}/signatures/{role} [delete]
 func (h *Handler) UnsignMeeting(w http.ResponseWriter, r *http.Request) {
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.RequireUser(w, r)
 	if !ok {
-		httpx.Error(w, http.StatusUnauthorized, "Chưa xác thực hoặc phiên đăng nhập đã hết hạn")
 		return
 	}
 	resp, err := h.svc.Unsign(r.Context(), r.PathValue("meetingId"), userID, r.PathValue("role"))
