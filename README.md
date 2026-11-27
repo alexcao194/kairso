@@ -7,6 +7,19 @@
 - 🚀 Hosted app: **https://app.kairso.com**
 - 🐳 Image: **[`alexcao194/kairso`](https://hub.docker.com/r/alexcao194/kairso)** — all-in-one (web + API), multi-arch `amd64` + `arm64`
 
+## Architecture
+
+![Kairso architecture](docs/architecture.png)
+
+<sub>Source: [`docs/architecture.svg`](docs/architecture.svg). After editing it, re-render the PNG with headless Chrome:
+`chrome --headless --force-device-scale-factor=2 --window-size=1360,660 --screenshot="$PWD/docs/architecture.png" "file://$PWD/docs/architecture.svg"`</sub>
+
+- **One entry point.** nginx sends WebSocket traffic (`/ws`) straight to the API and everything else to Next.js. The browser never calls the API directly: Next.js forwards `/api/proxy/*` to the API and signs each request with an HMAC `X-App-Token`.
+- **Auth.** Users sign in with Firebase; the API verifies the Firebase ID token once and issues its own JWT. AI assistants use a personal API key (`ksk_…`) or an OAuth token, and every MCP tool runs through the same REST handlers, so they get exactly the user's permissions.
+- **Realtime.** Every change is published as an event to both the hub, which pushes it to open WebSockets (the web refreshes the matching React Query cache), and the webhook dispatcher. Notifications are also sent to phones and browsers through Firebase Cloud Messaging.
+- **Files.** The API hands out presigned URLs; files go between the browser and MinIO/S3 without passing through the API.
+- **Redis** is part of the stack and its settings are required, but no code uses it yet.
+
 ## Repository layout
 
 | Path | What it is |
