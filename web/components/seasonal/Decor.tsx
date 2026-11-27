@@ -133,8 +133,8 @@ const SCENE: Record<ThemeId, ReactNode> = {
   winter: (
     <>
       {ground("fx-snow", 0.8)}
-      <circle cx="40" cy="40" r="9" fill={c("surface")} stroke={c("fx-snow")} strokeWidth="1.5" />
-      <circle cx="40" cy="26" r="6.5" fill={c("surface")} stroke={c("fx-snow")} strokeWidth="1.5" />
+      <circle cx="40" cy="40" r="9" fill={c("fx-white")} stroke={c("fx-snow")} strokeWidth="1.5" />
+      <circle cx="40" cy="26" r="6.5" fill={c("fx-white")} stroke={c("fx-snow")} strokeWidth="1.5" />
       <rect x="34" y="16" width="12" height="3" rx="1" fill={c("ink-2")} />
       <rect x="36.5" y="10" width="7" height="7" rx="1" fill={c("ink-2")} />
       <circle cx="38" cy="25" r="0.9" fill={c("ink")} />
@@ -193,7 +193,7 @@ const SCENE: Record<ThemeId, ReactNode> = {
           <rect x={x - 1} y={y - r - 4} width="2" height="5" fill={c("green-vivid")} />
         </g>
       ))}
-      <path d="M110 46 V24 Q110 10 122 10 Q134 10 134 24 V46 L130 42 L126 46 L122 42 L118 46 L114 42 Z" fill={c("surface")} stroke={c("ink-faint")} strokeWidth="1.2" />
+      <path d="M110 46 V24 Q110 10 122 10 Q134 10 134 24 V46 L130 42 L126 46 L122 42 L118 46 L114 42 Z" fill={c("fx-white")} stroke={c("ink-faint")} strokeWidth="1.2" />
       <circle cx="118" cy="22" r="1.6" fill={c("ink")} />
       <circle cx="126" cy="22" r="1.6" fill={c("ink")} />
       <ellipse cx="122" cy="30" rx="2.2" ry="3" fill={c("ink")} />
@@ -205,7 +205,7 @@ const SCENE: Record<ThemeId, ReactNode> = {
         <path key={`${x}`} transform={`translate(${x} ${y}) scale(${s})`} d="M0 7 C-10 -1 -6 -10 0 -5 C6 -10 10 -1 0 7 Z" fill={c(col as string)} />
       ))}
       <g transform="translate(160 38)">
-        <rect x="-14" y="-9" width="28" height="18" rx="2" fill={c("surface")} stroke={c("fx-heart")} />
+        <rect x="-14" y="-9" width="28" height="18" rx="2" fill={c("fx-white")} stroke={c("fx-heart")} />
         <path d="M-14 -9 L0 2 L14 -9" fill="none" stroke={c("fx-heart")} />
       </g>
     </>
@@ -264,9 +264,9 @@ const SCENE: Record<ThemeId, ReactNode> = {
       ))}
       <g transform="translate(110 40)">
         <path d="M-9 0 Q0 -14 9 0 Z" fill={c("rose-vivid")} />
-        <rect x="-2.5" y="0" width="5" height="9" rx="1.5" fill={c("surface")} stroke={c("ink-faint")} strokeWidth="0.8" />
-        <circle cx="-3" cy="-5" r="1.2" fill={c("surface")} />
-        <circle cx="3" cy="-3" r="1" fill={c("surface")} />
+        <rect x="-2.5" y="0" width="5" height="9" rx="1.5" fill={c("fx-white")} stroke={c("ink-faint")} strokeWidth="0.8" />
+        <circle cx="-3" cy="-5" r="1.2" fill={c("fx-white")} />
+        <circle cx="3" cy="-3" r="1" fill={c("fx-white")} />
       </g>
     </>
   ),
