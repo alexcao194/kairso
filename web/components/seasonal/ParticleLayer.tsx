@@ -153,7 +153,8 @@ function draw(ctx: CanvasRenderingContext2D, kind: Particle, p: P, t: number, go
   ctx.restore();
 }
 
-export function ParticleLayer({ kind }: { kind: Particle }) {
+/** `factor` scales how many particles spawn (1 = default density). */
+export function ParticleLayer({ kind, factor = 1 }: { kind: Particle; factor?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -173,7 +174,7 @@ export function ParticleLayer({ kind }: { kind: Particle }) {
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const n = Math.min(spec.max, Math.round(((w * h) / 100_000) * spec.density));
+      const n = Math.min(Math.round(spec.max * factor), Math.max(1, Math.round(((w * h) / 100_000) * spec.density * factor)));
       parts = parts.slice(0, n);
       while (parts.length < n) parts.push(spawn(spec, w, h, colors, true));
     };
@@ -226,7 +227,7 @@ export function ParticleLayer({ kind }: { kind: Particle }) {
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [kind]);
+  }, [kind, factor]);
 
   return <canvas ref={ref} aria-hidden="true" className="pointer-events-none fixed inset-0 z-[25] size-full" />;
 }

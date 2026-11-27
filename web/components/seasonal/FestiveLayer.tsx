@@ -1,6 +1,6 @@
 "use client";
 
-import { useFestiveTheme, useReducedMotion } from "@/lib/hooks/festive";
+import { DENSITY_FACTOR, useFestiveDensity, useFestiveTheme, useReducedMotion } from "@/lib/hooks/festive";
 import { useFestiveMusicController } from "@/lib/music/useFestiveMusic";
 import { ParticleLayer } from "./ParticleLayer";
 import { Garland } from "./Decor";
@@ -9,11 +9,12 @@ import { Garland } from "./Decor";
 export function FestiveLayer() {
   const theme = useFestiveTheme();
   const reduced = useReducedMotion();
+  const [density] = useFestiveDensity();
   useFestiveMusicController(theme);
   if (!theme?.particle || reduced) return null;
   return (
     <div className="print:hidden">
-      <ParticleLayer kind={theme.particle} />
+      <ParticleLayer kind={theme.particle} factor={DENSITY_FACTOR[density]} />
     </div>
   );
 }

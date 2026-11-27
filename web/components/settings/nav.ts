@@ -8,7 +8,7 @@ const NAV: Array<{ group: GroupId; items: Array<{ slug: Slug; perm?: Permission 
   { group: "people", items: [{ slug: "members" }, { slug: "invites" }, { slug: "roles" }] },
   { group: "workspace", items: [{ slug: "workspace" }, { slug: "resources" }, { slug: "labels" }] },
   { group: "ops", items: [{ slug: "attendance" }, { slug: "shifts" }, { slug: "kpi", perm: "kpi.settings" }] },
-  { group: "system", items: [{ slug: "notifications" }, { slug: "integrations" }, { slug: "webhooks" }, { slug: "ai" }, { slug: "audit" }, { slug: "whats-new" }] },
+  { group: "system", items: [{ slug: "notifications" }, { slug: "integrations" }, { slug: "webhooks" }, { slug: "ai" }, { slug: "audit" }, { slug: "festive" }, { slug: "whats-new" }] },
 ];
 
 /** Settings navigation with labels in the current language. */

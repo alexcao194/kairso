@@ -39,12 +39,29 @@ function writePref(on: boolean) {
 
 let currentTheme: FestiveTheme | null = null;
 
+/** The saved volume (0..100, default 60) as a master gain; 100 % is still background-quiet. */
+function savedGain(): number {
+  let v = 60;
+  try {
+    const n = Number(localStorage.getItem("kairso-festive-volume"));
+    if (localStorage.getItem("kairso-festive-volume") !== null && Number.isFinite(n)) v = Math.min(100, Math.max(0, n));
+  } catch {
+    /* default */
+  }
+  return (v / 100) * 0.25;
+}
+
+/** Apply a new volume (0..100) to the music that is playing. */
+export function setFestiveVolume(v: number) {
+  player?.setVolume((Math.min(100, Math.max(0, v)) / 100) * 0.25);
+}
+
 async function start() {
   if (!currentTheme) return;
   player ??= new FestivePlayer();
   player.onTrack = (track) => set({ track });
   try {
-    await player.play(PLAYLIST[currentTheme.id]);
+    await player.play(PLAYLIST[currentTheme.id], savedGain());
     set({ on: true });
   } catch {
     set({ on: false, track: null });
@@ -56,15 +73,15 @@ function stop() {
   set({ on: false, track: null });
 }
 
-/** Switch the music on or off (call from a click so the browser allows audio). */
+/** Turn the music on or off (call from a click so the browser allows audio). */
+export function setFestiveMusic(on: boolean) {
+  writePref(on);
+  if (on) void start();
+  else stop();
+}
+
 export function toggleFestiveMusic() {
-  if (state.on) {
-    writePref(false);
-    stop();
-  } else {
-    writePref(true);
-    void start();
-  }
+  setFestiveMusic(!state.on);
 }
 
 export function useFestiveMusicState() {

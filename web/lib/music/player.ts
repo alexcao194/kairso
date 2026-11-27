@@ -48,12 +48,21 @@ export class FestivePlayer {
   private live = new Set<AudioScheduledSourceNode>();
   onTrack?: (score: Score) => void;
 
+  private volume = 0.14;
+
   get playing() {
     return this.timer !== 0;
   }
 
-  async play(playlist: Score[], volume = 0.14) {
+  /** Change the loudness while playing (0..1 of the master gain). */
+  setVolume(volume: number) {
+    this.volume = volume;
+    if (this.ctx && this.master) this.master.gain.setTargetAtTime(volume, this.ctx.currentTime, 0.1);
+  }
+
+  async play(playlist: Score[], volume = this.volume) {
     this.stop(0);
+    this.volume = volume;
     if (!playlist.length) return;
     this.ctx ??= new AudioContext();
     await this.ctx.resume();
