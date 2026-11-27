@@ -283,15 +283,19 @@ export function SidebarScene({ theme }: { theme: ThemeId }) {
 
 // ---------- Snow cap ----------
 
-/** Snow resting on the top edge of a banner (winter and Christmas). */
+/** Snow resting on the top edge of a banner (winter and Christmas). A thin snow-blue rim and a
+ *  soft shadow under the drifts keep it apart from a light page background. */
+const SNOW_DRIFT = "Q388 12 376 7 T352 8 Q340 14 326 7 T300 6 Q288 13 272 7 T244 8 Q232 13 220 6 T196 7 Q182 14 168 7 T140 6 Q128 12 114 7 T88 8 Q74 14 60 7 T34 6 Q22 12 10 7 T0 7";
+
 export function SnowCap() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 400 14" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 top-0 h-3.5 w-full text-white">
-      <path
-        d="M0 0 H400 V5 Q388 11 376 6 T352 7 Q340 13 326 6 T300 5 Q288 12 272 6 T244 7 Q232 12 220 5 T196 6 Q182 13 168 6 T140 5 Q128 11 114 6 T88 7 Q74 13 60 6 T34 5 Q22 11 10 6 T0 6 Z"
-        fill="currentColor"
-        opacity="0.92"
-      />
+    <svg aria-hidden="true" viewBox="0 0 400 16" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 top-0 h-4 w-full">
+      {/* shadow under the drifts */}
+      <path d={`M0 0 H400 V8 ${SNOW_DRIFT} Z`} transform="translate(0 1.6)" fill="var(--fx-snow)" opacity="0.55" />
+      <path d={`M0 0 H400 V6 ${SNOW_DRIFT} Z`} fill="var(--fx-white)" />
+      {/* rim: the banner's top edge and the lower edge of the drifts */}
+      <path d={`M400 6 ${SNOW_DRIFT}`} fill="none" stroke="var(--fx-snow)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      <line x1="0" y1="0.5" x2="400" y2="0.5" stroke="var(--fx-snow)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

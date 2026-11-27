@@ -22,7 +22,7 @@ interface Spec {
 }
 
 const SPECS: Record<Particle, Spec> = {
-  snow: { density: 2.2, max: 40, size: [1.4, 3.4], speed: [14, 34], sway: 18, alpha: [0.45, 0.85], colors: ["--fx-snow"] },
+  snow: { density: 1.6, max: 30, size: [3.5, 7.5], speed: [14, 32], sway: 18, alpha: [0.55, 0.9], colors: ["--fx-snow"] },
   leaf: { density: 0.8, max: 14, size: [6, 10], speed: [18, 34], sway: 34, alpha: [0.55, 0.85], colors: ["--fx-leaf-1", "--fx-leaf-2", "--fx-leaf-3"] },
   petal: { density: 1, max: 18, size: [4, 7], speed: [14, 26], sway: 30, alpha: [0.5, 0.85], colors: ["--fx-petal", "--fx-petal-2"] },
   blossom: { density: 1, max: 18, size: [4.5, 7.5], speed: [14, 26], sway: 30, alpha: [0.6, 0.9], colors: ["--fx-mai", "--fx-dao"] },
@@ -70,9 +70,30 @@ function draw(ctx: CanvasRenderingContext2D, kind: Particle, p: P, t: number, go
   ctx.strokeStyle = p.color;
   switch (kind) {
     case "snow": {
+      // Six-armed snowflake with a pair of side branches on each arm, turning slowly.
+      ctx.rotate(p.rot * 0.4);
+      ctx.lineWidth = Math.max(0.8, s * 0.16);
+      ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.arc(0, 0, s, 0, Math.PI * 2);
-      ctx.fill();
+      for (let i = 0; i < 6; i++) {
+        const a = (Math.PI / 3) * i;
+        const cos = Math.cos(a), sin = Math.sin(a);
+        const at = (r: number, side: number) => {
+          // A point on the arm at radius r, pushed sideways for the branches.
+          const x = cos * r - sin * side, y = sin * r + cos * side;
+          return [x, y] as const;
+        };
+        ctx.moveTo(0, 0);
+        ctx.lineTo(cos * s, sin * s);
+        const [bx, by] = at(s * 0.55, 0);
+        const [lx, ly] = at(s * 0.8, s * 0.26);
+        const [rx, ry] = at(s * 0.8, -s * 0.26);
+        ctx.moveTo(bx, by);
+        ctx.lineTo(lx, ly);
+        ctx.moveTo(bx, by);
+        ctx.lineTo(rx, ry);
+      }
+      ctx.stroke();
       break;
     }
     case "spark": {

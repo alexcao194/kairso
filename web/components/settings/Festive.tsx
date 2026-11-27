@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SegmentedControl, Switch } from "@/components/ui/form";
-import { THEME_IDS, themeOn, type ThemeId } from "@/lib/domain/season";
+import { themeOn, type ThemeId } from "@/lib/domain/season";
 import { DENSITIES, useFestiveDensity, useFestiveEnabled, useFestiveTheme, useFestiveVolume, useReducedMotion } from "@/lib/hooks/festive";
 import { PLAYLIST } from "@/lib/music/scores";
 import { setFestiveMusic, setFestiveVolume, useFestiveMusicState } from "@/lib/music/useFestiveMusic";
@@ -38,7 +37,7 @@ export function FestiveSection() {
       <Card title={t.effects} hint={t.effectsHint}>
         <div className="flex items-center justify-between gap-3">
           <span className="text-[13px] text-ink">{t.effectsLabel}</span>
-          <Switch checked={enabled} onChange={(on) => (setEnabled(on), on || setFestiveMusic(false))} label={t.effectsLabel} />
+          <Switch checked={enabled} onChange={setEnabled} label={t.effectsLabel} />
         </div>
         {themeId && <p className="mt-2 text-[12.5px] text-ink-muted">{t.today(t.themeName[themeId])}</p>}
       </Card>
@@ -57,7 +56,9 @@ export function FestiveSection() {
       <Card title={t.music} hint={t.musicHint}>
         <div className="flex items-center justify-between gap-3">
           <span className="text-[13px] text-ink">{t.musicLabel}</span>
-          <Switch checked={music.on} disabled={!enabled} onChange={setFestiveMusic} label={t.musicLabel} />
+          <span data-festive-music>
+            <Switch checked={music.on} disabled={!enabled} onChange={setFestiveMusic} label={t.musicLabel} />
+          </span>
         </div>
         <label className="mt-3 flex items-center gap-3 text-[13px] text-ink-2">
           <span className="w-20 shrink-0">{t.volume}</span>
@@ -91,21 +92,6 @@ export function FestiveSection() {
         )}
       </Card>
 
-      <Card title={t.preview} hint={t.previewHint}>
-        <div className="flex flex-wrap gap-1.5">
-          {THEME_IDS.map((id) => (
-            <Link
-              key={id}
-              href={`/?season=${id}`}
-              className={`inline-flex h-ctl-sm items-center rounded-full border px-3 text-[12.5px] transition-colors ${
-                id === themeId ? "border-accent-border bg-accent-soft font-medium text-accent-ink" : "border-line text-ink-2 hover:bg-hover"
-              }`}
-            >
-              {t.themeName[id]}
-            </Link>
-          ))}
-        </div>
-      </Card>
     </div>
   );
 }

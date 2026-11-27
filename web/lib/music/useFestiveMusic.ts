@@ -6,7 +6,7 @@ import { FestivePlayer } from "./player";
 import { PLAYLIST, type Score } from "./scores";
 
 /**
- * Festive background music: off by default, switched on by the viewer and remembered per browser.
+ * Festive background music: on by default, can be switched off by the viewer (remembered per browser).
  * Browsers only start audio after a user gesture, so a remembered "on" resumes at the first
  * click or key press. One player for the whole app.
  */
@@ -24,9 +24,9 @@ const set = (next: Partial<typeof state>) => {
 
 function readPref(): boolean {
   try {
-    return localStorage.getItem(KEY) === "on";
+    return localStorage.getItem(KEY) !== "off";
   } catch {
-    return false;
+    return true;
   }
 }
 function writePref(on: boolean) {
@@ -109,7 +109,9 @@ export function useFestiveMusicController(theme: FestiveTheme | null) {
       return;
     }
     if (!readPref()) return;
-    const resume = () => {
+    const resume = (e: Event) => {
+      // A click on a music control decides by itself (it would otherwise start and stop at once).
+      if (e.target instanceof Element && e.target.closest("[data-festive-music]")) return;
       cleanup();
       if (!state.on && readPref()) void start();
     };
