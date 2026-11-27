@@ -569,6 +569,11 @@ JOIN modules m ON m.id = q.module_id
 JOIN projects p ON p.id = q.project_id
 LEFT JOIN customers c ON c.id = q.customer_id
 WHERE q.workspace_id = $1
+  -- Only the latest version of each quote; older ones are reached from its version list.
+  AND NOT EXISTS (
+    SELECT 1 FROM quotes n
+    WHERE n.workspace_id = q.workspace_id AND n.number = q.number AND n.version > q.version
+  )
   AND ($2::uuid IS NULL OR q.module_id = $2)
   AND ($3::uuid IS NULL OR q.project_id = $3)
   AND ($4::text IS NULL OR q.status = $4)

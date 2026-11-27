@@ -82,9 +82,13 @@ export function WorkspaceSwitcher({ collapsed }: { collapsed?: boolean }) {
                 w.id === workspace?.id ? "font-medium text-ink" : "text-ink-2"
               }`}
             >
-              <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-accent text-[11px] font-bold text-accent-on">
-                {w.name.charAt(0).toUpperCase()}
-              </span>
+              {w.avatar ? (
+                <Avatar person={{ id: w.id, name: w.name, avatar: w.avatar }} size="sm" />
+              ) : (
+                <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-accent text-[11px] font-bold text-accent-on">
+                  {w.name.charAt(0).toUpperCase()}
+                </span>
+              )}
               <span className="flex-1 truncate">{w.name}</span>
               {w.id === workspace?.id && <IconCheck size={14} className="shrink-0 text-accent" />}
             </button>

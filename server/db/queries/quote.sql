@@ -84,6 +84,11 @@ JOIN modules m ON m.id = q.module_id
 JOIN projects p ON p.id = q.project_id
 LEFT JOIN customers c ON c.id = q.customer_id
 WHERE q.workspace_id = sqlc.arg(workspace_id)
+  -- Only the latest version of each quote; older ones are reached from its version list.
+  AND NOT EXISTS (
+    SELECT 1 FROM quotes n
+    WHERE n.workspace_id = q.workspace_id AND n.number = q.number AND n.version > q.version
+  )
   AND (sqlc.narg(module_id)::uuid IS NULL OR q.module_id = sqlc.narg(module_id))
   AND (sqlc.narg(project_id)::uuid IS NULL OR q.project_id = sqlc.narg(project_id))
   AND (sqlc.narg(status)::text IS NULL OR q.status = sqlc.narg(status))
