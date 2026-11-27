@@ -310,6 +310,10 @@
   0%, 100% { transform: rotate(-4deg); }
   50% { transform: rotate(4deg); }
 }
+@keyframes fx-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
 @keyframes fx-twinkle {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(0.88); opacity: 0.75; }

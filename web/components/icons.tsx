@@ -201,6 +201,22 @@ export const IconZap = (p: Props) => (
   </Svg>
 );
 
+export const IconMusic = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 18V5l11-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="17" cy="16" r="3" />
+  </Svg>
+);
+
+export const IconMusicOff = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 9V5l11-2v9M9 13v5" />
+    <circle cx="6" cy="18" r="3" />
+    <path d="m3 3 18 18" />
+  </Svg>
+);
+
 export const IconSnowflake = (p: Props) => (
   <Svg {...p}>
     <path d="M12 2v20M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />

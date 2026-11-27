@@ -7,7 +7,7 @@ import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { OfflineBanner } from "@/components/shell/OfflineBanner";
-import { FestiveLayer } from "@/components/seasonal/FestiveLayer";
+import { FestiveLayer, FestiveGarland } from "@/components/seasonal/FestiveLayer";
 import { DialogProvider, useDialogs } from "@/components/dialogs/DialogProvider";
 import { EmptyState, Skeleton } from "@/components/ui/feedback";
 import { Button } from "@/components/ui/Button";
@@ -91,6 +91,7 @@ function Shell({ children }: { children: ReactNode }) {
       )}
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden pb-[60px] sm:pb-0">
+        <FestiveGarland />
         <OfflineBanner />
         {isLoading ? (
           <div className="flex flex-col gap-3 p-6">

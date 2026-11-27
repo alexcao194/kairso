@@ -1,6 +1,8 @@
 "use client";
 
 import { Ornament } from "@/components/seasonal/Ornament";
+import { SnowCap } from "@/components/seasonal/Decor";
+import { toggleFestiveMusic, useFestiveMusicState } from "@/lib/music/useFestiveMusic";
 import { useFestiveTheme } from "@/lib/hooks/festive";
 import { useMemo } from "react";
 import Link from "next/link";
@@ -26,7 +28,7 @@ import { PriorityTag } from "@/components/kairso/PriorityTag";
 import { ResourcePanel } from "@/components/kairso/ResourcePanel";
 import { useDialogs } from "@/components/dialogs/DialogProvider";
 import { IconTile } from "@/components/ui/IconTile";
-import { IconAlert, IconCheckSquare, IconCircleCheck, IconClock, IconFolder, IconPlus, IconZap, IconBell } from "@/components/icons";
+import { IconAlert, IconCheckSquare, IconCircleCheck, IconClock, IconFolder, IconPlus, IconZap, IconBell, IconMusic, IconMusicOff } from "@/components/icons";
 
 interface Item {
   id: string;
@@ -47,6 +49,7 @@ export default function HomePage() {
   const today = localDateKey();
   const t = useT();
   const festive = useFestiveTheme();
+  const music = useFestiveMusicState();
   const { lang } = useLocale();
   const kindText: Record<string, string> = { ...t.notif.kind, ...t.home.kind };
 
@@ -113,6 +116,7 @@ export default function HomePage() {
           >
             <span className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-white/15" aria-hidden="true" />
             <span className="pointer-events-none absolute -bottom-20 right-24 size-44 rounded-full bg-white/10" aria-hidden="true" />
+            {(festive?.id === "winter" || festive?.id === "christmas") && <SnowCap />}
             {festive ? (
               <Ornament theme={festive.id} className="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 opacity-95 lg:block" />
             ) : (
@@ -139,7 +143,22 @@ export default function HomePage() {
               <button type="button" onClick={() => openCreateTask()} className="inline-flex h-ctl items-center gap-1.5 rounded-lg border border-white/40 bg-white/15 px-3.5 text-[13px] font-medium text-white backdrop-blur transition hover:bg-white/25">
                 <IconPlus size={14} /> {t.home.createTask}
               </button>
+              {festive && (
+                <button
+                  type="button"
+                  onClick={toggleFestiveMusic}
+                  aria-label={music.on ? t.festive.musicOff : t.festive.musicOn}
+                  aria-pressed={music.on}
+                  title={music.on ? t.festive.musicOff : t.festive.musicOn}
+                  className="inline-flex size-ctl items-center justify-center rounded-lg border border-white/40 bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+                >
+                  {music.on ? <IconMusic size={15} className="motion-safe:animate-pulse" /> : <IconMusicOff size={15} />}
+                </button>
+              )}
             </div>
+            {music.on && music.track && (
+              <p className="mt-2 text-[11.5px] text-white/80" aria-live="polite">{t.festive.nowPlaying(music.track.title, music.track.composer)}</p>
+            )}
           </section>
 
           <MetricStrip

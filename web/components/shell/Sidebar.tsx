@@ -24,6 +24,8 @@ import {
 } from "@/components/icons";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { ThemeToggle } from "./ThemeToggle";
+import { SidebarScene } from "@/components/seasonal/Decor";
+import { useFestiveTheme } from "@/lib/hooks/festive";
 import { LangToggle } from "./LangToggle";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { UserMenu } from "./UserMenu";
@@ -65,6 +67,7 @@ export function Sidebar({
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [showAll, setShowAll] = useState(false);
   const tr = useT();
+  const festive = useFestiveTheme();
 
   const currentId = projects.find((p) => pathname.startsWith(`/projects/${p.id}`))?.id ?? null;
   const visible = showAll || collapsed ? projects : projects.slice(0, 4);
@@ -219,6 +222,7 @@ export function Sidebar({
         </nav>
       </div>
 
+      {festive && !collapsed && <SidebarScene theme={festive.id} />}
       <div className={`flex shrink-0 items-center border-t border-line px-2.5 py-2 ${collapsed ? "flex-col gap-1" : "gap-1"}`}>
         <UserMenu collapsed={collapsed} />
         <LangToggle />

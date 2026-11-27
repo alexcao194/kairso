@@ -5,6 +5,9 @@ export const festive = defineMessages({
     festive: {
       turnOff: "Tắt hiệu ứng theo mùa",
       turnOn: "Bật hiệu ứng theo mùa",
+      musicOn: "Bật nhạc nền",
+      musicOff: "Tắt nhạc nền",
+      nowPlaying: (title: string, composer: string) => `Đang phát: ${title} — ${composer}`,
       greeting: {
         newyear: "Chúc mừng năm mới",
         tet: "Chúc mừng năm mới — An khang thịnh vượng",
@@ -20,6 +23,9 @@ export const festive = defineMessages({
     festive: {
       turnOff: "Turn off seasonal effects",
       turnOn: "Turn on seasonal effects",
+      musicOn: "Play background music",
+      musicOff: "Stop background music",
+      nowPlaying: (title: string, composer: string) => `Now playing: ${title} — ${composer}`,
       greeting: {
         newyear: "Happy New Year",
         tet: "Happy Lunar New Year",
