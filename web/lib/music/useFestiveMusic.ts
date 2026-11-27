@@ -39,8 +39,8 @@ function writePref(on: boolean) {
 
 let currentTheme: FestiveTheme | null = null;
 
-/** The saved volume (0..100, default 60) as a master gain; 100 % is still background-quiet. */
-function savedGain(): number {
+/** The saved volume (0..100, default 60) as a 0..1 level. */
+function savedLevel(): number {
   let v = 60;
   try {
     const n = Number(localStorage.getItem("kairso-festive-volume"));
@@ -48,20 +48,21 @@ function savedGain(): number {
   } catch {
     /* default */
   }
-  return (v / 100) * 0.25;
+  return v / 100;
 }
 
 /** Apply a new volume (0..100) to the music that is playing. */
 export function setFestiveVolume(v: number) {
-  player?.setVolume((Math.min(100, Math.max(0, v)) / 100) * 0.25);
+  player?.setVolume(Math.min(100, Math.max(0, v)) / 100);
 }
 
 async function start() {
   if (!currentTheme) return;
   player ??= new FestivePlayer();
   player.onTrack = (track) => set({ track });
+  player.onFail = () => set({ on: false, track: null });
   try {
-    await player.play(PLAYLIST[currentTheme.id], savedGain());
+    await player.play(PLAYLIST[currentTheme.id], savedLevel());
     set({ on: true });
   } catch {
     set({ on: false, track: null });

@@ -19,6 +19,9 @@ export const festive = defineMessages({
       musicLabel: "Phát nhạc nền",
       volume: "Âm lượng",
       playlist: "Danh sách phát của chủ đề này",
+      recording: "Bản thu",
+      source: "nguồn",
+      synthNote: "Nhạc tổng hợp trong trình duyệt",
       themeName: {
         newyear: "Năm mới", tet: "Tết Nguyên Đán", valentine: "Valentine", womensday: "Quốc tế Phụ nữ 8/3",
         midautumn: "Trung thu", halloween: "Halloween", christmas: "Giáng sinh",
@@ -58,6 +61,9 @@ export const festive = defineMessages({
       musicLabel: "Play background music",
       volume: "Volume",
       playlist: "Playlist for this theme",
+      recording: "Recording",
+      source: "source",
+      synthNote: "Synthesised in the browser",
       themeName: {
         newyear: "New Year", tet: "Lunar New Year", valentine: "Valentine's Day", womensday: "Women's Day",
         midautumn: "Mid-Autumn", halloween: "Halloween", christmas: "Christmas",

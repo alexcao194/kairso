@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { SegmentedControl, Switch } from "@/components/ui/form";
 import { themeOn, type ThemeId } from "@/lib/domain/season";
 import { DENSITIES, useFestiveDensity, useFestiveEnabled, useFestiveTheme, useFestiveVolume, useReducedMotion } from "@/lib/hooks/festive";
-import { PLAYLIST } from "@/lib/music/scores";
+import { credit, PLAYLIST } from "@/lib/music/scores";
 import { setFestiveMusic, setFestiveVolume, useFestiveMusicState } from "@/lib/music/useFestiveMusic";
 import { useT } from "@/lib/i18n";
 
@@ -77,7 +77,7 @@ export function FestiveSection() {
           />
           <span className="w-10 text-right font-mono text-[12px] text-ink-muted">{volume}%</span>
         </label>
-        {music.on && music.track && <p className="mt-2 text-[12.5px] text-accent-ink">{t.nowPlaying(music.track.title, music.track.composer)}</p>}
+        {music.on && music.track && <p className="mt-2 text-[12.5px] text-accent-ink">{t.nowPlaying(music.track.title, credit(music.track))}</p>}
         {themeId && (
           <div className="mt-3">
             <p className="text-[12px] font-medium text-ink-muted">{t.playlist}</p>
@@ -85,6 +85,21 @@ export function FestiveSection() {
               {PLAYLIST[themeId].map((s) => (
                 <li key={s.title}>
                   {s.title} <span className="text-ink-faint">— {s.composer}</span>
+                  <span className="block text-[11.5px] text-ink-faint">
+                    {s.recording ? (
+                      <>
+                        {t.recording}: {s.recording.performer} ·{" "}
+                        {s.recording.licenseUrl ? (
+                          <a href={s.recording.licenseUrl} target="_blank" rel="noreferrer" className="underline hover:text-ink">{s.recording.license}</a>
+                        ) : (
+                          s.recording.license
+                        )}{" "}
+                        · <a href={s.recording.source} target="_blank" rel="noreferrer" className="underline hover:text-ink">{t.source}</a>
+                      </>
+                    ) : (
+                      t.synthNote
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>

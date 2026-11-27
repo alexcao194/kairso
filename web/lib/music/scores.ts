@@ -1,10 +1,11 @@
 import type { ThemeId } from "@/lib/domain/season";
 
 /**
- * Background music for the festive themes: public-domain classics, arranged here as note lists
- * and synthesised in the browser (lib/music/player.ts), so no recordings are shipped or licensed.
+ * Background music for the festive themes: classic pieces in freely licensed recordings from
+ * Wikimedia Commons (web/public/music, credits in CREDITS.md there), each optionally backed by a
+ * note-list arrangement synthesised in the browser (lib/music/player.ts) if the file can't play.
  *
- * Notation: space-separated `NOTE:beats` tokens. NOTE is a pitch like C4, F#5, A#3 (sharps only),
+ * Notation of the arrangements: space-separated `NOTE:beats` tokens. NOTE is a pitch like C4, F#5, A#3 (sharps only),
  * several pitches joined by + for a chord, or r for a rest. `|` marks bars and is ignored.
  */
 
@@ -19,12 +20,29 @@ export interface Voice {
   gain?: number;
 }
 
+export interface Recording {
+  /** Path under /public. */
+  src: string;
+  performer: string;
+  license: string;
+  licenseUrl?: string;
+  /** Commons file page. */
+  source: string;
+}
+
 export interface Score {
   title: string;
   composer: string;
-  bpm: number;
-  voices: Voice[];
+  recording?: Recording;
+  /** Synthesised arrangement, used when there is no recording or it fails to play. */
+  bpm?: number;
+  voices?: Voice[];
 }
+
+const commons = (file: string) => `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(file.replace(/ /g, "_"))}`;
+const PD = { license: "Public domain" };
+const CC_BY_3 = { license: "CC BY 3.0", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" };
+const CC_BY_SA_4 = { license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" };
 
 const rep = (s: string, n: number) => Array(n).fill(s).join(" ");
 
@@ -38,6 +56,7 @@ const oompah = (roots: string, beats = 4) =>
 const JINGLE_BELLS: Score = {
   title: "Jingle Bells",
   composer: "James Lord Pierpont, 1857",
+  recording: { src: "/music/jingle-bells.m4a", performer: "Kevin MacLeod", ...CC_BY_3, source: commons("Jingle Bells (Calm) (Kevin MacLeod) (ISRC USUAN1100188).oga") },
   bpm: 168,
   voices: [
     {
@@ -63,6 +82,7 @@ const JINGLE_BELLS: Score = {
 const WE_WISH: Score = {
   title: "We Wish You a Merry Christmas",
   composer: "Traditional English carol",
+  recording: { src: "/music/we-wish-you.m4a", performer: "Kevin MacLeod", ...PD, source: commons("We Wish you a Merry Christmas (Kevin MacLeod ) (ISRC USUAN1100369).oga") },
   bpm: 150,
   voices: [
     {
@@ -76,26 +96,10 @@ const WE_WISH: Score = {
   ],
 };
 
-const SILENT_NIGHT: Score = {
-  title: "Silent Night",
-  composer: "Franz Xaver Gruber, 1818",
-  bpm: 92,
-  voices: [
-    {
-      instrument: "bell",
-      octave: 1,
-      notes: `
-        F4:.75 G4:.25 F4:.5 D4:1.5 | F4:.75 G4:.25 F4:.5 D4:1.5 | C5:1 C5:.5 A4:1.5 | A#4:1 A#4:.5 F4:1.5 |
-        G4:1 G4:.5 A#4:.75 A4:.25 G4:.5 | F4:.75 G4:.25 F4:.5 D4:1.5 | G4:1 G4:.5 A#4:.75 A4:.25 G4:.5 | F4:.75 G4:.25 F4:.5 D4:1.5 |
-        C5:1 C5:.5 D#5:.75 C5:.25 A4:.5 | A#4:1.5 D5:1.5 | A#4:.75 F4:.25 D4:.5 F4:.75 D#4:.25 C4:.5 | A#3:3`,
-    },
-    { instrument: "pad", gain: 0.6, notes: "A#2+F3:3 A#2+F3:3 F2+C3:3 A#2+F3:3 D#3+G3:3 A#2+F3:3 D#3+G3:3 A#2+F3:3 F2+C3:3 A#2+F3:3 F2+C3:3 A#2+F3:3" },
-  ],
-};
-
 const AULD_LANG_SYNE: Score = {
   title: "Auld Lang Syne",
   composer: "Traditional Scottish",
+  recording: { src: "/music/auld-lang-syne.m4a", performer: "U.S. Army Band", ...PD, source: commons("Auld Lang Syne - U.S. Army Band.ogg") },
   bpm: 92,
   voices: [
     {
@@ -118,6 +122,7 @@ const AULD_LANG_SYNE: Score = {
 const CANON: Score = {
   title: "Canon in D",
   composer: "Johann Pachelbel, c. 1680",
+  recording: { src: "/music/canon.m4a", performer: "Kevin MacLeod", ...CC_BY_3, source: commons("Kevin MacLeod - Canon in D Major.ogg") },
   bpm: 66,
   voices: [
     { instrument: "pad", gain: 0.7, notes: rep("D3:2 A2:2 B2:2 F#2:2 G2:2 D2:2 G2:2 A2:2", 3) },
@@ -135,6 +140,7 @@ const CANON: Score = {
 const FUR_ELISE: Score = {
   title: "Für Elise",
   composer: "Ludwig van Beethoven, 1810",
+  recording: { src: "/music/fur-elise.m4a", performer: "JMC Han", ...CC_BY_SA_4, source: commons("For Elise (Für Elise) Beethoven JMC Han.ogg") },
   bpm: 70,
   voices: [
     {
@@ -158,6 +164,7 @@ const FUR_ELISE: Score = {
 const MOONLIGHT: Score = {
   title: "Moonlight Sonata",
   composer: "Ludwig van Beethoven, 1801",
+  recording: { src: "/music/moonlight.m4a", performer: "Musopen", ...PD, source: commons("Ludwig van Beethoven - sonata no. 14 in c sharp minor 'moonlight', op. 27 no. 2 - i. adagio sostenuto.ogg") },
   bpm: 56,
   voices: [
     {
@@ -185,6 +192,7 @@ const MOONLIGHT: Score = {
 const TOCCATA: Score = {
   title: "Toccata and Fugue in D minor",
   composer: "Johann Sebastian Bach",
+  recording: { src: "/music/toccata.m4a", performer: "Kevin MacLeod", ...CC_BY_3, source: commons("Kevin MacLeod - J S Bach Toccata and Fugue in D Minor.ogg") },
   bpm: 60,
   voices: [0, -1].map((octave) => ({
     instrument: "organ" as const,
@@ -200,6 +208,7 @@ const TOCCATA: Score = {
 const MOUNTAIN_KING: Score = {
   title: "In the Hall of the Mountain King",
   composer: "Edvard Grieg, 1875",
+  recording: { src: "/music/mountain-king.m4a", performer: "Musopen Symphony Orchestra", ...PD, source: commons("Musopen - In the Hall Of The Mountain King.ogg") },
   bpm: 132,
   voices: [
     {
@@ -218,6 +227,7 @@ const MOUNTAIN_KING: Score = {
 const SPRING: Score = {
   title: "The Four Seasons — Spring",
   composer: "Antonio Vivaldi, 1725",
+  recording: { src: "/music/spring.m4a", performer: "John Harrison, violin", ...CC_BY_SA_4, source: commons("Vivaldi - Four Seasons 1 Spring mvt 1 Allegro - John Harrison violin.oga") },
   bpm: 100,
   voices: [
     {
@@ -233,6 +243,7 @@ const SPRING: Score = {
 const MORNING_MOOD: Score = {
   title: "Peer Gynt — Morning Mood",
   composer: "Edvard Grieg, 1875",
+  recording: { src: "/music/morning-mood.m4a", performer: "Musopen Symphony Orchestra", ...PD, source: commons("Musopen - Morning.ogg") },
   bpm: 66,
   voices: [
     {
@@ -245,24 +256,25 @@ const MORNING_MOOD: Score = {
   ],
 };
 
-const GYMNOPEDIE: Score = {
-  title: "Gymnopédie No. 1",
-  composer: "Erik Satie, 1888",
-  bpm: 70,
-  voices: [
-    { instrument: "pad", gain: 0.7, notes: rep("G2:1 B3+D4+F#4:2 D2:1 A3+C#4+F#4:2", 6) },
-    {
-      instrument: "bell",
-      notes: `
-        r:12 | r:2 F#5:1 | A5:1 G5:1 F#5:1 | C#5:1 B4:1 C#5:1 | D5:1 A4:2 | F#4:6 | r:6`,
-    },
-  ],
+const VIVALDI_AUTUMN: Score = {
+  title: "The Four Seasons — Autumn",
+  composer: "Antonio Vivaldi, 1725",
+  recording: { src: "/music/autumn.m4a", performer: "John Harrison, violin", ...CC_BY_SA_4, source: commons("Vivaldi - Four Seasons 3 Autumn mvt 1 Allegro - John Harrison violin.oga") },
 };
+
+const VIVALDI_WINTER: Score = {
+  title: "The Four Seasons — Winter",
+  composer: "Antonio Vivaldi, 1725",
+  recording: { src: "/music/winter.m4a", performer: "John Harrison, violin", ...CC_BY_SA_4, source: commons("Vivaldi - Four Seasons 4 Winter mvt 1 Allegro non molto - John Harrison violin.oga") },
+};
+
+/** "Composer · performer" for display. */
+export const credit = (s: Score) => (s.recording ? `${s.composer} · ${s.recording.performer}` : s.composer);
 
 /** Playlist per theme, played in turn. */
 export const PLAYLIST: Record<ThemeId, Score[]> = {
-  christmas: [WE_WISH, JINGLE_BELLS, SILENT_NIGHT],
-  winter: [JINGLE_BELLS],
+  christmas: [WE_WISH, JINGLE_BELLS],
+  winter: [VIVALDI_WINTER],
   newyear: [AULD_LANG_SYNE],
   // Well-known Vietnamese Tết songs are still under copyright; Tết is the spring festival.
   tet: [SPRING],
@@ -272,5 +284,5 @@ export const PLAYLIST: Record<ThemeId, Score[]> = {
   halloween: [TOCCATA, MOUNTAIN_KING],
   spring: [SPRING],
   summer: [MORNING_MOOD],
-  autumn: [GYMNOPEDIE],
+  autumn: [VIVALDI_AUTUMN],
 };

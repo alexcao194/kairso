@@ -4,6 +4,7 @@ import { Ornament } from "@/components/seasonal/Ornament";
 import { SnowCap } from "@/components/seasonal/Decor";
 import { HeroMusic, HeroMusicToggle } from "@/components/seasonal/HeroMusic";
 import { useFestiveMusicState } from "@/lib/music/useFestiveMusic";
+import { credit } from "@/lib/music/scores";
 import { useFestiveTheme } from "@/lib/hooks/festive";
 import { useMemo } from "react";
 import Link from "next/link";
@@ -150,7 +151,7 @@ export default function HomePage() {
               {festive && <span className="lg:hidden"><HeroMusicToggle /></span>}
             </div>
             {festive && music.on && music.track && (
-              <p className="mt-2 text-[11.5px] text-white/80" aria-live="polite">{t.festive.nowPlaying(music.track.title, music.track.composer)}</p>
+              <p className="mt-2 text-[11.5px] text-white/80" aria-live="polite">{t.festive.nowPlaying(music.track.title, credit(music.track))}</p>
             )}
           </section>
 

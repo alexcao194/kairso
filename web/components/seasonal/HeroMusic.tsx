@@ -4,6 +4,7 @@ import { IconMusicOff } from "@/components/icons";
 import { useFestiveVolume } from "@/lib/hooks/festive";
 import { setFestiveVolume, toggleFestiveMusic, useFestiveMusicState } from "@/lib/music/useFestiveMusic";
 import { useT } from "@/lib/i18n";
+import { credit } from "@/lib/music/scores";
 
 // Static class names so Tailwind generates them: three bars bouncing out of step.
 const BARS = [
@@ -24,7 +25,7 @@ export function HeroMusicToggle({ withLabel = false }: { withLabel?: boolean }) 
       onClick={toggleFestiveMusic}
       aria-pressed={music.on}
       aria-label={label}
-      title={music.on && music.track ? t.nowPlaying(music.track.title, music.track.composer) : label}
+      title={music.on && music.track ? t.nowPlaying(music.track.title, credit(music.track)) : label}
       className={`inline-flex h-ctl shrink-0 items-center justify-center gap-1.5 rounded-lg border border-white/40 bg-white/15 text-[12.5px] font-medium text-white backdrop-blur transition hover:bg-white/25 ${
         withLabel ? "px-3" : "w-ctl"
       }`}
