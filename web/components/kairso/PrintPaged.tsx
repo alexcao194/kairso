@@ -24,10 +24,11 @@ export function pageRule(margin = "0") {
 }
 
 /**
- * Downloads the document as a PDF built on the server, with the print options chosen on the
- * page (layout, signing mode, place, signer…), so it looks the same whatever the browser.
+ * Downloads the document built on the server (PDF, or Excel with `label`), with the print
+ * options chosen on the page (layout, signing mode, place, signer…), so it looks the same
+ * whatever the browser.
  */
-export function PdfDownloadButton({ path, filename }: { path: string; filename: string }) {
+export function PdfDownloadButton({ path, filename, label }: { path: string; filename: string; label?: string }) {
   const sp = useSearchParams();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -55,7 +56,7 @@ export function PdfDownloadButton({ path, filename }: { path: string; filename: 
       disabled={busy}
       className="h-ctl rounded-md border border-(--doc-brand) px-4 text-[13px] font-medium text-(--doc-brand) disabled:opacity-60"
     >
-      {busy ? "…" : tr().adminDoc.downloadPdf}
+      {busy ? "…" : (label ?? tr().adminDoc.downloadPdf)}
     </button>
   );
 }

@@ -13,7 +13,7 @@ import { PdfDownloadButton, pageRule } from "@/components/kairso/PrintPaged";
 export type PrintFormat = "modern" | "admin";
 export type SignMode = "digital" | "wet";
 
-/** API path and file name of the server-built PDF of the document being printed. */
+/** API path and file name of a server-built file (PDF, Excel) of the document being printed. */
 export type PdfTarget = { path: string; filename: string };
 
 /** Print options live in the query string so a printed link reopens the same way. */
@@ -76,6 +76,7 @@ export function AdminShell({
   signerDefault,
   extra,
   pdf,
+  excel,
   children,
 }: {
   brandColor?: string | null;
@@ -87,6 +88,8 @@ export function AdminShell({
   /** Extra toolbar controls specific to the document. */
   extra?: ReactNode;
   pdf: PdfTarget;
+  /** Excel laid out like this page; omitted for documents without one. */
+  excel?: PdfTarget;
   children: ReactNode;
 }) {
   const { sign, place, signer, set } = usePrintOptions();
@@ -132,6 +135,7 @@ export function AdminShell({
         )}
         {extra}
         <span className="flex-1" />
+        {excel && <PdfDownloadButton path={excel.path} filename={excel.filename} label={t.downloadExcel} />}
         <PdfDownloadButton path={pdf.path} filename={pdf.filename} />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {printLabel}

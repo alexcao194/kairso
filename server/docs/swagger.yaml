@@ -10823,6 +10823,39 @@ paths:
         name: quoteId
         required: true
         type: string
+      - description: 'Layout: admin lays the sheet out like the administrative print
+          page (A4, Decree 30)'
+        enum:
+        - modern
+        - admin
+        in: query
+        name: template
+        type: string
+      - description: 'Signature boxes (admin layout): stamped when signed in the app,
+          or left blank to sign by hand'
+        enum:
+        - digital
+        - wet
+        in: query
+        name: sign
+        type: string
+      - description: Place in the date line (admin layout); defaults to the end of
+          the issuer's address
+        in: query
+        name: place
+        type: string
+      - description: Approver title (admin layout), default GIÁM ĐỐC
+        in: query
+        name: signer
+        type: string
+      - description: '1: one signature block when the director prepares the quote,
+          0: two (admin layout); default: one when the workspace owner signed'
+        enum:
+        - "0"
+        - "1"
+        in: query
+        name: merge
+        type: string
       produces:
       - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
       responses:

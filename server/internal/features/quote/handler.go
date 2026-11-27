@@ -449,6 +449,11 @@ func (h *Handler) SetStatus(w http.ResponseWriter, r *http.Request) {
 // @Produce application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 // @Param workspaceId path string true "Workspace ID"
 // @Param quoteId path string true "Quote ID"
+// @Param template query string false "Layout: admin lays the sheet out like the administrative print page (A4, Decree 30)" Enums(modern, admin)
+// @Param sign query string false "Signature boxes (admin layout): stamped when signed in the app, or left blank to sign by hand" Enums(digital, wet)
+// @Param place query string false "Place in the date line (admin layout); defaults to the end of the issuer's address"
+// @Param signer query string false "Approver title (admin layout), default GIÁM ĐỐC"
+// @Param merge query string false "1: one signature block when the director prepares the quote, 0: two (admin layout); default: one when the workspace owner signed" Enums(0, 1)
 // @Success 200 {file} binary "Quote workbook (.xlsx)"
 // @Failure 403 {object} httpx.ErrorResponse
 // @Failure 404 {object} httpx.ErrorResponse
@@ -458,7 +463,18 @@ func (h *Handler) ExportQuote(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	file, err := h.svc.ExportQuoteExcel(r.Context(), r.PathValue("workspaceId"), callerID, r.PathValue("quoteId"))
+	ws := r.PathValue("workspaceId")
+	q, err := h.svc.GetQuote(r.Context(), ws, callerID, r.PathValue("quoteId"))
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	var file *ExportFile
+	if opts := docpdf.ParseOptions(r); opts.Admin {
+		file, err = h.adminQuoteExcel(r.Context(), ws, q, opts)
+	} else {
+		file, err = quoteWorkbook(q)
+	}
 	if err != nil {
 		writeErr(w, err)
 		return

@@ -14,7 +14,7 @@ function docDate(d?: string) {
 }
 
 /** Quote laid out as a Vietnamese administrative document, for printing, signing and sealing. */
-export function AdminQuotePrint({ quote, workspace, pdf }: { quote: QuoteResponse; workspace?: WorkspaceResponse | null; pdf: PdfTarget }) {
+export function AdminQuotePrint({ quote, workspace, pdf, excel }: { quote: QuoteResponse; workspace?: WorkspaceResponse | null; pdf: PdfTarget; excel: PdfTarget }) {
   const { place, signer, merge, set } = usePrintOptions();
   const { members } = useWorkspace();
   const a = A();
@@ -35,7 +35,7 @@ export function AdminQuotePrint({ quote, workspace, pdf }: { quote: QuoteRespons
   const fmt = (d?: string) => (d ? docDate(d).toLocaleDateString(dateLocale("vi"), { day: "2-digit", month: "2-digit", year: "numeric" }) : "");
 
   return (
-    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn} pdf={pdf}
+    <AdminShell brandColor={workspace?.brandColor} defaultPlace={defaultPlace} unsigned={!sig} printLabel={tr().quotePrint.printBtn} pdf={pdf} excel={excel}
       signerDefault={a.director}
       extra={
         <label className="flex items-center gap-1.5 text-[12.5px] text-(--doc-ink-2)">

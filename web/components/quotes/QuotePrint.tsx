@@ -92,7 +92,8 @@ export function QuotePrint({ id }: { id: string }) {
   if (!quote) return <Center>{tr().quotePrint.failed}</Center>;
   const pdfPath = `/v1/workspaces/${workspaceId}/quotes/${quote.id}/pdf`;
   const pdfName = `${safeFilename(quote.number)}.pdf`;
-  if (opts.format === "admin") return <AdminQuotePrint quote={quote} workspace={workspace} pdf={{ path: pdfPath, filename: pdfName }} />;
+  const excel = { path: `/v1/workspaces/${workspaceId}/quotes/${quote.id}/export`, filename: `${safeFilename(quote.number)}.xlsx` };
+  if (opts.format === "admin") return <AdminQuotePrint quote={quote} workspace={workspace} pdf={{ path: pdfPath, filename: pdfName }} excel={excel} />;
 
   // The document follows the quote's language, not the viewer's UI language.
   const lang: Lang = quote.language === "en" ? "en" : "vi";
@@ -117,6 +118,7 @@ export function QuotePrint({ id }: { id: string }) {
           <input type="checkbox" checked={fit} onChange={(e) => setFit(e.target.checked)} />
           {tr().quotePrint.fitOne}
         </label>
+        <PdfDownloadButton path={excel.path} filename={excel.filename} label={tr().adminDoc.downloadExcel} />
         <PdfDownloadButton path={pdfPath} filename={pdfName} />
         <button type="button" onClick={() => window.print()} className="h-ctl rounded-md bg-(--doc-brand) px-4 text-[13px] font-medium text-white">
           {tr().quotePrint.printBtn}

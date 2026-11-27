@@ -1,7 +1,6 @@
 package quote
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -73,15 +72,7 @@ func partyLines(b *docexport.Book, p PartyInfo, l excelLabels) {
 	}
 }
 
-// ExportQuoteExcel renders a quote as an .xlsx sheet in the quote's language.
-func (s *Service) ExportQuoteExcel(ctx context.Context, workspaceID, callerID, quoteID string) (*ExportFile, error) {
-	q, err := s.GetQuote(ctx, workspaceID, callerID, quoteID)
-	if err != nil {
-		return nil, err
-	}
-	return quoteWorkbook(q)
-}
-
+// quoteWorkbook renders a quote as a plain .xlsx sheet in the quote's language.
 func quoteWorkbook(q *QuoteResponse) (*ExportFile, error) {
 	l, ok := quoteExcelLabels[q.Language]
 	if !ok {

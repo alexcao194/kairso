@@ -1409,10 +1409,22 @@ export const deleteWorkspaceQuote = (workspaceId: string, quoteId: string, opts?
 export const postWorkspaceQuoteDuplicate = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<S.QuoteResponse> =>
   request<S.QuoteResponse>("POST", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/duplicate`, { ...opts });
 
+export interface GetWorkspaceQuoteExportQuery {
+  /** Layout: admin lays the sheet out like the administrative print page (A4, Decree 30) */
+  template?: "modern" | "admin";
+  /** Signature boxes (admin layout): stamped when signed in the app, or left blank to sign by hand */
+  sign?: "digital" | "wet";
+  /** Place in the date line (admin layout); defaults to the end of the issuer's address */
+  place?: string;
+  /** Approver title (admin layout), default GIÁM ĐỐC */
+  signer?: string;
+  /** 1: one signature block when the director prepares the quote, 0: two (admin layout); default: one when the workspace owner signed */
+  merge?: "0" | "1";
+}
 /** GET /v1/workspaces/{workspaceId}/quotes/{quoteId}/export
  * Export a quote as an Excel workbook */
-export const getWorkspaceQuoteExport = (workspaceId: string, quoteId: string, opts?: RequestOptions): Promise<unknown> =>
-  request<unknown>("GET", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/export`, { ...opts });
+export const getWorkspaceQuoteExport = (workspaceId: string, quoteId: string, query?: GetWorkspaceQuoteExportQuery, opts?: RequestOptions): Promise<unknown> =>
+  request<unknown>("GET", `/v1/workspaces/${enc(workspaceId)}/quotes/${enc(quoteId)}/export`, { query, ...opts });
 
 /** POST /v1/workspaces/{workspaceId}/quotes/{quoteId}/new-version
  * Create the next version of a quote

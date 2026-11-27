@@ -10309,6 +10309,48 @@ const docTemplate = `{
                         "name": "quoteId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "enum": [
+                            "modern",
+                            "admin"
+                        ],
+                        "type": "string",
+                        "description": "Layout: admin lays the sheet out like the administrative print page (A4, Decree 30)",
+                        "name": "template",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "digital",
+                            "wet"
+                        ],
+                        "type": "string",
+                        "description": "Signature boxes (admin layout): stamped when signed in the app, or left blank to sign by hand",
+                        "name": "sign",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Place in the date line (admin layout); defaults to the end of the issuer's address",
+                        "name": "place",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Approver title (admin layout), default GIÁM ĐỐC",
+                        "name": "signer",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "0",
+                            "1"
+                        ],
+                        "type": "string",
+                        "description": "1: one signature block when the director prepares the quote, 0: two (admin layout); default: one when the workspace owner signed",
+                        "name": "merge",
+                        "in": "query"
                     }
                 ],
                 "responses": {
