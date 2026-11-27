@@ -3,9 +3,11 @@ package mcp
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"mime"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -18,6 +20,20 @@ type tool struct {
 	description string
 	schema      map[string]any
 	run         func(c *caller, a args) (any, error)
+	// readOnly and destructive become MCP tool annotations, so clients can skip confirmation
+	// for reads and insist on it for deletions.
+	readOnly, destructive bool
+}
+
+// annotations are the MCP hints for a tool.
+func (t tool) annotations() map[string]any {
+	return map[string]any{"readOnlyHint": t.readOnly, "destructiveHint": t.destructive}
+}
+
+// fileOut is a tool result carrying a document (PDF, Excel) as an embedded resource.
+type fileOut struct {
+	name, mime string
+	data       []byte
 }
 
 // call runs a tool and wraps the outcome as an MCP CallToolResult. Tool failures (bad input,
@@ -32,6 +48,18 @@ func (h *Handler) call(ctx context.Context, t tool, raw json.RawMessage) map[str
 	out, err := t.run(&caller{ctx: ctx, api: h.api}, a)
 	if err != nil {
 		return textResult(err.Error(), true)
+	}
+	if f, ok := out.(*fileOut); ok {
+		return map[string]any{
+			"content": []map[string]any{
+				{"type": "text", "text": fmt.Sprintf("%s (%s, %d bytes)", f.name, f.mime, len(f.data))},
+				{"type": "resource", "resource": map[string]any{
+					"uri": "kairso://export/" + url.PathEscape(f.name), "mimeType": f.mime,
+					"blob": base64.StdEncoding.EncodeToString(f.data),
+				}},
+			},
+			"isError": false,
+		}
 	}
 	if s, ok := out.(string); ok {
 		return textResult(s, false)
@@ -78,6 +106,34 @@ func (r *recorder) WriteHeader(code int) {
 
 // do calls a REST endpoint as the API key's owner and returns the JSON body.
 func (c *caller) do(method, path string, query url.Values, body any) (json.RawMessage, error) {
+	rec, err := c.send(method, path, query, body)
+	if err != nil {
+		return nil, err
+	}
+	if rec.body.Len() == 0 {
+		return json.RawMessage(`{"ok":true}`), nil
+	}
+	return json.RawMessage(rec.body.Bytes()), nil
+}
+
+// file calls a REST endpoint that answers with a document and returns it.
+func (c *caller) file(path string, query url.Values, name, mime string) (*fileOut, error) {
+	rec, err := c.send(http.MethodGet, path, query, nil)
+	if err != nil {
+		return nil, err
+	}
+	if ct := rec.header.Get("Content-Type"); ct != "" {
+		mime = strings.TrimSpace(strings.SplitN(ct, ";", 2)[0])
+	}
+	if cd := rec.header.Get("Content-Disposition"); cd != "" {
+		if _, params, err := mimeParse(cd); err == nil && params["filename"] != "" {
+			name = params["filename"]
+		}
+	}
+	return &fileOut{name: name, mime: mime, data: rec.body.Bytes()}, nil
+}
+
+func (c *caller) send(method, path string, query url.Values, body any) (*recorder, error) {
 	var rd *bytes.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -118,13 +174,67 @@ func (c *caller) do(method, path string, query url.Values, body any) (json.RawMe
 		}
 		return nil, fmt.Errorf("HTTP %d: %s", rec.status, msg)
 	}
-	if rec.body.Len() == 0 {
-		return json.RawMessage(`{"ok":true}`), nil
-	}
-	return json.RawMessage(rec.body.Bytes()), nil
+	return rec, nil
 }
 
+var mimeParse = mime.ParseMediaType
+
 func p(id string) string { return url.PathEscape(id) }
+
+// endpoint builds a tool runner for a plain REST call. Every {name} in path is filled from the
+// required argument of that name; query lists optional string/boolean arguments sent as query
+// parameters; page > 0 adds pagination with that default limit; body, when set, builds the
+// request body.
+func endpoint(method, path string, query []string, page int, body func(a args) (any, error)) func(*caller, args) (any, error) {
+	return func(c *caller, a args) (any, error) {
+		target := path
+		for {
+			i := strings.Index(target, "{")
+			if i < 0 {
+				break
+			}
+			j := strings.Index(target[i:], "}") + i
+			v, err := a.need(target[i+1 : j])
+			if err != nil {
+				return nil, err
+			}
+			target = target[:i] + p(v) + target[j+1:]
+		}
+		q := url.Values{}
+		for _, k := range query {
+			if b, ok := a[k].(bool); ok {
+				q.Set(k, strconv.FormatBool(b))
+			} else if v := a.str(k); v != "" {
+				q.Set(k, v)
+			}
+		}
+		if page > 0 {
+			q = a.pageQuery(q, page)
+		}
+		var b any
+		if body != nil {
+			var err error
+			if b, err = body(a); err != nil {
+				return nil, err
+			}
+		}
+		return c.do(method, target, q, b)
+	}
+}
+
+// fields copies the given arguments that are present into body: strings trimmed, numbers and
+// booleans as they are.
+func (a args) fields(body map[string]any, keys ...string) map[string]any {
+	for _, k := range keys {
+		switch v := a[k].(type) {
+		case string:
+			body[k] = strings.TrimSpace(v)
+		case float64, bool, []any, map[string]any:
+			body[k] = v
+		}
+	}
+	return body
+}
 
 // ---- argument helpers ----
 
@@ -260,6 +370,21 @@ func withPage(props map[string]any) map[string]any {
 // ---- tools ----
 
 func toolset() []tool {
+	all := append(coreTools(), workTools()...)
+	all = append(all, quoteTools()...)
+	all = append(all, feedbackTools()...)
+	all = append(all, reportTools()...)
+	for i, t := range all {
+		for _, prefix := range []string{"whoami", "list_", "get_", "search_", "export_"} {
+			if strings.HasPrefix(t.name, prefix) {
+				all[i].readOnly = true
+			}
+		}
+	}
+	return all
+}
+
+func coreTools() []tool {
 	return []tool{
 		{
 			name:        "whoami",
@@ -384,7 +509,7 @@ func toolset() []tool {
 				"title":       sProp("Task title"),
 				"description": sProp("Markdown description"),
 				"status":      enumProp("Initial status, default todo", statuses...),
-				"priority":    iProp("1 (low) .. 4 (urgent)"),
+				"priority":    iProp("1 (low) .. 4 (urgent), default 2"),
 				"moduleId":    sProp("Module ID"),
 				"parentId":    sProp("Parent task ID, to create a subtask"),
 				"startDate":   sProp("YYYY-MM-DD"),
@@ -541,7 +666,7 @@ func createTask(c *caller, a args) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	body := map[string]any{"title": title, "status": "todo"}
+	body := map[string]any{"title": title, "status": "todo", "priority": 2}
 	if v := a.str("status"); v != "" {
 		body["status"] = v
 	}

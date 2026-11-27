@@ -4,7 +4,7 @@
 // sensitive) in the OS keychain.
 import { zip, type ZipEntry } from "./zip";
 
-export const EXTENSION_VERSION = "1.0.0";
+export const EXTENSION_VERSION = "1.1.0";
 
 const BRIDGE = String.raw`#!/usr/bin/env node
 // Kairso MCP bridge: stdio (Claude Desktop) <-> Streamable HTTP (Kairso /api/mcp).
@@ -99,9 +99,9 @@ export function buildExtension(opts: { mcpUrl: string; homepage: string; icon?: 
     name: "kairso",
     display_name: "Kairso",
     version: EXTENSION_VERSION,
-    description: "Read projects, create and update tasks and write meeting minutes in Kairso.",
+    description: "Manage tasks, meeting minutes, quotes, customer feedback and daily reports in Kairso.",
     long_description:
-      "Connects Claude to your Kairso workspace. Claude can browse workspaces, projects, members and modules; search, create, edit and assign tasks and comment on them; read, create and edit meeting minutes. It acts with your API key, so it can only do what you are allowed to do.",
+      "Connects Claude to your Kairso workspace. Claude can browse workspaces, projects, members and modules; search, create, edit, label and assign tasks; manage modules and sprints; write meeting minutes; prepare, send and export quotes; triage and answer customer feedback; write end-of-day reports. It acts with your API key, so it can only do what you are allowed to do.",
     author: { name: "Kairso", url: opts.homepage },
     homepage: opts.homepage,
     ...(opts.icon ? { icon: "icon.png" } : {}),

@@ -3,7 +3,7 @@ import { defineMessages } from "../define";
 export const apiKeys = defineMessages({
   vi: {
     apiKeys: {
-      intro: "Kết nối Claude Code, Claude Desktop, Cursor… với Kairso qua MCP để AI đọc dự án, tạo và cập nhật task, ghi biên bản họp thay bạn. AI dùng API key của bạn nên chỉ làm được những gì chính bạn được phép.",
+      intro: "Kết nối Claude Code, Claude Desktop, Cursor… với Kairso qua MCP để AI đọc dự án, quản lý task và module, ghi biên bản họp, soạn báo giá, xử lý phản hồi khách hàng và viết báo cáo cuối ngày thay bạn. AI dùng API key của bạn nên chỉ làm được những gì chính bạn được phép.",
       keysTitle: "API key của bạn",
       create: "Tạo API key",
       empty: "Chưa có API key nào",
@@ -41,13 +41,13 @@ export const apiKeys = defineMessages({
       connectorNote: "Connector được gọi từ máy chủ của Anthropic, nên Kairso phải có địa chỉ https truy cập được từ Internet.",
       setupJsonDesc: "Thêm máy chủ MCP kiểu HTTP với URL và header sau:",
       toolsTitle: "AI làm được gì",
-      tools: "Xem workspace, dự án, thành viên, module; tìm, tạo, sửa, giao task và bình luận; xem, tạo, sửa biên bản họp và thêm dòng vào biên bản.",
+      tools: "Xem workspace, dự án, thành viên; tìm, tạo, sửa, xoá, giao task, gắn nhãn, bình luận, đính kèm, xem lịch sử; tạo, sửa module và sprint; xem, tạo, sửa biên bản họp; tạo, sửa, gửi, xuất PDF/Excel báo giá và quản lý khách hàng; xử lý phản hồi khách hàng và câu hỏi dự án; viết và xem báo cáo cuối ngày.",
       tryTitle: "Thử hỏi",
       tryExample: "“Ghi biên bản cuộc họp sáng nay của dự án Kairso từ ghi chú này, tạo task cho các việc cần triển khai và giao cho người phụ trách.”",
     },
     oauthConsent: {
       title: (app: string) => `Cho phép ${app} truy cập Kairso?`,
-      body: (user: string) => `Ứng dụng sẽ dùng tài khoản ${user} để xem workspace và dự án, tạo và cập nhật task, ghi biên bản họp. Nó chỉ làm được những gì bạn được phép.`,
+      body: (user: string) => `Ứng dụng sẽ dùng tài khoản ${user} để xem workspace và dự án, quản lý task, biên bản họp, báo giá, phản hồi khách hàng và báo cáo cuối ngày. Nó chỉ làm được những gì bạn được phép.`,
       redirectNote: (host: string) => `Sau khi chọn, bạn sẽ được chuyển về ${host}.`,
       revokeNote: "Bạn có thể ngắt kết nối bất cứ lúc nào trong Cài đặt → AI & API key.",
       allow: "Cho phép",
@@ -59,7 +59,7 @@ export const apiKeys = defineMessages({
   },
   en: {
     apiKeys: {
-      intro: "Connect Claude Code, Claude Desktop, Cursor… to Kairso over MCP so AI can read projects, create and update tasks and write meeting minutes for you. The AI uses your API key, so it can only do what you are allowed to do.",
+      intro: "Connect Claude Code, Claude Desktop, Cursor… to Kairso over MCP so AI can read projects, manage tasks and modules, write meeting minutes, prepare quotes, handle customer feedback and write end-of-day reports for you. The AI uses your API key, so it can only do what you are allowed to do.",
       keysTitle: "Your API keys",
       create: "Create API key",
       empty: "No API keys yet",
@@ -97,13 +97,13 @@ export const apiKeys = defineMessages({
       connectorNote: "Connectors are called from Anthropic's servers, so Kairso needs an https address reachable from the Internet.",
       setupJsonDesc: "Add an HTTP MCP server with this URL and header:",
       toolsTitle: "What the AI can do",
-      tools: "Browse workspaces, projects, members and modules; search, create, edit and assign tasks and comment; read, create and edit meeting minutes and add rows to them.",
+      tools: "Browse workspaces, projects and members; search, create, edit, delete and assign tasks, label them, comment, attach files and read their history; create and edit modules and sprints; read, create and edit meeting minutes; create, edit, send and export quotes (PDF/Excel) and manage customers; handle customer feedback and project questions; write and read end-of-day reports.",
       tryTitle: "Try asking",
       tryExample: "“Write the minutes of this morning's Kairso project meeting from these notes, create tasks for the planned items and assign them to their owners.”",
     },
     oauthConsent: {
       title: (app: string) => `Allow ${app} to access Kairso?`,
-      body: (user: string) => `The app will use the account ${user} to read workspaces and projects, create and update tasks and write meeting minutes. It can only do what you are allowed to do.`,
+      body: (user: string) => `The app will use the account ${user} to read workspaces and projects, manage tasks, meeting minutes, quotes, customer feedback and end-of-day reports. It can only do what you are allowed to do.`,
       redirectNote: (host: string) => `After you choose, you will be sent back to ${host}.`,
       revokeNote: "You can disconnect it any time in Settings → AI & API keys.",
       allow: "Allow",

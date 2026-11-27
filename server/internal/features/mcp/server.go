@@ -18,18 +18,23 @@ import (
 
 const (
 	serverName    = "kairso"
-	serverVersion = "1.0.0"
+	serverVersion = "1.1.0"
 	latestVersion = "2025-06-18"
 	maxBodyBytes  = 1 << 20
 )
 
 var supportedVersions = []string{"2025-06-18", "2025-03-26", "2024-11-05"}
 
-const instructions = `Kairso is a project management workspace (tasks, modules, meeting minutes).
-Typical flow: list_workspaces → list_projects (workspaceId) → work with tasks or meetings.
+const instructions = `Kairso is a project management workspace: tasks, modules and sprints, meeting minutes,
+quotes (báo giá) with customers, customer feedback and questions on each project's public board,
+and end-of-day reports.
+Typical flow: list_workspaces → list_projects (workspaceId) → list_modules / search_tasks / list_quotes ...
 IDs are UUIDs returned by the list tools. Task priority is 1..4 (4 = urgent). Task status is one
 of backlog, todo, in_progress, review, done, canceled. Dates are YYYY-MM-DD.
-Use list_members to find user IDs before assigning tasks or naming meeting attendees.`
+Use list_members to find user IDs before assigning tasks or naming meeting attendees.
+Quotes: create_quote needs a module; money is in the currency's minor units (VND: đồng). Only drafts
+can be edited; send_quote locks a quote, new_quote_version reopens it as the next version.
+export_quote returns the PDF or Excel file. Tools marked destructive delete data: confirm with the user first.`
 
 // Handler serves POST /mcp.
 type Handler struct {
@@ -170,7 +175,9 @@ func (h *Handler) handle(ctx context.Context, req rpcRequest) (rpcResponse, bool
 	case "tools/list":
 		list := make([]map[string]any, 0, len(h.tools))
 		for _, t := range h.tools {
-			list = append(list, map[string]any{"name": t.name, "description": t.description, "inputSchema": t.schema})
+			list = append(list, map[string]any{
+				"name": t.name, "description": t.description, "inputSchema": t.schema, "annotations": t.annotations(),
+			})
 		}
 		resp.Result = map[string]any{"tools": list}
 	case "tools/call":
