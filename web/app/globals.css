@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --canvas: #F7F7F8;
   --surface: #FFFFFF;
   --surface-sunken: #FAFAFB;
@@ -21,17 +22,19 @@
   --ink-disabled: #A1A1AA;
   --ink-placeholder: #8B8B93;
 
+  /* Accent = the workspace brand colour. These are the defaults (indigo); lib/domain/brand.ts
+     derives the same set from any brand colour and overrides them at runtime. */
   --accent: #4F46E5;
-  --accent-2: #7C3AED;
-  --accent-hover: #4338CA;
-  --accent-ink: #4338CA;
-  --accent-soft: #ECEDFF;
-  --accent-border: #C5C9FA;
+  --accent-hover: #382ED9;
+  --accent-ink: #342CBA;
+  --accent-soft: #EAE9FC;
+  --accent-softer: #F5F5FC;
+  --accent-border: #C3C0F2;
   --accent-on: #FFFFFF;
-  --accent-grad: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-  --accent-grad-hover: linear-gradient(135deg, #4338CA 0%, #6D28D9 100%);
+  --on-white: #241ABC;
+  --hero-bg: linear-gradient(135deg, #4F46E5 0%, #362DCB 100%);
+  /* Kairso product mark and login hero only (not workspace-branded). */
   --brand-grad: linear-gradient(135deg, #6366F1 0%, #A855F7 55%, #EC4899 100%);
-  --on-white: #4338CA;
 
   --st-backlog-bg: #E9ECF6; --st-backlog-fg: #444A6B; --st-backlog-dot: #8A91B0;
   --st-todo-bg: #E1EBFF;    --st-todo-fg: #1D4ED8;    --st-todo-dot: #3B82F6;
@@ -71,22 +74,25 @@
 
   --avatar-1: #6366F1; --avatar-2: #059669; --avatar-3: #EA580C; --avatar-4: #C026D3;
   --avatar-5: #0284C7; --avatar-6: #D97706; --avatar-7: #E11D48; --avatar-8: #0D9488;
-  --grad-1: linear-gradient(135deg, #6366F1, #8B5CF6);
-  --grad-2: linear-gradient(135deg, #059669, #14B8A6);
-  --grad-3: linear-gradient(135deg, #EA580C, #F43F5E);
-  --grad-4: linear-gradient(135deg, #C026D3, #7C3AED);
-  --grad-5: linear-gradient(135deg, #0284C7, #6366F1);
-  --grad-6: linear-gradient(135deg, #D97706, #EA580C);
-  --grad-7: linear-gradient(135deg, #E11D48, #DB2777);
-  --grad-8: linear-gradient(135deg, #0D9488, #2563EB);
   --scrim: rgba(24, 24, 27, 0.45);
+
+  /* Festive layer (components/seasonal): particles over the UI and the hero ornament.
+     Light theme particles are deeper so they read on white surfaces. */
+  --fx-snow: #9FB4D1;
+  --fx-leaf-1: #D9822B; --fx-leaf-2: #C2410C; --fx-leaf-3: #B7791F;
+  --fx-petal: #F2A3BE; --fx-petal-2: #E57FA3;
+  --fx-mai: #E8B10E; --fx-dao: #F08BAE;
+  --fx-heart: #E14A6C;
+  --fx-spark: #E0A526;
+  --fx-bat: #4A4458;
+  --fx-gold: #FFD66B;
 
   --hero-grad: linear-gradient(120deg, #4F46E5 0%, #7C3AED 48%, #DB2777 100%);
 
   --sh-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
   --sh-md: 0 6px 16px rgba(24, 24, 27, 0.10);
   --sh-overlay: 0 16px 40px rgba(24, 24, 27, 0.18);
-  --sh-accent: 0 4px 12px rgba(79, 70, 229, 0.32);
+  --sh-accent: 0 2px 8px rgba(79, 70, 229, 0.22);
 
   --font-be-vietnam-pro: 'Be Vietnam Pro';
   --font-jetbrains-mono: 'JetBrains Mono';
@@ -118,6 +124,7 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --canvas: #101012;
   --surface: #19191C;
   --surface-sunken: #141416;
@@ -138,17 +145,16 @@
   --ink-disabled: #52525B;
   --ink-placeholder: #71717A;
 
-  --accent: #8F94FF;
-  --accent-2: #B48CFF;
-  --accent-hover: #ADB1FF;
-  --accent-ink: #B4B8FF;
-  --accent-soft: #232558;
-  --accent-border: #3F4390;
-  --accent-on: #0E1030;
-  --accent-grad: linear-gradient(135deg, #8F94FF 0%, #B48CFF 100%);
-  --accent-grad-hover: linear-gradient(135deg, #A8ACFF 0%, #C4A4FF 100%);
+  --accent: #5C53E7;
+  --accent-hover: #756EEB;
+  --accent-ink: #9994F0;
+  --accent-soft: #1F1D3F;
+  --accent-softer: #1B1A2D;
+  --accent-border: #3D3974;
+  --accent-on: #FFFFFF;
+  --on-white: #2219B3;
+  --hero-bg: linear-gradient(135deg, #262178 0%, #1B1754 100%);
   --brand-grad: linear-gradient(135deg, #7C80FF 0%, #B577FF 55%, #FF6FB5 100%);
-  --on-white: #4338CA;
 
   --st-backlog-bg: #24274B; --st-backlog-fg: #B9BEE3; --st-backlog-dot: #7E85B4;
   --st-todo-bg: #1A2650;    --st-todo-fg: #9DBBFF;    --st-todo-dot: #5B8CFF;
@@ -181,12 +187,21 @@
 
   --scrim: rgba(0, 0, 0, 0.66);
 
+  --fx-snow: #E3ECF7;
+  --fx-leaf-1: #F0A04B; --fx-leaf-2: #E2663A; --fx-leaf-3: #D9A441;
+  --fx-petal: #F7B8CE; --fx-petal-2: #F093B5;
+  --fx-mai: #F5C842; --fx-dao: #F59DBD;
+  --fx-heart: #FF7A95;
+  --fx-spark: #FFD37A;
+  --fx-bat: #A79FC2;
+  --fx-gold: #FFD66B;
+
   --hero-grad: linear-gradient(120deg, #3B35B8 0%, #6B2FD1 48%, #B4225F 100%);
 
   --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
   --sh-md: 0 6px 16px rgba(0, 0, 0, 0.5);
   --sh-overlay: 0 16px 40px rgba(0, 0, 0, 0.6);
-  --sh-accent: 0 4px 14px rgba(143, 148, 255, 0.28);
+  --sh-accent: 0 2px 10px rgba(92, 83, 231, 0.2);
 }
 
 @theme inline {
@@ -217,7 +232,7 @@
   --color-accent-border: var(--accent-border);
   --color-accent-on: var(--accent-on);
 
-  --color-accent-2: var(--accent-2);
+  --color-accent-softer: var(--accent-softer);
   --color-on-white: var(--on-white);
   --color-blue: var(--blue);
   --color-blue-soft: var(--blue-soft);
@@ -288,6 +303,16 @@
   --spacing-ghead: var(--h-group-head);
   --spacing-ctl: var(--h-control-md);
   --spacing-ctl-sm: var(--h-control-sm);
+}
+
+/* Festive ornaments (components/seasonal): gentle sway and twinkle, used via motion-safe. */
+@keyframes fx-sway {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+@keyframes fx-twinkle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.88); opacity: 0.75; }
 }
 
 @layer base {

@@ -53,7 +53,7 @@ export function WorkspaceSwitcher({ collapsed }: { collapsed?: boolean }) {
           {workspace?.avatar ? (
             <Avatar person={{ id: workspace.id, name: workspace.name, avatar: workspace.avatar }} size="md" />
           ) : (
-            <span style={{ background: "var(--brand-grad)" }} className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg text-[14px] font-bold text-white shadow-accent">
+            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent text-[14px] font-bold text-accent-on">
               {initial}
             </span>
           )}

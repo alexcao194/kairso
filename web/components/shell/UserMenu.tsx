@@ -9,7 +9,8 @@ import { useToast } from "@/lib/toast/ToastProvider";
 import { disablePush, enablePush } from "@/lib/firebase/messaging";
 import { Menu } from "@/components/ui/Popover";
 import { Avatar } from "@/components/ui/Avatar";
-import { IconBell, IconChevronDown, IconLogout, IconSettings, IconUser, IconUsers, IconBulb } from "@/components/icons";
+import { IconBell, IconChevronDown, IconLogout, IconSettings, IconUser, IconUsers, IconBulb, IconSnowflake } from "@/components/icons";
+import { useFestiveEnabled } from "@/lib/hooks/festive";
 import { useDialogs } from "@/components/dialogs/DialogProvider";
 
 const PUSH_TOKEN_KEY = "kairso-push-token";
@@ -20,6 +21,7 @@ export function UserMenu({ collapsed }: { collapsed?: boolean }) {
   const { openProfile } = useDialogs();
   const { lang } = useLocale();
   const t = useT();
+  const [festiveOn, setFestive] = useFestiveEnabled();
   const toast = useToast();
   const router = useRouter();
   const person = { id: user?.id, name: user?.name, avatar: user?.avatar };
@@ -87,6 +89,7 @@ export function UserMenu({ collapsed }: { collapsed?: boolean }) {
         { label: workspaceSettingsLabel, icon: <IconSettings size={14} />, onSelect: () => router.push("/settings/workspace") },
         { label: t.userMenu.members, icon: <IconUsers size={14} />, onSelect: () => router.push("/settings/members") },
         { label: t.userMenu.whatsNew, icon: <IconBulb size={14} />, onSelect: () => router.push("/settings/whats-new") },
+        { label: festiveOn ? t.festive.turnOff : t.festive.turnOn, icon: <IconSnowflake size={14} />, onSelect: () => setFestive(!festiveOn) },
         {
           label: t.userMenu.logout,
           icon: <IconLogout size={14} />,

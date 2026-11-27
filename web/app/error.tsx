@@ -21,7 +21,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <button
         type="button"
         onClick={() => reset()}
-        className="mt-2 inline-flex h-ctl items-center gap-2 rounded-md bg-(image:--accent-grad) px-4 text-[13px] font-medium text-accent-on shadow-accent hover:brightness-105"
+        className="mt-2 inline-flex h-ctl items-center gap-2 rounded-md bg-accent px-4 text-[13px] font-medium text-accent-on shadow-accent hover:bg-accent-hover"
       >
         <IconArrowLeft size={15} /> {tr().errors.retry}
       </button>

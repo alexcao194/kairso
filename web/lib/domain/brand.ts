@@ -62,9 +62,15 @@ const rgba = (c: string, a: number) => { const [r, g, b] = hexToRgb(c); return `
 const WHITE = "#FFFFFF";
 const NEAR_BLACK = "#111827";
 
+/** Pick white or near-black text for a solid background, whichever reads better. */
+const onColor = (bg: string) => (contrast(bg, WHITE) >= contrast(bg, NEAR_BLACK) ? WHITE : NEAR_BLACK);
+
 export function normalizeBrand(v?: string | null): string | null {
   return v && BRAND_HEX.test(v) ? v.toUpperCase() : null;
 }
+
+export const DEFAULT_BRAND = "#4F46E5";
+const DARK_SURFACE = "#19191C";
 
 /** Accent tokens for the app UI (light theme). */
 function lightTokens(base: Hsl): Record<string, string> {
@@ -77,44 +83,59 @@ function lightTokens(base: Hsl): Record<string, string> {
     if (contrast(baseHex, NEAR_BLACK) >= 4.5) on = NEAR_BLACK;
     else accent = ensure(base, WHITE, 4.5);
   }
+  // A near-white brand would vanish on white surfaces: deepen it until fills are visible.
+  if (contrast(hex(accent), WHITE) < 1.6) {
+    accent = ensure(accent, WHITE, 3);
+    on = onColor(hex(accent));
+  }
   const accentHex = hex(accent);
-  const hover = hsl(accent.h, accent.s, accent.l + (on === WHITE ? -0.07 : -0.06));
-  const soft = hsl(accent.h, Math.min(accent.s, 0.9), 0.95);
-  const ink = ensure(ensure(hsl(accent.h, accent.s, Math.min(accent.l, 0.45)), WHITE, 5), hex(soft), 4.6);
-  const border = hsl(accent.h, Math.min(accent.s, 0.85), 0.84);
-  const accent2 = hsl(accent.h + 28, accent.s, accent.l);
+  const s = Math.min(accent.s, 0.9);
+  const hover = hsl(accent.h, accent.s * 0.92, accent.l + (on === WHITE ? -0.07 : -0.06));
+  const soft = hsl(accent.h, Math.min(s, 0.75), 0.95);
+  const softer = hsl(accent.h, Math.min(s, 0.6), 0.975);
+  const ink = ensure(ensure(hsl(accent.h, accent.s * 0.82, Math.min(accent.l, 0.45)), WHITE, 5), hex(soft), 4.6);
+  const border = hsl(accent.h, Math.min(s, 0.65), 0.85);
+  // Hero banner: the brand colour itself, deepened along the same hue, always with white text.
+  const hero = ensure(base, WHITE, 4.6);
+  const heroEnd = hsl(hero.h, hero.s * 0.85, hero.l - 0.1);
   return {
     "--accent": accentHex,
-    "--accent-2": hex(accent2),
     "--accent-hover": hex(hover),
     "--accent-ink": hex(ink),
     "--accent-soft": hex(soft),
+    "--accent-softer": hex(softer),
     "--accent-border": hex(border),
     "--accent-on": on,
-    "--accent-grad": `linear-gradient(135deg, ${accentHex} 0%, ${hex(accent2)} 100%)`,
-    "--accent-grad-hover": `linear-gradient(135deg, ${hex(hover)} 0%, ${hex(hsl(accent2.h, accent2.s, accent2.l - 0.07))} 100%)`,
-    "--sh-accent": `0 4px 12px ${rgba(accentHex, 0.32)}`,
+    "--on-white": hex(ensure(hsl(accent.h, accent.s, Math.min(accent.l, 0.42)), WHITE, 5.5)),
+    "--hero-bg": `linear-gradient(135deg, ${hex(hero)} 0%, ${hex(heroEnd)} 100%)`,
+    "--sh-accent": `0 2px 8px ${rgba(accentHex, 0.22)}`,
   };
 }
 
-/** Accent tokens for the dark theme: lighter accent, dark tinted surfaces. */
+/** Accent tokens for the dark theme: the brand colour kept recognisable, lifted only as far as
+ *  it needs to stand out on dark surfaces, with tinted soft fills. */
 function darkTokens(base: Hsl): Record<string, string> {
-  const s = clamp(base.s, 0.3, 0.95);
-  const accent = hsl(base.h, s, clamp(Math.max(base.l, 0.68), 0.68, 0.8));
+  const s = clamp(base.s, 0.35, 0.9);
+  // Fills (buttons, active states) need 3:1 against the surface (WCAG 1.4.11); text uses --accent-ink.
+  const accent = ensure(hsl(base.h, s, clamp(base.l, 0.45, 0.6)), DARK_SURFACE, 3.2);
   const accentHex = hex(accent);
-  const accent2 = hsl(accent.h + 28, s, accent.l);
-  const hoverC = hsl(accent.h, s, accent.l + 0.07);
+  const on = onColor(accentHex);
+  const hover = hsl(accent.h, s, accent.l + 0.06);
+  const soft = hsl(accent.h, s * 0.5, 0.18);
+  const ink = ensure(hsl(accent.h, s, 0.76), hex(soft), 5);
+  const hero = hsl(base.h, s * 0.75, 0.3);
+  const heroEnd = hsl(base.h, s * 0.75, 0.21);
   return {
     "--accent": accentHex,
-    "--accent-2": hex(accent2),
-    "--accent-hover": hex(hoverC),
-    "--accent-ink": hex(hsl(accent.h, s, 0.8)),
-    "--accent-soft": hex(hsl(accent.h, s * 0.5, 0.22)),
-    "--accent-border": hex(hsl(accent.h, s * 0.45, 0.38)),
-    "--accent-on": hex(hsl(accent.h, 0.4, 0.12)),
-    "--accent-grad": `linear-gradient(135deg, ${accentHex} 0%, ${hex(accent2)} 100%)`,
-    "--accent-grad-hover": `linear-gradient(135deg, ${hex(hoverC)} 0%, ${hex(hsl(accent2.h, s, accent2.l + 0.06))} 100%)`,
-    "--sh-accent": `0 4px 14px ${rgba(accentHex, 0.28)}`,
+    "--accent-hover": hex(hover),
+    "--accent-ink": hex(ink),
+    "--accent-soft": hex(soft),
+    "--accent-softer": hex(hsl(accent.h, s * 0.35, 0.14)),
+    "--accent-border": hex(hsl(accent.h, s * 0.45, 0.34)),
+    "--accent-on": on,
+    "--on-white": hex(ensure(hsl(accent.h, accent.s, 0.4), WHITE, 5.5)),
+    "--hero-bg": `linear-gradient(135deg, ${hex(hero)} 0%, ${hex(heroEnd)} 100%)`,
+    "--sh-accent": `0 2px 10px ${rgba(accentHex, 0.2)}`,
   };
 }
 
@@ -137,10 +158,9 @@ export function docTokens(color?: string | null): Record<string, string> | undef
 
 const decl = (t: Record<string, string>) => Object.entries(t).map(([k, v]) => `${k}:${v}`).join(";");
 
-/** Stylesheet text overriding the accent tokens for both themes. Empty string = default theme. */
+/** Stylesheet text setting the accent tokens for both themes; without a brand colour, the default one. */
 export function brandCss(color?: string | null): string {
-  const c = normalizeBrand(color);
-  if (!c) return "";
+  const c = normalizeBrand(color) ?? DEFAULT_BRAND;
   const base = rgbToHsl(hexToRgb(c));
   return `html:root{${decl(lightTokens(base))}}\nhtml:root[data-theme="dark"]{${decl(darkTokens(base))}}`;
 }

@@ -201,6 +201,13 @@ export const IconZap = (p: Props) => (
   </Svg>
 );
 
+export const IconSnowflake = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 2v20M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
+    <path d="M9.5 3.5 12 6l2.5-2.5M9.5 20.5 12 18l2.5 2.5M3.3 10.6l3.4.9-.9-3.4M20.7 13.4l-3.4-.9.9 3.4M3.3 13.4l3.4-.9-.9 3.4M20.7 10.6l-3.4.9.9-3.4" />
+  </Svg>
+);
+
 export const IconEdit = (p: Props) => (
   <Svg {...p}>
     <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17z" />

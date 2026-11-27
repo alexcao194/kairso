@@ -44,7 +44,7 @@ export function EmptyState({
   title,
   description,
   action,
-  hue = "violet",
+  hue = "accent",
   className = "",
 }: {
   icon?: ReactNode;

@@ -1,5 +1,7 @@
 "use client";
 
+import { Ornament } from "@/components/seasonal/Ornament";
+import { useFestiveTheme } from "@/lib/hooks/festive";
 import { useMemo } from "react";
 import Link from "next/link";
 import { useQueries } from "@tanstack/react-query";
@@ -44,6 +46,7 @@ export default function HomePage() {
   const { openCreateTask, openCheckIn } = useDialogs();
   const today = localDateKey();
   const t = useT();
+  const festive = useFestiveTheme();
   const { lang } = useLocale();
   const kindText: Record<string, string> = { ...t.notif.kind, ...t.home.kind };
 
@@ -105,12 +108,21 @@ export default function HomePage() {
         <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 p-5 max-sm:p-4">
           <section
             aria-labelledby="home-hello"
-            style={{ background: "var(--hero-grad)" }}
+            style={{ background: "var(--hero-bg)" }}
             className="relative overflow-hidden rounded-2xl px-6 py-5 text-white shadow-md"
           >
             <span className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-white/15" aria-hidden="true" />
             <span className="pointer-events-none absolute -bottom-20 right-24 size-44 rounded-full bg-white/10" aria-hidden="true" />
-            <span className="pointer-events-none absolute right-6 top-6 hidden text-white/90 sm:block" aria-hidden="true"><IconZap size={44} /></span>
+            {festive ? (
+              <Ornament theme={festive.id} className="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 opacity-95 lg:block" />
+            ) : (
+              <span className="pointer-events-none absolute right-6 top-6 hidden text-white/90 sm:block" aria-hidden="true"><IconZap size={44} /></span>
+            )}
+            {festive?.holiday && (
+              <p className="mb-1.5 inline-flex h-6 items-center rounded-full bg-white/20 px-2.5 text-[12px] font-semibold text-white">
+                {t.festive.greeting[festive.id as keyof typeof t.festive.greeting]}
+              </p>
+            )}
             <p className="text-[12.5px] font-medium text-white/85">{new Date().toLocaleDateString(dateLocale(lang), { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}</p>
             <h1 id="home-hello" className="mt-0.5 text-[24px] font-bold leading-tight">{t.home.hello(user?.nickname || user?.name?.split(" ").slice(-1)[0] || t.home.you)}</h1>
             <p className="mt-1 max-w-[520px] text-[13.5px] text-white/90">
@@ -143,8 +155,8 @@ export default function HomePage() {
             <div className="flex min-w-0 flex-col gap-4">
               <section aria-labelledby="h-act" className="overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
                 <h2 id="h-act" className="flex h-12 items-center gap-2.5 border-b border-line px-4 text-[14px] font-semibold">
-                  <IconTile hue="violet" size={26}><IconBell size={14} /></IconTile>
-                  {t.home.needsYou} {items.length > 0 && <span className="rounded-full bg-violet-soft px-2 font-mono text-[12px] font-semibold text-violet">{items.length}</span>}
+                  <IconTile hue="accent" size={26}><IconBell size={14} /></IconTile>
+                  {t.home.needsYou} {items.length > 0 && <span className="rounded-full bg-accent-soft px-2 font-mono text-[12px] font-semibold text-accent-ink">{items.length}</span>}
                 </h2>
                 {loading ? (
                   <div className="flex flex-col gap-2 p-3">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-9" />)}</div>

@@ -203,7 +203,7 @@ function PublicFolder({ node, depth }: { node: TreeNode; depth: number }) {
         style={{ paddingLeft: depth * 16 + 4 }}
       >
         <IconChevronRight size={13} className={`shrink-0 text-ink-faint transition-transform ${open ? "rotate-90" : ""}`} />
-        <IconFolder size={15} className="shrink-0 text-accent" />
+        <IconFolder size={15} className="shrink-0 text-accent-ink" />
         <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-ink">{name}</span>
       </button>
       {open && (

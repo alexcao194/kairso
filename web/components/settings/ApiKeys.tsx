@@ -165,7 +165,7 @@ export function ApiKeysSection() {
           <a
             href="/api/mcp/extension"
             download="kairso.mcpb"
-            className="inline-flex h-ctl items-center gap-1.5 rounded-md border border-transparent bg-(image:--accent-grad) px-3.5 text-[13px] font-medium text-accent-on shadow-accent hover:brightness-105"
+            className="inline-flex h-ctl items-center gap-1.5 rounded-md border border-transparent bg-accent px-3.5 text-[13px] font-medium text-accent-on shadow-accent hover:bg-accent-hover"
           >
             <IconDownload size={14} /> {t.downloadExtension}
           </a>

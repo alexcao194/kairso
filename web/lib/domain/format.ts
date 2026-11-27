@@ -45,7 +45,7 @@ function hashIndex(seed: string, mod: number): number {
 }
 
 const AVATAR_COUNT = 8;
-export const avatarColor = (seed: string) => `var(--grad-${hashIndex(seed, AVATAR_COUNT) + 1})`;
+export const avatarColor = (seed: string) => `var(--avatar-${hashIndex(seed, AVATAR_COUNT) + 1})`;
 export const projectColor = (seed: string) => `var(--avatar-${hashIndex(`p:${seed}`, AVATAR_COUNT) + 1})`;
 
 export function startOfWeek(d: Date): Date {

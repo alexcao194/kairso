@@ -7,6 +7,7 @@ import { useWorkspace } from "@/lib/workspace/WorkspaceContext";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { MobileNav } from "@/components/shell/MobileNav";
 import { OfflineBanner } from "@/components/shell/OfflineBanner";
+import { FestiveLayer } from "@/components/seasonal/FestiveLayer";
 import { DialogProvider, useDialogs } from "@/components/dialogs/DialogProvider";
 import { EmptyState, Skeleton } from "@/components/ui/feedback";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +21,7 @@ function Splash() {
   return (
     <div className="flex h-screen w-full items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <div style={{ background: "var(--brand-grad)" }} className="flex size-10 animate-pulse items-center justify-center rounded-xl text-base font-bold text-white shadow-accent">K</div>
+        <div className="flex size-10 animate-pulse items-center justify-center rounded-xl bg-accent text-base font-bold text-accent-on">K</div>
         <span className="text-xs font-medium text-ink-muted">{useT().shell.loadingApp}</span>
       </div>
     </div>
@@ -104,6 +105,7 @@ function Shell({ children }: { children: ReactNode }) {
         )}
       </main>
       <MobileNav onMenu={() => setDrawer(true)} />
+      <FestiveLayer />
     </div>
   );
 }

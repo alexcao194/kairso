@@ -325,7 +325,7 @@ const t = useT();
                 {mode === "login" && (
                   <Link
                     href="/forgot-password"
-                    className="text-[11px] text-accent hover:underline cursor-pointer"
+                    className="text-[11px] text-accent-ink hover:underline cursor-pointer"
                   >
                     {t.login.forgot}
                   </Link>
@@ -370,7 +370,7 @@ const t = useT();
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 h-10 w-full cursor-pointer rounded-lg bg-(image:--accent-grad) text-xs font-semibold text-white shadow-accent transition-all hover:bg-(image:--accent-grad-hover) disabled:opacity-50"
+              className="mt-2 h-10 w-full cursor-pointer rounded-lg bg-accent text-xs font-semibold text-accent-on shadow-accent transition-colors hover:bg-accent-hover disabled:opacity-50"
             >
               {isLoading
                 ? t.login.processing
@@ -385,7 +385,7 @@ const t = useT();
             <button
               type="button"
               onClick={() => setShowTokenInput(!showTokenInput)}
-              className="w-full text-center text-xs text-ink-muted hover:text-accent flex items-center justify-center gap-1.5 cursor-pointer py-1"
+              className="w-full text-center text-xs text-ink-muted hover:text-accent-ink flex items-center justify-center gap-1.5 cursor-pointer py-1"
             >
               <IconZap size={13} />
               <span>
@@ -410,7 +410,7 @@ const t = useT();
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-8 rounded-md bg-surface border border-accent/40 text-accent hover:bg-accent/10 text-xs font-medium transition-colors cursor-pointer"
+                  className="w-full h-8 rounded-md bg-surface border border-accent/40 text-accent-ink hover:bg-accent/10 text-xs font-medium transition-colors cursor-pointer"
                 >
                   {t.login.connect}
                 </button>

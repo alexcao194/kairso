@@ -14,7 +14,7 @@ export default function NotFound() {
       </p>
       <Link
         href="/"
-        className="mt-2 inline-flex h-ctl items-center gap-2 rounded-md bg-(image:--accent-grad) px-4 text-[13px] font-medium text-accent-on shadow-accent hover:brightness-105"
+        className="mt-2 inline-flex h-ctl items-center gap-2 rounded-md bg-accent px-4 text-[13px] font-medium text-accent-on shadow-accent hover:bg-accent-hover"
       >
         <IconHome size={15} /> {tr().errors.goHome}
       </Link>

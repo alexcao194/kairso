@@ -43,7 +43,7 @@ const t = useT();
         </Link>
 
         <div>
-          <div className="flex size-10 items-center justify-center rounded-lg bg-accent/15 text-accent font-bold mb-3">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-accent/15 text-accent-ink font-bold mb-3">
             🔐
           </div>
           <h1 className="text-xl font-bold text-ink">{t.forgot.title}</h1>
@@ -68,7 +68,7 @@ const t = useT();
             <div className="pt-2">
               <Link
                 href="/login"
-                className="inline-block text-xs font-medium text-accent hover:underline cursor-pointer"
+                className="inline-block text-xs font-medium text-accent-ink hover:underline cursor-pointer"
               >
                 {t.forgot.backToLogin}
               </Link>
